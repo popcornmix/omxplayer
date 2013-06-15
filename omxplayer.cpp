@@ -60,6 +60,8 @@ extern "C" {
 #include <string>
 #include <utility>
 
+#include "version.h"
+
 // when we repeatedly seek, rather than play continuously
 #define TRICKPLAY(speed) (speed < 0 || speed > 4 * DVD_PLAYSPEED_NORMAL)
 
@@ -141,6 +143,7 @@ void print_usage()
   printf("Usage: omxplayer [OPTIONS] [FILE]\n");
   printf("Options :\n");
   printf("         -h / --help                    print this help\n");
+  printf("         -v / --version                 print version info\n");
   printf("         -k / --keys                    print key bindings\n");
 //  printf("         -a / --alang language          audio language        : e.g. ger\n");
   printf("         -n / --aidx  index             audio stream index    : e.g. 1\n");
@@ -168,7 +171,7 @@ void print_usage()
   printf("              --align left/center       subtitle alignment (default: left)\n");
   printf("              --lines n                 number of lines to accommodate in the subtitle buffer\n");
   printf("                                        (default: 3)\n");
-  printf("              --win \"x1 y1 x2 y2\"     Set position of video window\n");
+  printf("              --win \"x1 y1 x2 y2\"       Set position of video window\n");
   printf("              --audio_fifo  n           Size of audio output fifo in seconds\n");
   printf("              --video_fifo  n           Size of video output fifo in MB\n");
   printf("              --audio_queue n           Size of audio input queue in MB\n");
@@ -201,6 +204,14 @@ void print_keybindings()
   printf("        right arrow        seek +30 seconds\n");
   printf("        down arrow         seek -600 seconds\n");
   printf("        up arrow           seek +600 seconds\n");
+}
+
+void print_version()
+{
+  printf("omxplayer - Commandline multimedia player for the Raspberry Pi\n");
+  printf("        Build date: %s\n", VERSION_DATE);
+  printf("        Version   : %s [%s]\n", VERSION_HASH, VERSION_BRANCH);
+  printf("        Repository: %s\n", VERSION_REPO);
 }
 
 static void PrintSubtitleInfo()
@@ -508,6 +519,7 @@ int main(int argc, char *argv[])
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
     { "help",         no_argument,        NULL,          'h' },
+    { "version",      no_argument,        NULL,          'v' },
     { "keys",         no_argument,        NULL,          'k' },
     { "aidx",         required_argument,  NULL,          'n' },
     { "adev",         required_argument,  NULL,          'o' },
@@ -545,7 +557,7 @@ int main(int argc, char *argv[])
   int playspeed_current = playspeed_normal;
   int c;
   std::string mode;
-  while ((c = getopt_long(argc, argv, "wihkn:l:o:cslpd3:yzt:rgb:", longopts, NULL)) != -1)
+  while ((c = getopt_long(argc, argv, "wihvkn:l:o:cslpd3:yzt:rgb:", longopts, NULL)) != -1)
   {
     switch (c) 
     {
@@ -664,6 +676,10 @@ int main(int argc, char *argv[])
         break;
       case 'h':
         print_usage();
+        return 0;
+        break;
+      case 'v':
+        print_version();
         return 0;
         break;
       case 'k':

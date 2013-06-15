@@ -41,10 +41,10 @@ all: omxplayer.bin
 	@rm -f $@ 
 	$(CXX) $(CFLAGS) $(INCLUDES) -c $< -o $@ -Wno-deprecated-declarations
 
-list_test:
-	$(CXX) -O3 -o list_test list_test.cpp
+version:
+	sh gen_version.sh > version.h 
 
-omxplayer.bin: $(OBJS)
+omxplayer.bin: version $(OBJS)
 	$(CXX) $(LDFLAGS) -o omxplayer.bin $(OBJS) -lvchiq_arm -lvcos -lrt -lpthread -lavutil -lavcodec -lavformat -lswscale -lswresample -lpcre
 	#arm-unknown-linux-gnueabi-strip omxplayer.bin
 
