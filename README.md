@@ -80,7 +80,7 @@ Using OMXPlayer
               --video_fifo  n           Size of video output fifo in MB
               --audio_queue n           Size of audio input queue in MB
               --video_queue n           Size of video input queue in MB
-         -b / --threshold   n           Amount of buffered data required to come out of buffering in seconds
+              --threshold   n           Amount of buffered data required to come out of buffering in seconds
 
 For example:
 

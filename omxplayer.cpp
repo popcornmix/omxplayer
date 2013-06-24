@@ -177,7 +177,7 @@ void print_usage()
   printf("              --video_fifo  n           Size of video output fifo in MB\n");
   printf("              --audio_queue n           Size of audio input queue in MB\n");
   printf("              --video_queue n           Size of video input queue in MB\n");
-  printf("         -b / --threshold   n           Amount of buffered data required to come out of buffering in seconds\n");
+  printf("              --threshold   n           Amount of buffered data required to come out of buffering in seconds\n");
 }
 
 void print_keybindings()
