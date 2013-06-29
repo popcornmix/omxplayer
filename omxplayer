@@ -12,6 +12,12 @@ else
   FONT="fonts/FreeSans.ttf"
 fi
 
+if [ -e /usr/share/fonts/truetype/freefont/FreeSansOblique.ttf ]; then
+  ITALIC_FONT="/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf"
+else
+  ITALIC_FONT="fonts/FreeSansOblique.ttf"
+fi
+
 if [ -e /usr/bin/omxplayer.bin ]; then
   OMXPLAYER="/usr/bin/omxplayer.bin"
 else
@@ -35,7 +41,7 @@ if [ -e $FBSET ]; then
   fbset -xres 1 -yres 1
 fi
 
-$OMXPLAYER --font $FONT "$@"
+$OMXPLAYER --font $FONT --italic-font $ITALIC_FONT "$@"
 
 if [ -e $FBSET ]; then
   fbset -xres ${XRES} -yres ${YRES}

@@ -88,13 +88,13 @@ public:
   }
 };
 
-void SubtitleRenderer::load_glyph(char32_t codepoint) {
+void SubtitleRenderer::load_glyph(InternalChar ch) {
   VGfloat escapement[2]{};
 
   auto load_glyph_internal =
   [&](FT_Face ft_face, VGFont vg_font, bool border) {
     try {
-      auto glyph_index = FT_Get_Char_Index(ft_face, codepoint);
+      auto glyph_index = FT_Get_Char_Index(ft_face, ch.codepoint());
       ENFORCE(!FT_Load_Glyph(ft_face, glyph_index, FT_LOAD_NO_HINTING));
 
       FT_Glyph glyph;
@@ -165,7 +165,7 @@ void SubtitleRenderer::load_glyph(char32_t codepoint) {
       escapement[0] = static_cast<VGfloat>((ft_face->glyph->advance.x + 32) / 64);
       escapement[1] = 0;
 
-      vgSetGlyphToImage(vg_font, codepoint, image, glyph_origin, escapement);
+      vgSetGlyphToImage(vg_font, ch.val, image, glyph_origin, escapement);
       assert(!vgGetError());
 
       if (image) {
@@ -175,34 +175,40 @@ void SubtitleRenderer::load_glyph(char32_t codepoint) {
     } catch(...) {
       escapement[0] = 0;
       escapement[1] = 0;
-      vgSetGlyphToImage(vg_font, codepoint, VG_INVALID_HANDLE, escapement, escapement);
+      vgSetGlyphToImage(vg_font, ch.val, VG_INVALID_HANDLE, escapement, escapement);
       assert(!vgGetError());
     }
   };
 
-  load_glyph_internal(ft_face_, vg_font_, false);
-  glyphs_[codepoint].advance = escapement[0];
-  load_glyph_internal(ft_face_, vg_font_border_, true);
+  if (!ch.italic()) {
+    load_glyph_internal(ft_face_, vg_font_, false);
+    glyphs_[ch].advance = escapement[0];
+    load_glyph_internal(ft_face_, vg_font_border_, true);
+  } else {
+    load_glyph_internal(ft_face_italic_, vg_font_, false);
+    glyphs_[ch].advance = escapement[0];
+    load_glyph_internal(ft_face_italic_, vg_font_border_, true);
+  }
 }
 
 int SubtitleRenderer::get_text_width(const std::vector<InternalChar>& text) {
   int width = 0;
   for (auto c = text.begin(); c != text.end(); ++c) {
-    width += c->italic ? (assert(0), 0)
-                       : glyphs_.at(c->codepoint).advance;
+    width += glyphs_.at(*c).advance;
   }
   return width;
 }
 
 std::vector<SubtitleRenderer::InternalChar> SubtitleRenderer::
-get_internal_chars(const std::string& str) {
+get_internal_chars(const std::string& str, TagTracker& tag_tracker) {
   std::vector<InternalChar> internal_chars;
-  bool italic{};
   auto c_str = str.c_str();
   for (size_t i = 0, len = str.length(); i < len;) {
     try {
       auto cp = decodeUtf8(c_str, len, i);
-      internal_chars.push_back(InternalChar({cp, italic}));
+      tag_tracker.put(cp);
+      if (!tag_tracker.in_tag())
+        internal_chars.push_back(InternalChar(cp, tag_tracker.italic()));
     } catch (...) {
       ++i; // Keep going
     }
@@ -213,14 +219,13 @@ get_internal_chars(const std::string& str) {
 void SubtitleRenderer::
 prepare_glyphs(const std::vector<InternalChar>& text) {
   for (auto c = text.begin(); c != text.end(); ++c) {
-    if (glyphs_.find(c->codepoint) == glyphs_.end()) {
-      load_glyph(c->codepoint);
-    }
+    if (glyphs_.find(*c) == glyphs_.end())
+      load_glyph(*c);
   }
 }
 
 void SubtitleRenderer::
-draw_text(VGFont font, VGFont italic_font,
+draw_text(VGFont font,
           const std::vector<SubtitleRenderer::InternalChar>& text,
           int x, int y,
           unsigned int lightness) {
@@ -245,10 +250,7 @@ draw_text(VGFont font, VGFont italic_font,
   assert(!vgGetError());
 
   for (auto c = text.begin(); c != text.end(); ++c) {
-    vgDrawGlyph(c->italic ? italic_font : font,
-                c->codepoint,
-                VG_FILL_PATH,
-                VG_FALSE);
+    vgDrawGlyph(font, c->val, VG_FILL_PATH, VG_FALSE);
     assert(!vgGetError());
   }
 }
@@ -261,6 +263,7 @@ SubtitleRenderer::~SubtitleRenderer() BOOST_NOEXCEPT {
 SubtitleRenderer::
 SubtitleRenderer(int layer,
                  const std::string& font_path,
+                 const std::string& italic_font_path,
                  float font_size,
                  float margin_left,
                  float margin_bottom,
@@ -276,10 +279,9 @@ SubtitleRenderer(int layer,
   surface_(),
   vg_font_(),
   vg_font_border_(),
-  vg_font_italic_(),
-  vg_font_italic_border_(),
   ft_library_(),
   ft_face_(),
+  ft_face_italic_(),
   ft_stroker_(),
   line_height_(),
   box_offset_(),
@@ -296,7 +298,7 @@ SubtitleRenderer(int layer,
     uint32_t screen_width, screen_height;
     ENFORCE(graphics_get_display_size(0, &screen_width, &screen_height) >= 0);
 
-    initialize_fonts(font_path, font_size*screen_height);
+    initialize_fonts(font_path, italic_font_path, font_size*screen_height);
 
     int abs_margin_bottom =
       static_cast<int>(margin_bottom * screen_height + 0.5f) - box_offset_;
@@ -333,11 +335,16 @@ void SubtitleRenderer::destroy() {
 }
 
 void SubtitleRenderer::
-initialize_fonts(const std::string& font_path, unsigned int font_size) {
+initialize_fonts(const std::string& font_path,
+                 const std::string& italic_font_path,
+                 unsigned int font_size) {
   ENFORCE(!FT_Init_FreeType(&ft_library_));
   ENFORCE2(!FT_New_Face(ft_library_, font_path.c_str(), 0, &ft_face_),
            "Unable to open font");
+  ENFORCE2(!FT_New_Face(ft_library_, italic_font_path.c_str(), 0, &ft_face_italic_),
+           "Unable to open italic font");
   ENFORCE(!FT_Set_Pixel_Sizes(ft_face_, 0, font_size));
+  ENFORCE(!FT_Set_Pixel_Sizes(ft_face_italic_, 0, font_size));
 
   auto get_bbox = [this](char32_t cp) {
     auto glyph_index = FT_Get_Char_Index(ft_face_, cp);
@@ -376,6 +383,7 @@ void SubtitleRenderer::destroy_fonts() {
     assert(!error);
     ft_library_ = {};
     ft_face_ = {};
+    ft_face_italic_ = {};
     ft_stroker_ = {};
   }
 } 
@@ -522,12 +530,13 @@ void SubtitleRenderer::destroy_vg() {
 void SubtitleRenderer::
 prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT {
   const int n_lines = text_lines.size();
+  TagTracker tag_tracker;
 
   internal_lines_.resize(n_lines);
   line_widths_.resize(n_lines);
   line_positions_.resize(n_lines);
   for (int i = 0; i < n_lines; ++i) {
-    internal_lines_[i] = get_internal_chars(text_lines[i]);
+    internal_lines_[i] = get_internal_chars(text_lines[i], tag_tracker);
     prepare_glyphs(internal_lines_[i]);
     line_widths_[i] = get_text_width(internal_lines_[i]);
     line_positions_[i].second = margin_bottom_ + (n_lines-i-1)*line_height_;
@@ -562,14 +571,14 @@ void SubtitleRenderer::draw() BOOST_NOEXCEPT {
   }
 
   for (size_t i = 0; i < n_lines; ++i) {
-    draw_text(vg_font_border_, vg_font_italic_border_,
+    draw_text(vg_font_border_,
               internal_lines_[i],
               line_positions_[i].first, line_positions_[i].second,
               0);
   }
 
   for (size_t i = 0; i < n_lines; ++i) {
-    draw_text(vg_font_, vg_font_italic_,
+    draw_text(vg_font_,
               internal_lines_[i],
               line_positions_[i].first, line_positions_[i].second,
               white_level_);

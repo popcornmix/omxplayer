@@ -76,13 +76,13 @@ void COMXSubtitleTagSami::ConvertLine(COMXOverlayText* pOverlay, const char* lin
     else if (fullTag == "<i>" || fullTag == "{\\i1}")
     {
       m_flag[FLAG_ITALIC] = true;
-      // strUTF8.insert(pos, "[I]");
+      strUTF8.insert(pos, "<i>");
       pos += 3;
     }
     else if ((fullTag == "</i>" || fullTag == "{\\i0}") && m_flag[FLAG_ITALIC])
     {
       m_flag[FLAG_ITALIC] = false;
-      // strUTF8.insert(pos, "[/I]");
+      strUTF8.insert(pos, "</i>");
       pos += 4;
     }
     else if ((fullTag == "</font>" || fullTag == "{\\c}") && m_flag[FLAG_COLOR])

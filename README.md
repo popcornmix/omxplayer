@@ -70,6 +70,7 @@ Using OMXPlayer
               --subtitles path          external subtitles in UTF-8 srt format
               --font path               subtitle font
                                         (default: /usr/share/fonts/truetype/freefont/FreeSans.ttf)
+              --italic-font path        (default: /usr/share/fonts/truetype/freefont/FreeSansOblique.ttf)
               --font-size size          font size as thousandths of screen height
                                         (default: 55)
               --align left/center       subtitle alignment (default: left)

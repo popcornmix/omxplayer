@@ -78,7 +78,9 @@ int               m_use_hw_audio        = false;
 std::string       m_external_subtitles_path;
 bool              m_has_external_subtitles = false;
 std::string       m_font_path           = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
-bool              m_has_font            = false;
+std::string       m_italic_font_path    = "/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf";
+bool              m_asked_for_font      = false;
+bool              m_asked_for_italic_font = false;
 float             m_font_size           = 0.055f;
 bool              m_centered            = false;
 unsigned int      m_subtitle_lines      = 3;
@@ -167,6 +169,7 @@ void print_usage()
   printf("              --subtitles path          external subtitles in UTF-8 srt format\n");
   printf("              --font path               subtitle font\n");
   printf("                                        (default: /usr/share/fonts/truetype/freefont/FreeSans.ttf)\n");
+  printf("              --italic-font path        (default: /usr/share/fonts/truetype/freefont/FreeSansOblique.ttf)\n");
   printf("              --font-size size          font size as thousandths of screen height\n");
   printf("                                        (default: 55)\n");
   printf("              --align left/center       subtitle alignment (default: left)\n");
@@ -555,6 +558,7 @@ int main(int argc, char *argv[])
   TV_DISPLAY_STATE_T   tv_state;
 
   const int font_opt        = 0x100;
+  const int italic_font_opt = 0x201;
   const int font_size_opt   = 0x101;
   const int align_opt       = 0x102;
   const int subtitles_opt   = 0x103;
@@ -591,6 +595,7 @@ int main(int argc, char *argv[])
     { "pos",          required_argument,  NULL,          'l' },    
     { "blank",        no_argument,        NULL,          'b' },
     { "font",         required_argument,  NULL,          font_opt },
+    { "italic-font",  required_argument,  NULL,          italic_font_opt },
     { "font-size",    required_argument,  NULL,          font_size_opt },
     { "align",        required_argument,  NULL,          align_opt },
     { "subtitles",    required_argument,  NULL,          subtitles_opt },
@@ -683,7 +688,11 @@ int main(int argc, char *argv[])
         break;
       case font_opt:
         m_font_path = optarg;
-        m_has_font = true;
+        m_asked_for_font = true;
+        break;
+      case italic_font_opt:
+        m_italic_font_path = optarg;
+        m_asked_for_italic_font = true;
         break;
       case font_size_opt:
         {
@@ -772,9 +781,15 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  if(m_has_font && !Exists(m_font_path))
+  if(m_asked_for_font && !Exists(m_font_path))
   {
     PrintFileNotFound(m_font_path);
+    return 0;
+  }
+
+  if(m_asked_for_italic_font && !Exists(m_italic_font_path))
+  {
+    PrintFileNotFound(m_italic_font_path);
     return 0;
   }
 
@@ -896,6 +911,7 @@ int main(int argc, char *argv[])
        !m_player_subtitles.Open(m_omx_reader.SubtitleStreamCount(),
                                 std::move(external_subtitles),
                                 m_font_path,
+                                m_italic_font_path,
                                 m_font_size,
                                 m_centered,
                                 m_subtitle_lines,

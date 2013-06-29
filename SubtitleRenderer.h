@@ -36,12 +36,58 @@
 #include <unordered_map>
 #include <string>
 
+class TagTracker {
+public:
+  TagTracker() : italic_(), state_(), closing_() {};
+
+  void put(char32_t cp) {
+    if (state_ == '>')
+      state_ = 0;
+
+    switch (cp) {
+      case '<':
+        state_ = '<';
+        closing_ = false;
+        break;
+      case '/':
+        if (state_ == '<')
+          closing_ = true;
+        break;
+      case 'i':
+        if (state_)
+          state_ = 'i';
+        break;
+      case '>':
+        if (state_) {
+          if (state_ == 'i')
+            italic_ = !closing_;
+          state_ = '>';
+        }
+        break;
+    }
+  }
+
+  bool italic() {
+    return italic_;
+  }
+
+  bool in_tag() {
+    return state_;
+  }
+
+private:
+  bool italic_;
+  char state_;
+  bool closing_;
+};
+
 class SubtitleRenderer {
 public:
   SubtitleRenderer(const SubtitleRenderer&) = delete;
   SubtitleRenderer& operator=(const SubtitleRenderer&) = delete;
   SubtitleRenderer(int level,
                    const std::string& font_path,
+                   const std::string& italic_font_path,
                    float font_size,
                    float margin_left,
                    float margin_bottom,
@@ -58,8 +104,7 @@ public:
   }
 
   void show_next() BOOST_NOEXCEPT {
-    if (prepared_)
-    {
+    if (prepared_) {
       // puts("Expensive show_next!");
       draw();
     }
@@ -75,21 +120,40 @@ public:
 
 private:
   struct InternalChar {
-    char32_t codepoint;
-    bool italic;
+    InternalChar() = default;
+    InternalChar(char32_t codepoint, bool italic) {
+      val = codepoint | (static_cast<char32_t>(italic) << 31);
+    }
+    
+    bool operator ==(const InternalChar& other) const {
+      return val == other.val;
+    }
+
+    char32_t codepoint() const { return val & 0x7FFFFFFF; }
+    bool italic() const { return val >> 31; }
+
+    char32_t val;
+  };
+
+  struct InternalCharHash {
+    size_t operator()(InternalChar ch) const noexcept {
+      return static_cast<size_t>(ch.val);
+    }
   };
 
   struct InternalGlyph {
     int advance;
   };
 
-  static void draw_text(VGFont font, VGFont italic_font,
+  static void draw_text(VGFont font,
                         const std::vector<InternalChar>& text,
                         int x, int y,
                         unsigned int lightness);
 
   void destroy();
-  void initialize_fonts(const std::string& font_name, unsigned int font_size);
+  void initialize_fonts(const std::string& font_name,
+                        const std::string& italic_font_path,
+                        unsigned int font_size);
   void destroy_fonts();
   void initialize_vg();
   void destroy_vg();
@@ -103,9 +167,10 @@ private:
   void draw() BOOST_NOEXCEPT;
   void swap_buffers() BOOST_NOEXCEPT;
   void prepare_glyphs(const std::vector<InternalChar>& text);
-  void load_glyph(char32_t codepoint);
+  void load_glyph(InternalChar ch);
   int get_text_width(const std::vector<InternalChar>& text);
-  std::vector<InternalChar> get_internal_chars(const std::string& str);
+  std::vector<InternalChar> get_internal_chars(const std::string& str,
+                                               TagTracker& tag_tracker);
 
   bool prepared_;
   DISPMANX_ELEMENT_HANDLE_T dispman_element_;
@@ -115,12 +180,11 @@ private:
   EGLSurface surface_;
   VGFont vg_font_;
   VGFont vg_font_border_;
-  VGFont vg_font_italic_;
-  VGFont vg_font_italic_border_;
   FT_Library ft_library_;
   FT_Face ft_face_;
+  FT_Face ft_face_italic_;
   FT_Stroker ft_stroker_;
-  std::unordered_map<char32_t,InternalGlyph> glyphs_;
+  std::unordered_map<InternalChar,InternalGlyph, InternalCharHash> glyphs_;
   std::vector<std::vector<InternalChar>> internal_lines_;
   std::vector<std::pair<int,int>> line_positions_;
   std::vector<int> line_widths_;

@@ -41,6 +41,7 @@ public:
   bool Open(size_t stream_count,
             std::vector<Subtitle>&& external_subtitles,
             const std::string& font_path,
+            const std::string& italic_font_path,
             float font_size,
             bool centered,
             unsigned int lines,
@@ -112,6 +113,7 @@ private:
 
   void Process();
   void RenderLoop(const std::string& font_path,
+                  const std::string& italic_font_path,
                   float font_size,
                   bool centered,
                   unsigned int lines,
@@ -135,6 +137,7 @@ private:
   int                                           m_delay;
   std::atomic<bool>                             m_thread_stopped;
   std::string                                   m_font_path;
+  std::string                                   m_italic_font_path;
   float                                         m_font_size;
   bool                                          m_centered;
   unsigned int                                  m_lines;

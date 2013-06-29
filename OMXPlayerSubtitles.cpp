@@ -57,6 +57,7 @@ OMXPlayerSubtitles::~OMXPlayerSubtitles() BOOST_NOEXCEPT
 bool OMXPlayerSubtitles::Open(size_t stream_count,
                               vector<Subtitle>&& external_subtitles,
                               const string& font_path,
+                              const string& italic_font_path,
                               float font_size,
                               bool centered,
                               unsigned int lines,
@@ -75,6 +76,7 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
   m_thread_stopped.store(false, memory_order_relaxed);
 
   m_font_path = font_path;
+  m_italic_font_path = italic_font_path;
   m_font_size = font_size;
   m_centered = centered;
   m_lines = lines;
@@ -112,7 +114,8 @@ void OMXPlayerSubtitles::Process()
 {
   try
   {
-    RenderLoop(m_font_path, m_font_size, m_centered, m_lines, m_av_clock);
+    RenderLoop(m_font_path, m_italic_font_path, m_font_size, m_centered,
+               m_lines, m_av_clock);
   }
   catch(Enforce_error& e)
   {
@@ -144,6 +147,7 @@ Iterator FindSubtitle(Iterator begin, Iterator end, int time)
 
 void OMXPlayerSubtitles::
 RenderLoop(const string& font_path,
+           const string& italic_font_path,
            float font_size,
            bool centered,
            unsigned int lines,
@@ -151,6 +155,7 @@ RenderLoop(const string& font_path,
 {
   SubtitleRenderer renderer(1,
                             font_path,
+                            italic_font_path,
                             font_size,
                             0.01f, 0.06f,
                             centered,
