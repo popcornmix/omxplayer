@@ -38,7 +38,9 @@ public:
   OMXPlayerSubtitles& operator=(const OMXPlayerSubtitles&) = delete;
   OMXPlayerSubtitles() BOOST_NOEXCEPT;
   ~OMXPlayerSubtitles() BOOST_NOEXCEPT;
-  bool Open(size_t stream_count,
+  bool Open(bool has_subs,
+            bool info_enabled,
+            size_t stream_count,
             std::vector<Subtitle>&& external_subtitles,
             const std::string& font_path,
             const std::string& italic_font_path,
@@ -86,6 +88,8 @@ public:
 
   bool AddPacket(OMXPacket *pkt, size_t stream_index) BOOST_NOEXCEPT;
 
+  void ShowInfo(string info, int duration = 2000) BOOST_NOEXCEPT;
+
 private:
   struct Message {
     struct Stop {};
@@ -109,6 +113,11 @@ private:
     {
       bool value;
     };
+    struct ShowInfo
+    {
+      std::vector<std::string> text_lines;
+      int duration;
+    };
   };
 
   void Process();
@@ -129,8 +138,11 @@ private:
           Message::Push,
           Message::Seek,
           Message::SetPaused,
-          Message::SetDelay>                    m_mailbox;
+          Message::SetDelay,
+          Message::ShowInfo>                    m_mailbox;
   bool                                          m_paused;
+  bool                                          m_has_subs;
+  bool                                          m_info_enabled;
   bool                                          m_visible;
   bool                                          m_use_external_subtitles;
   size_t                                        m_active_index;

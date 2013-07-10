@@ -54,7 +54,9 @@ OMXPlayerSubtitles::~OMXPlayerSubtitles() BOOST_NOEXCEPT
   Close();
 }
 
-bool OMXPlayerSubtitles::Open(size_t stream_count,
+bool OMXPlayerSubtitles::Open(bool has_subs,
+                              bool info_enabled,
+                              size_t stream_count,
                               vector<Subtitle>&& external_subtitles,
                               const string& font_path,
                               const string& italic_font_path,
@@ -68,6 +70,8 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
   m_subtitle_buffers.resize(stream_count, circular_buffer<Subtitle>(32));
   m_external_subtitles = move(external_subtitles);
   
+  m_has_subs = has_subs;
+  m_info_enabled = info_enabled;
   m_paused = false;
   m_visible = true;
   m_use_external_subtitles = true;
@@ -82,14 +86,19 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
   m_lines = lines;
   m_av_clock = clock;
 
-  if(!Create())
+  // TODO Delay creating the thread if there aren't subtitles?
+  // Here, only Create() if subs exist or info is enabled
+  if ((m_info_enabled || m_has_subs) && !Create())
     return false;
 
-  m_mailbox.send(Message::Flush{m_external_subtitles});
+  // Only actually flush the subtitles if they exist
+  if (has_subs) {
+    m_mailbox.send(Message::Flush{m_external_subtitles});
 
 #ifndef NDEBUG
-  m_open = true;
+    m_open = true;
 #endif
+  }
 
   return true;
 }
@@ -172,6 +181,8 @@ RenderLoop(const string& font_path,
   int current_stop = INT_MIN;
   bool showing{};
   int delay{};
+  bool showing_info = false;
+  chrono::time_point<std::chrono::steady_clock> info_stoptime;
 
   auto GetCurrentTime = [&]
   {
@@ -194,6 +205,7 @@ RenderLoop(const string& font_path,
 
   auto Reset = [&](int time)
   {
+    showing_info = false;
     renderer.unprepare();
     current_stop = INT_MIN;
     auto it = FindSubtitle(subtitles.begin(),
@@ -203,9 +215,36 @@ RenderLoop(const string& font_path,
     TryPrepare(time);
   };
 
+  // Show some information in the subtitle area.
+  auto ShowInfo = [&](const std::vector<std::string> text_lines, int duration)
+  {
+    info_stoptime = chrono::steady_clock::now() + chrono::milliseconds(duration);
+
+    // cout << "Showing subtitle: [" << text_lines[0];
+    // cout << "], for ms: " << duration << endl;
+    renderer.prepare(text_lines);
+    renderer.show_next();
+    
+    showing_info = true;
+    have_next = false;
+  };
+
   for(;;)
   {
     int timeout;
+
+    auto now = GetCurrentTime();
+
+    // Remove the info message if the time has elapsed
+    if (showing_info && chrono::steady_clock::now() >= info_stoptime) {
+      // printf("Removing info subtitle, time: %d\n", now);
+      showing_info = false;
+
+      if (showing)
+        Reset(now);
+      else
+        renderer.hide();
+    }
 
     if(paused)
     {
@@ -213,7 +252,7 @@ RenderLoop(const string& font_path,
     }
     else
     {
-      auto now = GetCurrentTime();
+      now = GetCurrentTime();
 
       int till_stop =
         showing ? current_stop - now
@@ -223,8 +262,13 @@ RenderLoop(const string& font_path,
         have_next ? subtitles[next_index].start - now
                   : INT_MAX;
 
-      timeout = clamp(min(till_stop, till_next_start),
-                      0, 1000);
+      int info_stop_ms = chrono::duration_cast<std::chrono::milliseconds>
+        (info_stoptime - chrono::steady_clock::now()).count();
+
+      timeout = min(min(till_stop, till_next_start), 1000);
+
+      if (showing_info && timeout > info_stop_ms)
+        timeout = info_stop_ms;
     }
 
     m_mailbox.receive_wait(chrono::milliseconds(timeout),
@@ -253,13 +297,18 @@ RenderLoop(const string& font_path,
       [&](Message::Stop&&)
       {
         exit = true;
+      },
+      [&](Message::ShowInfo&& args)
+      {
+        if (m_info_enabled)
+          ShowInfo(args.text_lines, args.duration);
       });
 
     if(exit) break;
 
-    if(paused) continue;
+    if(paused || !m_has_subs || showing_info) continue;
 
-    auto now = GetCurrentTime();
+    now = GetCurrentTime();
 
     if(have_next && subtitles[next_index].stop <= now)
     {
@@ -331,7 +380,7 @@ void OMXPlayerSubtitles::Flush(double pts) BOOST_NOEXCEPT
 
 void OMXPlayerSubtitles::Resume() BOOST_NOEXCEPT
 {
-  assert(m_open);
+  assert(m_open || !m_has_subs);
 
   m_paused = false;
   m_mailbox.send(Message::SetPaused{false});
@@ -339,7 +388,7 @@ void OMXPlayerSubtitles::Resume() BOOST_NOEXCEPT
 
 void OMXPlayerSubtitles::Pause() BOOST_NOEXCEPT
 {
-  assert(m_open);
+  assert(m_open || !m_has_subs);
 
   m_paused = true;
   m_mailbox.send(Message::SetPaused{true});
@@ -469,4 +518,22 @@ bool OMXPlayerSubtitles::AddPacket(OMXPacket *pkt, size_t stream_index) BOOST_NO
   }
 
   return true;
+}
+
+
+void OMXPlayerSubtitles::ShowInfo(string info, int duration) BOOST_NOEXCEPT
+{
+  assert(m_open || !m_has_subs);
+
+  if(m_thread_stopped.load(memory_order_relaxed))
+  {
+    // Rendering thread has stopped! Hmm...
+    printf("Subtitle rendering thread has stopped, no info displayed\n");
+    CLog::Log(LOGWARNING, "Subtitle rendering thread has stopped, no info displayed");
+    return;
+  }
+
+  vector<string> text_lines;
+  split(text_lines, info, is_any_of("\n"));
+  m_mailbox.send(Message::ShowInfo{ text_lines, duration });
 }
