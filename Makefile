@@ -31,6 +31,7 @@ SRC=linux/XMemUtils.cpp \
 		SubtitleRenderer.cpp \
 		Unicode.cpp \
 		Srt.cpp \
+        KeyConfig.cpp \
 		omxplayer.cpp \
 
 OBJS+=$(filter %.o,$(SRC:.cpp=.o))

@@ -82,6 +82,7 @@ Using OMXPlayer
               --audio_queue n           Size of audio input queue in MB
               --video_queue n           Size of video input queue in MB
               --threshold   n           Amount of buffered data required to come out of buffering in seconds
+              --key-config <file>       Uses key bindings specified in <file> instead of the default
 
 For example:
 
@@ -112,3 +113,50 @@ While playing you can use the following keys to control omxplayer:
     Right Arrow	Seek +30 s
     Down Arrow	Seek -600 s
     Up Arrow	Seek +600 s
+
+Key Config Syntax
+-----------------
+
+A key config file is a series of rules of the form [action]:[key]. Multiple keys can be bound
+to the same action, and comments are supported by adding a # in front of the line.
+The list of valid [action]s roughly corresponds to the list of default key bindings above and are:
+
+    DECREASE_SPEED
+    INCREASE_SPEED
+    REWIND
+    FAST_FORWARD
+    SHOW_INFO
+    PREVIOUS_AUDIO
+    NEXT_AUDIO
+    PREVIOUS_CHAPTER
+    NEXT_CHAPTER
+    PREVIOUS_SUBTITLE
+    NEXT_SUBTITLE
+    TOGGLE_SUBTITLE
+    DECREASE_SUBTITLE_DELAY
+    INCREASE_SUBTITLE_DELAY
+    EXIT
+    PAUSE
+    DECREASE_VOLUME
+    INCREASE_VOLUME
+    SEEK_BACK_SMALL
+    SEEK_FORWARD_SMALL
+    SEEK_BACK_LARGE
+    SEEK_FORWARD_LARGE
+    STEP
+
+Valid [key]s include all alpha-numeric characters and most symbols, as well as:
+    left
+    right
+    up
+    down
+    esc
+
+For example:
+
+    EXIT:esc
+    PAUSE:p
+    #Note that this next line has a space after the :
+    PAUSE: 
+    REWIND:left
+    EXIT:q
