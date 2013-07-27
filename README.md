@@ -117,7 +117,8 @@ While playing you can use the following keys to control omxplayer:
 Key Config Syntax
 -----------------
 
-A key config file is a series of rules of the form [action]:[key]. Multiple keys can be bound
+A key config file is a series of rules of the form [action]:[key]. Keyboard input 
+is supported as well as input from multiple joysticks. Multiple keys can be bound
 to the same action, and comments are supported by adding a # in front of the line.
 The list of valid [action]s roughly corresponds to the list of default key bindings above and are:
 
@@ -146,6 +147,7 @@ The list of valid [action]s roughly corresponds to the list of default key bindi
     STEP
 
 Valid [key]s include all alpha-numeric characters and most symbols, as well as:
+
     left
     right
     up
@@ -153,8 +155,22 @@ Valid [key]s include all alpha-numeric characters and most symbols, as well as:
     esc
     hex [keycode]
 
+Joystick inputs are defined of the form:
+
+    js /path/to/js a[number][+-]
+    js /path/to/js b[number]
+
+Where /path/to/js is the path to the joystick (usually something like /dev/input/js0),
+a denotes an axis is being bound, b denotes a button being bound, [number] is the
+number of the joystick axis or button, and [+-] designates which direction (positive or
+negative) of motion on the axis will trigger the event. Joystick axis and button 
+numbers can easily be discovered by using jstest. You do not need to declare the
+joysticks anywhere in the file; the parser will build the list of joysticks
+from the ones it finds that have buttons/axes bound.
+
 For example:
 
+    #Keyboard bindings
     EXIT:esc
     PAUSE:p
     #Note that this next line has a space after the :
@@ -162,3 +178,9 @@ For example:
     REWIND:left
     SEEK_FORWARD_SMALL:hex 0x4f43
     EXIT:q
+
+    #Joystick bindings
+    SEEK_FORWARD_SMALL:js /dev/input/js0 a0+
+    SEEK_BACK_SMALL:js /dev/input/js0 a0-
+    EXIT:js /dev/input/js0 b6
+    PAUSE:js /dev/input/js1 b0

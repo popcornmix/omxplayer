@@ -1,5 +1,8 @@
 #include <map>
+#include <vector>
 #include <string>
+#include <sys/types.h>
+#include <linux/joystick.h>
 
 class KeyConfig{
 
@@ -30,12 +33,27 @@ class KeyConfig{
         ACTION_STEP
     };
 
-    #define KEY_LEFT 0x5b44
-    #define KEY_RIGHT 0x5b43
-    #define KEY_UP 0x5b41
-    #define KEY_DOWN 0x5b42
-    #define KEY_ESC 27
+    #define KEY_LEFT_HEX 0x5b44
+    #define KEY_RIGHT_HEX 0x5b43
+    #define KEY_UP_HEX 0x5b41
+    #define KEY_DOWN_HEX 0x5b42
+    #define KEY_ESC_HEX 27
 
-    static std::map<int, int> buildDefaultKeymap();
-    static std::map<int, int> parseConfigFile(std::string filepath);
+    KeyConfig();
+    KeyConfig(char*);
+
+    int getAction(int key);
+    int getAction(std::string joystick, struct js_event *jse);
+
+    std::vector<std::string> getJoysticks(){ return joysticks; }
+    int getNumJoysticks(){ return joysticks.size(); }
+
+  private:
+    std::map<int, int> keymap;
+    std::map<std::string, int> jsmap;
+    std::vector<std::string> joysticks;
+    int num_joysticks;
+
+    void buildDefaultKeymap();
+    void parseConfigFile(char* filepath);
 };

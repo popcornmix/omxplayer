@@ -1,5 +1,4 @@
-#include <string>
-#include <map>
+#include <set>
 #include <fstream>
 
 #include "KeyConfig.h"
@@ -86,9 +85,7 @@ string getKeyFromString(string line){
 /* Returns a keymap consisting of the default
  *  keybinds specified with the -k option 
  */
-map<int, int> KeyConfig::buildDefaultKeymap(){
-    map<int,int> keymap;
-
+void KeyConfig::buildDefaultKeymap(){
     keymap['1'] = ACTION_DECREASE_SPEED;
     keymap['2'] = ACTION_INCREASE_SPEED;
     keymap['<'] = ACTION_REWIND;
@@ -106,28 +103,26 @@ map<int, int> KeyConfig::buildDefaultKeymap(){
     keymap['d'] = ACTION_DECREASE_SUBTITLE_DELAY;
     keymap['f'] = ACTION_INCREASE_SUBTITLE_DELAY;
     keymap['q'] = ACTION_EXIT;
-    keymap[KEY_ESC] = ACTION_EXIT;
+    keymap[KEY_ESC_HEX] = ACTION_EXIT;
     keymap['p'] = ACTION_PAUSE;
     keymap[' '] = ACTION_PAUSE;
     keymap['-'] = ACTION_DECREASE_VOLUME;
     keymap['+'] = ACTION_INCREASE_VOLUME;
     keymap['='] = ACTION_INCREASE_VOLUME;
-    keymap[KEY_LEFT] = ACTION_SEEK_BACK_SMALL;
-    keymap[KEY_RIGHT] = ACTION_SEEK_FORWARD_SMALL;
-    keymap[KEY_DOWN] = ACTION_SEEK_BACK_LARGE;
-    keymap[KEY_UP] = ACTION_SEEK_FORWARD_LARGE;
+    keymap[KEY_LEFT_HEX] = ACTION_SEEK_BACK_SMALL;
+    keymap[KEY_RIGHT_HEX] = ACTION_SEEK_FORWARD_SMALL;
+    keymap[KEY_DOWN_HEX] = ACTION_SEEK_BACK_LARGE;
+    keymap[KEY_UP_HEX] = ACTION_SEEK_FORWARD_LARGE;
     keymap['v'] = ACTION_STEP;
-
-    return keymap;
 }
 
-/* Parses the supplied config file and turns it into a map object.
+/* Parses the supplied config file and adds the values to the map objects.
  * NOTE: Does not work with certain filepath shortcuts (e.g. ~ as user's home)
  */
-map<int, int> KeyConfig::parseConfigFile(string filepath){
-    ifstream config_file(filepath.c_str());
-    map<int,int> keymap;
+void KeyConfig::parseConfigFile(char* filepath){
+    ifstream config_file(filepath);
     string line;
+    std::set<std::string> jsset;
 
     while(getline(config_file, line)){
         string str_action = getActionFromString(line);
@@ -136,27 +131,86 @@ map<int, int> KeyConfig::parseConfigFile(string filepath){
         if(str_action != "" && key != "" && str_action[0] != '#'){
             int key_action = convertStringToAction(str_action);
             if(key.substr(0,4) == "left"){
-                keymap[KEY_LEFT] = key_action;
+                keymap[KEY_LEFT_HEX] = key_action;
             }
             else if(key.substr(0,5) == "right"){
-                keymap[KEY_RIGHT] = key_action;
+                keymap[KEY_RIGHT_HEX] = key_action;
             }
             else if(key.substr(0,2) == "up"){
-                keymap[KEY_UP] = key_action;
+                keymap[KEY_UP_HEX] = key_action;
             }
             else if(key.substr(0,4) == "down"){
-                keymap[KEY_DOWN] = key_action;
+                keymap[KEY_DOWN_HEX] = key_action;
             }
             else if(key.substr(0,3) == "esc"){
-                keymap[KEY_ESC] = key_action;
+                keymap[KEY_ESC_HEX] = key_action;
             }
             else if(key.substr(0,3) == "hex"){
               const char *hex = key.substr(4).c_str();
               if (hex)
                 keymap[strtoul(hex,0,0)] = key_action;
             }
+            else if(key.substr(0,3) == "js "){
+                string js_key = key.substr(3);
+                jsmap[js_key] = key_action;
+                string js_path = js_key.substr(0, js_key.find(' '));
+                jsset.insert(js_path);
+            }
             else keymap[key[0]] = key_action;
         }
     }
-    return keymap;
+
+    //Turn the set of joysticks into a vector because it is more convenient to work with later
+    joysticks.assign(jsset.begin(), jsset.end());
+}
+
+/* Default constructor that builds the default keymap */
+KeyConfig::KeyConfig(){
+    buildDefaultKeymap();
+    num_joysticks = 0;
+}
+
+/* Constructor that takes a path to a config file. Falls back on the
+ * default keymap in case of trouble.
+ */
+KeyConfig::KeyConfig(char* filepath){
+    parseConfigFile(filepath);
+
+    // true if config file is empty or there was an error reading it
+    if(keymap.size() + jsmap.size() < 1){
+        buildDefaultKeymap();
+        num_joysticks = 0;
+    }
+    else if(jsmap.size() > 0){
+        num_joysticks = joysticks.size();
+    }
+}
+
+/* Finds the action associated with the provided keyboard event */
+int KeyConfig::getAction(int key_pressed){
+    return keymap[key_pressed];
+}
+
+/* Finds the action associated with the provided joystick/joystick event */
+int KeyConfig::getAction(std::string joystick, struct js_event *jse){
+    //value of 0 is either a button release or a dead joystick
+    if(jse->value == 0)
+        return -1;
+
+    std::string key_string = joystick;
+
+    if((jse->type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON){
+        key_string.append(" b");
+        key_string.append(to_string(jse->number));
+    }
+    else if((jse->type & ~JS_EVENT_INIT) == JS_EVENT_AXIS){
+        key_string.append(" a");
+        key_string.append(to_string(jse->number));
+
+        if(jse->value > 0)
+            key_string.append("+");
+        else if(jse->value < 0)
+            key_string.append("-");
+    }
+    return jsmap[key_string];
 }
