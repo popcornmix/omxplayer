@@ -558,6 +558,8 @@ int main(int argc, char *argv[])
   float video_queue_size = 0.0;
   float m_threshold      = 0.1f; // amount of audio/video required to come out of buffering
   TV_DISPLAY_STATE_T   tv_state;
+  int *joystick_fds = 0;
+  vector<std::string> joysticks;
 
   const int font_opt        = 0x100;
   const int italic_font_opt = 0x201;
@@ -622,7 +624,7 @@ int main(int argc, char *argv[])
   std::string mode;
 
   //Build default keymap just in case the --key-config option isn't used
-  map<int,int> keymap = KeyConfig::buildDefaultKeymap();
+  KeyConfig * keymap = new KeyConfig;
 
   while ((c = getopt_long(argc, argv, "wihvkn:l:o:cslbpd3:yzt:rg", longopts, NULL)) != -1)
   {
@@ -747,7 +749,8 @@ int main(int argc, char *argv[])
         m_blank_background = true;
         break;
       case key_config_opt:
-        keymap = KeyConfig::parseConfigFile(optarg);
+        keymap = new KeyConfig(optarg);
+        joysticks = keymap->getJoysticks();
         break;
       case 0:
         break;
@@ -974,10 +977,27 @@ int main(int argc, char *argv[])
 
   PrintSubtitleInfo();
 
+  // Open joystick file descriptors
+  if(keymap->getNumJoysticks() > 0){
+    joystick_fds = (int*) malloc(keymap->getNumJoysticks() * sizeof(int));
+    for(unsigned int i=0; i < joysticks.size(); i++){
+      joystick_fds[i] = open(joysticks[i].c_str(), O_RDONLY | O_NONBLOCK);
+    }
+  }
+
   while(!m_stop)
   {
     int ch[8];
     int chnum = 0;
+    struct js_event jse;
+    memset(&jse, 0, sizeof(struct js_event));
+
+    int num_actions = 1 + keymap->getNumJoysticks();
+    int current_actions[num_actions]; // 0 = stdin, 1-n are joysticks
+
+    for(int i = 0; i < num_actions; i++){
+      current_actions[i] = -1;
+    }
 
     if(g_abort)
       goto do_exit;
@@ -988,7 +1008,20 @@ int main(int argc, char *argv[])
 
     if (chnum > 1) ch[0] = ch[chnum - 1] | (ch[chnum - 2] << 8);
 
-    switch(keymap[ch[0]])
+    current_actions[0] = keymap->getAction(ch[0]);
+
+    // skip stdin
+    for(int i=0; i < num_actions-1; i++){
+      if(joystick_fds[i] > 0){
+        int bytes = read(joystick_fds[i], &jse, sizeof(struct js_event));
+        if(bytes == sizeof(struct js_event)){
+          current_actions[i+1] = keymap->getAction(joysticks[i], &jse);
+        }
+      }
+    }
+
+    for(int i=0; i < num_actions; i++){
+    switch(current_actions[i])
     {
       case KeyConfig::ACTION_SHOW_INFO:
         m_tv_show_info = !m_tv_show_info;
@@ -1186,6 +1219,7 @@ int main(int argc, char *argv[])
         break;
       default:
         break;
+    }
     }
 
     if(m_seek_flush || m_incr != 0)
@@ -1447,6 +1481,9 @@ do_exit:
 
   g_OMX.Deinitialize();
   g_RBP.Deinitialize();
+
+  free(joystick_fds);
+  delete keymap;
 
   printf("have a nice day ;)\n");
   return 1;
