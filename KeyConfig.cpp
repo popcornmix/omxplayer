@@ -1,6 +1,7 @@
 #include <string>
 #include <map>
 #include <fstream>
+#include <cstdlib>
 
 #include "KeyConfig.h"
 

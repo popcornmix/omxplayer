@@ -253,22 +253,6 @@
 #define HAS_GLES 1
 #endif
 
-
-#ifdef HAS_GL
-#if defined(TARGET_WINDOWS)
-#include "GL/glew.h"
-#include <GL/gl.h>
-#include <GL/glu.h>
-//#include <GL/wglext.h>
-#elif defined(TARGET_DARWIN)
-#include <GL/glew.h>
-#include <OpenGL/gl.h>
-#elif defined(TARGET_LINUX)
-#include <GL/glew.h>
-#include <GL/gl.h>
-#endif
-#endif
-
 #if HAS_GLES == 2
   #if defined(TARGET_DARWIN)
     #include <OpenGLES/ES2/gl.h>

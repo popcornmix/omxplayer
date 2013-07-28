@@ -57,6 +57,7 @@ extern "C" {
 #include "DllOMX.h"
 #include "Srt.h"
 #include "KeyConfig.h"
+#include "utils/Strprintf.h"
 
 #include <string>
 #include <utility>
@@ -65,6 +66,11 @@ extern "C" {
 
 // when we repeatedly seek, rather than play continuously
 #define TRICKPLAY(speed) (speed < 0 || speed > 4 * DVD_PLAYSPEED_NORMAL)
+
+#define DISPLAY_TEXT(text, ms) if(m_osd) m_player_subtitles.DisplayText(text, ms)
+
+#define DISPLAY_TEXT_SHORT(text) DISPLAY_TEXT(text, 1000)
+#define DISPLAY_TEXT_LONG(text) DISPLAY_TEXT(text, 2000)
 
 typedef enum {CONF_FLAGS_FORMAT_NONE, CONF_FLAGS_FORMAT_SBS, CONF_FLAGS_FORMAT_TB } FORMAT_3D_T;
 enum PCMChannels  *m_pChannelMap        = NULL;
@@ -76,6 +82,7 @@ bool              m_NoDeinterlace       = false;
 bool              m_HWDecode            = false;
 std::string       deviceString          = "";
 int               m_use_hw_audio        = false;
+bool              m_osd                 = true;
 std::string       m_external_subtitles_path;
 bool              m_has_external_subtitles = false;
 std::string       m_font_path           = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
@@ -84,6 +91,7 @@ bool              m_asked_for_font      = false;
 bool              m_asked_for_italic_font = false;
 float             m_font_size           = 0.055f;
 bool              m_centered            = false;
+bool              m_ghost_box           = true;
 unsigned int      m_subtitle_lines      = 3;
 bool              m_Pause               = false;
 OMXReader         m_omx_reader;
@@ -167,6 +175,7 @@ void print_usage()
   printf("         -b / --blank                   set background to black\n");
   printf("              --boost-on-downmix        boost volume when downmixing\n");
   printf("              --vol n                   Set initial volume in millibels (default 0)\n");
+  printf("              --no-osd                  do not display status information on screen\n");
   printf("              --subtitles path          external subtitles in UTF-8 srt format\n");
   printf("              --font path               subtitle font\n");
   printf("                                        (default: /usr/share/fonts/truetype/freefont/FreeSans.ttf)\n");
@@ -174,6 +183,7 @@ void print_usage()
   printf("              --font-size size          font size as thousandths of screen height\n");
   printf("                                        (default: 55)\n");
   printf("              --align left/center       subtitle alignment (default: left)\n");
+  printf("              --no-ghost-box            no semitransparent boxes behind subtitles\n");
   printf("              --lines n                 number of lines to accommodate in the subtitle buffer\n");
   printf("                                        (default: 3)\n");
   printf("              --win \"x1 y1 x2 y2\"       Set position of video window\n");
@@ -295,17 +305,17 @@ static void FlushStreams(double pts)
   if(m_has_audio)
     m_player_audio.Flush();
 
+  if(pts != DVD_NOPTS_VALUE)
+    m_av_clock->OMXMediaTime(pts);
+
   if(m_has_subtitle)
-    m_player_subtitles.Flush(pts);
+    m_player_subtitles.Flush();
 
   if(m_omx_pkt)
   {
     m_omx_reader.FreePacket(m_omx_pkt);
     m_omx_pkt = NULL;
   }
-
-  if(pts != DVD_NOPTS_VALUE)
-    m_av_clock->OMXMediaTime(pts);
 }
 
 void SetVideoMode(int width, int height, int fpsrate, int fpsscale, FORMAT_3D_T is3d)
@@ -563,6 +573,7 @@ int main(int argc, char *argv[])
   const int italic_font_opt = 0x201;
   const int font_size_opt   = 0x101;
   const int align_opt       = 0x102;
+  const int no_ghost_box_opt = 0x203;
   const int subtitles_opt   = 0x103;
   const int lines_opt       = 0x104;
   const int pos_opt         = 0x105;
@@ -575,6 +586,7 @@ int main(int argc, char *argv[])
   const int threshold_opt   = 0x10c;
   const int boost_on_downmix_opt = 0x200;
   const int key_config_opt  = 0x10d;
+  const int no_osd_opt = 0x202;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -601,6 +613,7 @@ int main(int argc, char *argv[])
     { "italic-font",  required_argument,  NULL,          italic_font_opt },
     { "font-size",    required_argument,  NULL,          font_size_opt },
     { "align",        required_argument,  NULL,          align_opt },
+    { "no-ghost-box", no_argument,        NULL,          no_ghost_box_opt },
     { "subtitles",    required_argument,  NULL,          subtitles_opt },
     { "lines",        required_argument,  NULL,          lines_opt },
     { "win",          required_argument,  NULL,          pos_opt },
@@ -611,6 +624,7 @@ int main(int argc, char *argv[])
     { "threshold",    required_argument,  NULL,          threshold_opt },
     { "boost-on-downmix", no_argument,    NULL,          boost_on_downmix_opt },
     { "key-config",   required_argument,  NULL,          key_config_opt },
+    { "no-osd",       no_argument,        NULL,          no_osd_opt },
     { 0, 0, 0, 0 }
   };
 
@@ -694,6 +708,9 @@ int main(int argc, char *argv[])
         if (m_seek_pos < 0)
             m_seek_pos = 0;
         break;
+      case no_osd_opt:
+        m_osd = false;
+        break;
       case font_opt:
         m_font_path = optarg;
         m_asked_for_font = true;
@@ -711,6 +728,9 @@ int main(int argc, char *argv[])
         break;
       case align_opt:
         m_centered = !strcmp(optarg, "center");
+        break;
+      case no_ghost_box_opt:
+        m_ghost_box = false;
         break;
       case subtitles_opt:
         m_external_subtitles_path = optarg;
@@ -909,6 +929,7 @@ int main(int argc, char *argv[])
                                          m_hdmi_clock_sync, m_thread_player, m_display_aspect, video_queue_size, video_fifo_size))
     goto do_exit;
 
+  if(m_has_subtitle || m_osd)
   {
     std::vector<Subtitle> external_subtitles;
     if(m_has_external_subtitles &&
@@ -918,13 +939,13 @@ int main(int argc, char *argv[])
        goto do_exit;
     }
 
-    if(m_has_subtitle &&
-       !m_player_subtitles.Open(m_omx_reader.SubtitleStreamCount(),
+    if(!m_player_subtitles.Open(m_omx_reader.SubtitleStreamCount(),
                                 std::move(external_subtitles),
                                 m_font_path,
                                 m_italic_font_path,
                                 m_font_size,
                                 m_centered,
+                                m_ghost_box,
                                 m_subtitle_lines,
                                 m_av_clock))
       goto do_exit;
@@ -999,6 +1020,8 @@ int main(int argc, char *argv[])
           playspeed_current = playspeed_slow_max-1;
         playspeed_current = std::max(playspeed_current-1, playspeed_slow_min);
         SetSpeed(playspeeds[playspeed_current]);
+        DISPLAY_TEXT_SHORT(
+          strprintf("Playspeed: %.3f", playspeeds[playspeed_current]/1000.0f));
         printf("Playspeed %.3f\n", playspeeds[playspeed_current]/1000.0f);
         m_Pause = false;
         break;
@@ -1007,6 +1030,8 @@ int main(int argc, char *argv[])
           playspeed_current = playspeed_slow_max-1;
         playspeed_current = std::min(playspeed_current+1, playspeed_slow_max);
         SetSpeed(playspeeds[playspeed_current]);
+        DISPLAY_TEXT_SHORT(
+          strprintf("Playspeed: %.3f", playspeeds[playspeed_current]/1000.0f));
         printf("Playspeed %.3f\n", playspeeds[playspeed_current]/1000.0f);
         m_Pause = false;
         break;
@@ -1021,6 +1046,8 @@ int main(int argc, char *argv[])
         else
           playspeed_current = std::max(playspeed_current-1, playspeed_rew_max);
         SetSpeed(playspeeds[playspeed_current]);
+        DISPLAY_TEXT_SHORT(
+          strprintf("Playspeed: %.3f", playspeeds[playspeed_current]/1000.0f));
         printf("Playspeed %.3f\n", playspeeds[playspeed_current]/1000.0f);
         m_Pause = false;
         break;
@@ -1035,29 +1062,48 @@ int main(int argc, char *argv[])
         else
           playspeed_current = std::min(playspeed_current+1, playspeed_ff_max);
         SetSpeed(playspeeds[playspeed_current]);
+        DISPLAY_TEXT_SHORT(
+          strprintf("Playspeed: %.3f", playspeeds[playspeed_current]/1000.0f));
         printf("Playspeed %.3f\n", playspeeds[playspeed_current]/1000.0f);
         m_Pause = false;
         break;
       case KeyConfig::ACTION_STEP:
         m_av_clock->OMXStep();
         printf("Step\n");
+        {
+          auto t = (unsigned) (m_av_clock->OMXMediaTime()*1e-3);
+          auto dur = m_omx_reader.GetStreamLength() / 1000;
+          DISPLAY_TEXT_SHORT(
+            strprintf("Step\n%02d:%02d:%02d.%03d / %02d:%02d:%02d",
+              (t/3600000), (t/60000)%60, (t/1000)%60, t%1000,
+              (dur/3600), (dur/60)%60, dur%60));
+        }
         break;
       case KeyConfig::ACTION_PREVIOUS_AUDIO:
         if(m_has_audio)
         {
           int new_index = m_omx_reader.GetAudioIndex() - 1;
-          if (new_index >= 0)
+          if(new_index >= 0)
+          {
             m_omx_reader.SetActiveStream(OMXSTREAM_AUDIO, new_index);
+            DISPLAY_TEXT_SHORT(
+              strprintf("Audio stream: %d", m_omx_reader.GetAudioIndex() + 1));
+          }
         }
         break;
       case KeyConfig::ACTION_NEXT_AUDIO:
         if(m_has_audio)
+        {
           m_omx_reader.SetActiveStream(OMXSTREAM_AUDIO, m_omx_reader.GetAudioIndex() + 1);
+          DISPLAY_TEXT_SHORT(
+            strprintf("Audio stream: %d", m_omx_reader.GetAudioIndex() + 1));
+        }
         break;
       case KeyConfig::ACTION_PREVIOUS_CHAPTER:
         if(m_omx_reader.GetChapterCount() > 0)
         {
           m_omx_reader.SeekChapter(m_omx_reader.GetChapter() - 1, &startpts);
+          DISPLAY_TEXT_LONG(strprintf("Chapter %d", m_omx_reader.GetChapter()));
           FlushStreams(startpts);
         }
         else
@@ -1069,6 +1115,7 @@ int main(int argc, char *argv[])
         if(m_omx_reader.GetChapterCount() > 0)
         {
           m_omx_reader.SeekChapter(m_omx_reader.GetChapter() + 1, &startpts);
+          DISPLAY_TEXT_LONG(strprintf("Chapter %d", m_omx_reader.GetChapter()));
           FlushStreams(startpts);
         }
         else
@@ -1084,12 +1131,16 @@ int main(int argc, char *argv[])
             if (m_player_subtitles.GetActiveStream() == 0)
             {
               if(m_has_external_subtitles)
+              {
+                DISPLAY_TEXT_SHORT("Subtitle file:\n" + m_external_subtitles_path);
                 m_player_subtitles.SetUseExternalSubtitles(true);
+              }
             }
             else
             {
-              m_player_subtitles.SetActiveStream(
-                m_player_subtitles.GetActiveStream()-1);
+              auto new_index = m_player_subtitles.GetActiveStream()-1;
+              DISPLAY_TEXT_SHORT(strprintf("Subtitle stream: %d", new_index+1));
+              m_player_subtitles.SetActiveStream(new_index);
             }
           }
 
@@ -1105,6 +1156,7 @@ int main(int argc, char *argv[])
             if(m_omx_reader.SubtitleStreamCount())
             {
               assert(m_player_subtitles.GetActiveStream() == 0);
+              DISPLAY_TEXT_SHORT("Subtitle stream: 1");
               m_player_subtitles.SetUseExternalSubtitles(false);
             }
           }
@@ -1112,7 +1164,10 @@ int main(int argc, char *argv[])
           {
             auto new_index = m_player_subtitles.GetActiveStream()+1;
             if(new_index < (size_t) m_omx_reader.SubtitleStreamCount())
+            {
+              DISPLAY_TEXT_SHORT(strprintf("Subtitle stream: %d", new_index+1));
               m_player_subtitles.SetActiveStream(new_index);
+            }
           }
 
           m_player_subtitles.SetVisible(true);
@@ -1129,14 +1184,18 @@ int main(int argc, char *argv[])
       case KeyConfig::ACTION_DECREASE_SUBTITLE_DELAY:
         if(m_has_subtitle && m_player_subtitles.GetVisible())
         {
-          m_player_subtitles.SetDelay(m_player_subtitles.GetDelay() - 250);
+          auto new_delay = m_player_subtitles.GetDelay() - 250;
+          DISPLAY_TEXT_SHORT(strprintf("Subtitle delay: %d ms", new_delay));
+          m_player_subtitles.SetDelay(new_delay);
           PrintSubtitleInfo();
         }
         break;
       case KeyConfig::ACTION_INCREASE_SUBTITLE_DELAY:
         if(m_has_subtitle && m_player_subtitles.GetVisible())
         {
-          m_player_subtitles.SetDelay(m_player_subtitles.GetDelay() + 250);
+          auto new_delay = m_player_subtitles.GetDelay() + 250;
+          DISPLAY_TEXT_SHORT(strprintf("Subtitle delay: %d ms", new_delay));
+          m_player_subtitles.SetDelay(new_delay);
           PrintSubtitleInfo();
         }
         break;
@@ -1169,19 +1228,33 @@ int main(int argc, char *argv[])
         {
           if(m_has_subtitle)
             m_player_subtitles.Pause();
+
+          auto t = (unsigned) (m_av_clock->OMXMediaTime()*1e-6);
+          auto dur = m_omx_reader.GetStreamLength() / 1000;
+          DISPLAY_TEXT_LONG(strprintf("Pause\n%02d:%02d:%02d / %02d:%02d:%02d",
+            (t/3600), (t/60)%60, t%60, (dur/3600), (dur/60)%60, dur%60));
         }
         else
         {
           if(m_has_subtitle)
             m_player_subtitles.Resume();
+
+          auto t = (unsigned) (m_av_clock->OMXMediaTime()*1e-6);
+          auto dur = m_omx_reader.GetStreamLength() / 1000;
+          DISPLAY_TEXT_SHORT(strprintf("Play\n%02d:%02d:%02d / %02d:%02d:%02d",
+            (t/3600), (t/60)%60, t%60, (dur/3600), (dur/60)%60, dur%60));
         }
         break;
       case KeyConfig::ACTION_DECREASE_VOLUME:
         m_player_audio.SetCurrentVolume(m_player_audio.GetCurrentVolume() - 300);
+        DISPLAY_TEXT_SHORT(strprintf("Volume: %.2f dB",
+          m_player_audio.GetCurrentVolume() / 100.0f));
         printf("Current Volume: %.2fdB\n", m_player_audio.GetCurrentVolume() / 100.0f);
         break;
       case KeyConfig::ACTION_INCREASE_VOLUME:
         m_player_audio.SetCurrentVolume(m_player_audio.GetCurrentVolume() + 300);
+        DISPLAY_TEXT_SHORT(strprintf("Volume: %.2f dB",
+          m_player_audio.GetCurrentVolume() / 100.0f));
         printf("Current Volume: %.2fdB\n", m_player_audio.GetCurrentVolume() / 100.0f);
         break;
       default:
@@ -1192,9 +1265,6 @@ int main(int argc, char *argv[])
     {
       double seek_pos     = 0;
       double pts          = 0;
-
-      if(m_has_subtitle)
-        m_player_subtitles.Pause();
 
       m_av_clock->OMXPause();
 
@@ -1207,7 +1277,16 @@ int main(int argc, char *argv[])
       m_incr = 0;
 
       if(m_omx_reader.SeekTime((int)seek_pos, m_incr < 0.0f, &startpts))
+      {
+        unsigned t = (unsigned)(startpts*1e-6);
+        auto dur = m_omx_reader.GetStreamLength() / 1000;
+
+        DISPLAY_TEXT_LONG(strprintf("Seek\n%02d:%02d:%02d / %02d:%02d:%02d",
+            (t/3600), (t/60)%60, t%60, (dur/3600), (dur/60)%60, dur%60));
+        printf("Seek to: %02d:%02d:%02d\n", (t/3600), (t/60)%60, t%60);
+
         FlushStreams(startpts);
+      }
 
       m_player_video.Close();
       if(m_has_video && !m_player_video.Open(m_hints_video, m_av_clock, DestRect, m_Deinterlace ? 1:m_NoDeinterlace ? -1:0,
@@ -1216,12 +1295,6 @@ int main(int argc, char *argv[])
 
       CLog::Log(LOGDEBUG, "Seeked %.0f %.0f %.0f\n", DVD_MSEC_TO_TIME(seek_pos), startpts, m_av_clock->OMXMediaTime());
 
-      m_av_clock->OMXMediaTime(startpts);
-      
-      if(m_has_subtitle)
-        m_player_subtitles.Resume();
-      unsigned t = (unsigned)(startpts*1e-6);
-      printf("Seek to: %02d:%02d:%02d\n", (t/3600), (t/60)%60, t%60);
       m_packet_after_seek = false;
       m_seek_flush = false;
     }

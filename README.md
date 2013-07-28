@@ -67,6 +67,7 @@ Using OMXPlayer
          -b / --blank                   set background to black
               --boost-on-downmix        boost volume when downmixing
               --vol n                   Set initial volume in millibels (default 0)
+              --no-osd                  do not display status information on screen
               --subtitles path          external subtitles in UTF-8 srt format
               --font path               subtitle font
                                         (default: /usr/share/fonts/truetype/freefont/FreeSans.ttf)
@@ -74,6 +75,7 @@ Using OMXPlayer
               --font-size size          font size as thousandths of screen height
                                         (default: 55)
               --align left/center       subtitle alignment (default: left)
+              --no-ghost-box            no semitransparent boxes behind subtitles
               --lines n                 number of lines to accommodate in the subtitle buffer
                                         (default: 3)
               --win "x1 y1 x2 y2"       Set position of video window

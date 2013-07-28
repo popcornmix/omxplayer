@@ -1,6 +1,6 @@
 #pragma once
 
-// Author: Torarin Hals Bakke (2012)
+// Author: Torarin Hals Bakke (2013)
 
 // Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -26,12 +26,28 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-template<typename T>
-T clamp(T val, T lo, T hi) {
-  return val < lo ? lo : hi < val ? hi : val;
+#include <cassert>
+#include <cstdio>
+#include <string>
+
+template <size_t N, typename... Ts>
+std::string strprintf_impl(const char (&format)[N], Ts... ts) {
+  const auto length_guess = static_cast<size_t>(1.5 * (N - 1 /* '\0' */) + 0.5);
+  std::string result;
+  result.resize(length_guess);
+  auto formatted_length =
+    snprintf(&result[0], length_guess + 1 /* '\0' */, &format[0], ts...);
+  assert(formatted_length >= 0);
+  result.resize(formatted_length);
+  if ((unsigned) formatted_length > length_guess) {
+    auto snprintf_ret =
+      snprintf(&result[0], formatted_length + 1 /* '\0' */, &format[0], ts...);
+    assert(snprintf_ret >= 0);
+  }
+  return result;
 }
 
-template<typename T, typename U>
-void procrustes(T& val, U cap) {
-  if (cap < val) val = cap;
-}
+int strprintf_arg_checker(const char* format, ...) __attribute__((format(printf, 1, 2)));
+
+#define strprintf(format, ts...) \
+  ((void) sizeof(strprintf_arg_checker(format, ts)), strprintf_impl(format, ts))

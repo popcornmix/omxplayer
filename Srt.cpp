@@ -74,7 +74,7 @@ bool ReadSrt(const std::string& filename, std::vector<Subtitle>& subtitles) {
       text_lines.push_back(std::move(line));
     }
 
-    if (!subtitles.empty() && subtitles.back().start > start)
+    if (!subtitles.empty() && subtitles.back().stop > stop)
       continue;
 
     subtitles.emplace_back(start, stop, std::move(text_lines));
