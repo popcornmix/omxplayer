@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Author:
 #     Sergio Conde <skgsergio@gmail.com>
@@ -25,11 +25,9 @@ if [ x"$?" = x"0" ]; then
 fi
 
 echo "#ifndef __VERSION_H__"
-echo "#define __VERSION_H__\n"
-
+echo "#define __VERSION_H__"
 echo "#define VERSION_DATE \"$date\""
 echo "#define VERSION_HASH \"$hash\""
 echo "#define VERSION_BRANCH \"$branch\""
 echo "#define VERSION_REPO \"$repo\""
-
-echo "\n#endif"
+echo "#endif"

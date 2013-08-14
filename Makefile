@@ -44,7 +44,7 @@ all: omxplayer.bin
 	$(CXX) $(CFLAGS) $(INCLUDES) -c $< -o $@ -Wno-deprecated-declarations
 
 version:
-	sh gen_version.sh > version.h 
+	bash gen_version.sh > version.h 
 
 omxplayer.bin: version $(OBJS)
 	$(CXX) $(LDFLAGS) -o omxplayer.bin $(OBJS) -lvchiq_arm -lvcos -lrt -lpthread -lavutil -lavcodec -lavformat -lswscale -lswresample -lpcre
