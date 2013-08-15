@@ -45,6 +45,7 @@ OMXReader::OMXReader()
   m_filename    = "";
   m_bMatroska   = false;
   m_bAVI        = false;
+  m_bMP3        = false;
   g_abort       = false;
   m_pFile       = NULL;
   m_ioContext   = NULL;
@@ -208,6 +209,7 @@ bool OMXReader::Open(std::string filename, bool dump_format)
 
   m_bMatroska = strncmp(m_pFormatContext->iformat->name, "matroska", 8) == 0; // for "matroska.webm"
   m_bAVI = strcmp(m_pFormatContext->iformat->name, "avi") == 0;
+  m_bMP3 = strcmp(m_pFormatContext->iformat->name, "mp3") == 0;
 
   // if format can be nonblocking, let's use that
   m_pFormatContext->flags |= AVFMT_FLAG_NONBLOCK;
@@ -648,6 +650,10 @@ void OMXReader::AddStream(int id)
   // discard PNG stream as we don't support it, and it stops mp3 files playing with album art
   if (pStream->codec->codec_type == AVMEDIA_TYPE_VIDEO && 
     (pStream->codec->codec_id == CODEC_ID_PNG))
+    return;
+
+  // discard any video stream in a mp3 file
+  if ( m_bMP3 && pStream->codec->codec_type == AVMEDIA_TYPE_VIDEO )
     return;
 
   switch (pStream->codec->codec_type)

@@ -111,6 +111,7 @@ protected:
   std::string               m_filename;
   bool                      m_bMatroska;
   bool                      m_bAVI;
+  bool                      m_bMP3;
   XFILE::CFile              *m_pFile;
   AVFormatContext           *m_pFormatContext;
   AVIOContext               *m_ioContext;
