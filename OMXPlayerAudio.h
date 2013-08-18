@@ -38,6 +38,7 @@
 
 #include <deque>
 #include <string>
+#include <atomic>
 #include <sys/types.h>
 
 using namespace std;
@@ -71,6 +72,7 @@ protected:
   bool                      m_bAbort;
   bool                      m_use_thread; 
   bool                      m_flush;
+  std::atomic<bool>         m_flush_requested;
   bool                      m_live;
   enum PCMLayout            m_layout;
   unsigned int              m_cached_size;
