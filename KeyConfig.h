@@ -1,10 +1,12 @@
 #include <map>
 #include <string>
 
-class KeyConfig{
+class KeyConfig
+{
 
   public: 
-    enum {
+    enum 
+    {
         ACTION_DECREASE_SPEED = 1,
         ACTION_INCREASE_SPEED,
         ACTION_REWIND,
@@ -27,7 +29,8 @@ class KeyConfig{
         ACTION_SEEK_FORWARD_SMALL,
         ACTION_SEEK_BACK_LARGE,
         ACTION_SEEK_FORWARD_LARGE,
-        ACTION_STEP
+        ACTION_STEP,
+        ACTION_BLANK
     };
 
     #define KEY_LEFT 0x5b44

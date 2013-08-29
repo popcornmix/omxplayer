@@ -66,6 +66,7 @@ public:
   bool Deinitialize();
 
   void SetVolume(float nVolume);
+  float GetVolume();
   void SetMute(bool bOnOff);
   void SetDynamicRangeCompression(long drc);
   bool ApplyVolume();

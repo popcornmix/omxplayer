@@ -643,6 +643,11 @@ void COMXAudio::SetVolume(float fVolume)
     ApplyVolume();
 }
 
+float COMXAudio::GetVolume() 
+{
+  return m_Mute ? VOLUME_MINIMUM : m_CurrentVolume;
+}
+
 //***********************************************************************************************
 bool COMXAudio::ApplyVolume(void)
 {

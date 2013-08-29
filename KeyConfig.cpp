@@ -10,7 +10,8 @@ using namespace std;
 /* Converts the action string from the config file into 
  * the corresponding enum value
  */
-int convertStringToAction(string str_action){
+int convertStringToAction(string str_action)
+{
     if(str_action == "DECREASE_SPEED")
         return KeyConfig::ACTION_DECREASE_SPEED;
     if(str_action == "INCREASE_SPEED")
@@ -61,7 +62,8 @@ int convertStringToAction(string str_action){
     return -1;
 }
 /* Grabs the substring prior to the ':', this is the Action */
-string getActionFromString(string line){
+string getActionFromString(string line)
+{
     string action;
     unsigned int colonIndex = line.find(":");
     if(colonIndex == string::npos)
@@ -73,7 +75,8 @@ string getActionFromString(string line){
 }
 
 /* Grabs the substring after the ':', this is the Key */
-string getKeyFromString(string line){
+string getKeyFromString(string line)
+{
     string key;
     unsigned int colonIndex = line.find(":");
     if(colonIndex == string::npos)
@@ -87,7 +90,8 @@ string getKeyFromString(string line){
 /* Returns a keymap consisting of the default
  *  keybinds specified with the -k option 
  */
-map<int, int> KeyConfig::buildDefaultKeymap(){
+map<int, int> KeyConfig::buildDefaultKeymap()
+{
     map<int,int> keymap;
 
     keymap['1'] = ACTION_DECREASE_SPEED;
@@ -125,33 +129,42 @@ map<int, int> KeyConfig::buildDefaultKeymap(){
 /* Parses the supplied config file and turns it into a map object.
  * NOTE: Does not work with certain filepath shortcuts (e.g. ~ as user's home)
  */
-map<int, int> KeyConfig::parseConfigFile(string filepath){
+map<int, int> KeyConfig::parseConfigFile(string filepath)
+{
     ifstream config_file(filepath.c_str());
     map<int,int> keymap;
     string line;
 
-    while(getline(config_file, line)){
+    while(getline(config_file, line))
+    {
         string str_action = getActionFromString(line);
         string key = getKeyFromString(line);
 
-        if(str_action != "" && key != "" && str_action[0] != '#'){
+        if(str_action != "" && key != "" && str_action[0] != '#')
+        {
             int key_action = convertStringToAction(str_action);
-            if(key.substr(0,4) == "left"){
+            if(key.substr(0,4) == "left")
+            {
                 keymap[KEY_LEFT] = key_action;
             }
-            else if(key.substr(0,5) == "right"){
+            else if(key.substr(0,5) == "right")
+            {
                 keymap[KEY_RIGHT] = key_action;
             }
-            else if(key.substr(0,2) == "up"){
+            else if(key.substr(0,2) == "up")
+            {
                 keymap[KEY_UP] = key_action;
             }
-            else if(key.substr(0,4) == "down"){
+            else if(key.substr(0,4) == "down")
+            {
                 keymap[KEY_DOWN] = key_action;
             }
-            else if(key.substr(0,3) == "esc"){
+            else if(key.substr(0,3) == "esc")
+            {
                 keymap[KEY_ESC] = key_action;
             }
-            else if(key.substr(0,3) == "hex"){
+            else if(key.substr(0,3) == "hex")
+            {
               const char *hex = key.substr(4).c_str();
               if (hex)
                 keymap[strtoul(hex,0,0)] = key_action;

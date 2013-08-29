@@ -54,10 +54,12 @@ extern "C" {
 #include "OMXPlayerVideo.h"
 #include "OMXPlayerAudio.h"
 #include "OMXPlayerSubtitles.h"
+#include "OMXControl.h"
 #include "DllOMX.h"
 #include "Srt.h"
 #include "KeyConfig.h"
 #include "utils/Strprintf.h"
+#include "Keyboard.h"
 
 #include <string>
 #include <utility>
@@ -99,6 +101,8 @@ int               m_audio_index_use     = -1;
 int               m_seek_pos            = 0;
 bool              m_thread_player       = false;
 OMXClock          *m_av_clock           = NULL;
+OMXControl        m_omxcontrol;
+Keyboard          m_keyboard;
 COMXStreamInfo    m_hints_audio;
 COMXStreamInfo    m_hints_video;
 OMXPacket         *m_omx_pkt            = NULL;
@@ -120,20 +124,6 @@ bool              m_gen_log             = false;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
-static struct termios orig_termios;
-static int orig_fl;
-static void restore_term()
-{
-  if (isatty(STDIN_FILENO))
-  {
-    tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
-  }
-  else
-  {
-    fcntl(STDIN_FILENO, F_SETFL, orig_fl);
-  }
-}
-
 void sig_handler(int s)
 {
   if (s==SIGINT && !g_abort)
@@ -145,7 +135,6 @@ void sig_handler(int s)
   signal(SIGABRT, SIG_DFL);
   signal(SIGSEGV, SIG_DFL);
   signal(SIGFPE, SIG_DFL);
-  restore_term();
   abort();
 }
 
@@ -369,11 +358,11 @@ void SetVideoMode(int width, int height, int fpsrate, int fpsscale, FORMAT_3D_T 
 
       /* Check if frame rate match (equal or exact multiple) */
       if(fabs(r - 1.0f*fps) / fps < 0.002f)
-	score += 0;
+  score += 0;
       else if(fabs(r - 2.0f*fps) / fps < 0.002f)
-	score += 1<<8;
+  score += 1<<8;
       else 
-	score += (1<<28)/r; // bad - but prefer higher framerate
+  score += (1<<28)/r; // bad - but prefer higher framerate
 
       /* Check size too, only choose, bigger resolutions */
       if(width && height) 
@@ -530,26 +519,6 @@ int main(int argc, char *argv[])
   signal(SIGABRT, sig_handler);
   signal(SIGFPE, sig_handler);
   signal(SIGINT, sig_handler);
-
-  if (isatty(STDIN_FILENO))
-  {
-    struct termios new_termios;
-
-    tcgetattr(STDIN_FILENO, &orig_termios);
-
-    new_termios             = orig_termios;
-    new_termios.c_lflag     &= ~(ICANON | ECHO | ECHOCTL | ECHONL);
-    new_termios.c_cflag     |= HUPCL;
-    new_termios.c_cc[VMIN]  = 0;
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_termios);
-  }
-  else
-  {
-    orig_fl = fcntl(STDIN_FILENO, F_GETFL);
-    fcntl(STDIN_FILENO, F_SETFL, orig_fl | O_NONBLOCK);
-  }
-  atexit(restore_term);
 
   bool                  m_send_eos            = false;
   bool                  m_packet_after_seek   = false;
@@ -744,7 +713,7 @@ int main(int argc, char *argv[])
         m_subtitle_lines = std::max(atoi(optarg), 1);
         break;
       case pos_opt:
-	sscanf(optarg, "%f %f %f %f", &DestRect.x1, &DestRect.y1, &DestRect.x2, &DestRect.y2);
+  sscanf(optarg, "%f %f %f %f", &DestRect.x1, &DestRect.y1, &DestRect.x2, &DestRect.y2);
         break;
       case vol_opt:
 	m_Volume = atoi(optarg);
@@ -753,19 +722,19 @@ int main(int argc, char *argv[])
         m_boost_on_downmix = true;
         break;
       case audio_fifo_opt:
-	audio_fifo_size = atof(optarg);
+  audio_fifo_size = atof(optarg);
         break;
       case video_fifo_opt:
-	video_fifo_size = atof(optarg);
+  video_fifo_size = atof(optarg);
         break;
       case audio_queue_opt:
-	audio_queue_size = atof(optarg);
+  audio_queue_size = atof(optarg);
         break;
       case video_queue_opt:
-	video_queue_size = atof(optarg);
+  video_queue_size = atof(optarg);
         break;
       case threshold_opt:
-	m_threshold = atof(optarg);
+  m_threshold = atof(optarg);
         break;
       case 'b':
         m_blank_background = true;
@@ -875,6 +844,8 @@ int main(int argc, char *argv[])
     printf("Only %dM of gpu_mem is configured. Try running \"sudo raspi-config\" and ensure that \"memory_split\" has a value of %d or greater\n", gpu_mem, min_gpu_mem);
 
   m_av_clock = new OMXClock();
+  m_omxcontrol.init(m_av_clock, &m_player_audio);
+  m_keyboard.setKeymap(keymap);
 
   m_thread_player = true;
 
@@ -1020,19 +991,12 @@ int main(int argc, char *argv[])
 
   while(!m_stop)
   {
-    int ch[8];
-    int chnum = 0;
 
     if(g_abort)
       goto do_exit;
-    if (IsPipe(m_filename))
-      ch[0] = EOF;
-    else
-      while((ch[chnum] = getchar()) != EOF) chnum++;
 
-    if (chnum > 1) ch[0] = ch[chnum - 1] | (ch[chnum - 2] << 8);
-
-    switch(keymap[ch[0]])
+     if (!IsPipe(m_filename)) {
+    switch(m_omxcontrol.getEvent())
     {
       case KeyConfig::ACTION_SHOW_INFO:
         m_tv_show_info = !m_tv_show_info;
@@ -1284,6 +1248,7 @@ int main(int argc, char *argv[])
         break;
       default:
         break;
+    }
     }
 
     if(m_seek_flush || m_incr != 0)
@@ -1543,6 +1508,7 @@ do_exit:
   m_player_subtitles.Close();
   m_player_video.Close();
   m_player_audio.Close();
+  m_keyboard.Close();
 
   if(m_omx_pkt)
   {

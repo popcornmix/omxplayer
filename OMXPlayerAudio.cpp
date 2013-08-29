@@ -531,3 +531,9 @@ void OMXPlayerAudio::SetVolume(float nVolume)
   if(m_decoder) m_decoder->SetVolume(nVolume);
 }
 
+float OMXPlayerAudio::GetVolume()
+{
+  if(m_decoder) 
+    return m_decoder->GetVolume();
+  return 0.0;
+}
