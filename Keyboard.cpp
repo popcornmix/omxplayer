@@ -75,7 +75,7 @@ void Keyboard::restore_term()
 
 void Keyboard::Process() 
 {
-  while(!m_bStop && dbus_connection_read_write_dispatch(conn, 0)) 
+  while(!m_bStop && conn && dbus_connection_read_write_dispatch(conn, 0)) 
   {
     int ch[8];
     int chnum = 0;
@@ -141,7 +141,7 @@ int Keyboard::dbus_connect()
   DBusError error;
 
   dbus_error_init(&error);
-  if (!(conn = dbus_bus_get_private(DBUS_BUS_SYSTEM, &error))) 
+  if (!(conn = dbus_bus_get_private(DBUS_BUS_SESSION, &error))) 
   {
     CLog::Log(LOGWARNING, "dbus_bus_get_private(): %s", error.message);
         goto fail;

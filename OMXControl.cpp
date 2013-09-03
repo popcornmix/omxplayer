@@ -41,7 +41,8 @@ void OMXControl::init(OMXClock *m_av_clock, OMXPlayerAudio *m_player_audio)
 }
 void OMXControl::dispatch() 
 {
-  dbus_connection_read_write_dispatch(bus, 0);
+  if (bus)
+    dbus_connection_read_write_dispatch(bus, 0);
 }
 
 int OMXControl::dbus_connect() 
@@ -49,7 +50,7 @@ int OMXControl::dbus_connect()
   DBusError error;
 
   dbus_error_init(&error);
-  if (!(bus = dbus_bus_get_private(DBUS_BUS_SYSTEM, &error))) 
+  if (!(bus = dbus_bus_get_private(DBUS_BUS_SESSION, &error))) 
   {
     CLog::Log(LOGWARNING, "dbus_bus_get_private(): %s", error.message);
         goto fail;
@@ -101,8 +102,10 @@ void OMXControl::dbus_disconnect()
 
 int OMXControl::getEvent() 
 {
+  if (!bus)
+    return KeyConfig::ACTION_BLANK;
+  
   dispatch();
-
   DBusMessage *m = dbus_connection_pop_message(bus);
 
   if (m == NULL) 
