@@ -41,11 +41,32 @@ if [ -e $FBSET ]; then
   fbset -xres 1 -yres 1
 fi
 
-if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
-  eval $(dbus-launch --sh-syntax)
-fi
+exec 5> omxplayer.address
+exec 6> omxplayer.pid
+
+cleanup ()
+{
+  pid=`head -n1 omxplayer.pid`
+  if test -n "$pid" ; then
+    kill -INT "$pid"
+  fi
+  rm -f omxplayer.address
+  rm -f omxplayer.pid
+}
+
+trap cleanup INT HUP TERM
+
+dbus-daemon --fork --print-address 5 --print-pid 6 --session
+
+DBUS_SESSION_BUS_ADDRESS="`cat omxplayer.address`"
+export DBUS_SESSION_BUS_ADDRESS
+DBUS_SESSION_BUS_PID="`cat omxplayer.pid`"
+export DBUS_SESSION_BUS_PID
 
 $OMXPLAYER --font $FONT --italic-font $ITALIC_FONT "$@"
+
+trap - INT HUP TERM
+cleanup
 
 if [ -e $FBSET ]; then
   fbset -xres ${XRES} -yres ${YRES}
