@@ -64,6 +64,8 @@ void COMXStreamInfo::Clear()
   bitrate    = 0;
   bitspersample = 0;
 
+  orientation = 0;
+
   identifier = 0;
 
   framesize  = 0;

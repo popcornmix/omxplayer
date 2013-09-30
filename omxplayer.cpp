@@ -163,6 +163,7 @@ void print_usage()
   printf("         -g / --genlog                  generate log file\n");
   printf("         -l / --pos n                   start position (in seconds)\n");
   printf("         -b / --blank                   set background to black\n");
+  printf("              --orientation n           set Video rotation, (eg. 0/90/180/270) (default 0)\n");
   printf("              --boost-on-downmix        boost volume when downmixing\n");
   printf("              --vol n                   Set initial volume in millibels (default 0)\n");
   printf("              --amp n                   Set initial amplification in millibels (default 0)\n");
@@ -563,6 +564,8 @@ int main(int argc, char *argv[])
   const int key_config_opt  = 0x10d;
   const int amp_opt         = 0x10e;
   const int no_osd_opt = 0x202;
+  
+  const int orientation_opt = 0x400;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -602,6 +605,7 @@ int main(int argc, char *argv[])
     { "boost-on-downmix", no_argument,    NULL,          boost_on_downmix_opt },
     { "key-config",   required_argument,  NULL,          key_config_opt },
     { "no-osd",       no_argument,        NULL,          no_osd_opt },
+    { "orientation", required_argument, NULL, orientation_opt },
     { 0, 0, 0, 0 }
   };
 
@@ -730,19 +734,22 @@ int main(int argc, char *argv[])
         m_boost_on_downmix = true;
         break;
       case audio_fifo_opt:
-  audio_fifo_size = atof(optarg);
+        audio_fifo_size = atof(optarg);
         break;
       case video_fifo_opt:
-  video_fifo_size = atof(optarg);
+        video_fifo_size = atof(optarg);
         break;
       case audio_queue_opt:
-  audio_queue_size = atof(optarg);
+        audio_queue_size = atof(optarg);
         break;
       case video_queue_opt:
-  video_queue_size = atof(optarg);
+        video_queue_size = atof(optarg);
         break;
       case threshold_opt:
-  m_threshold = atof(optarg);
+        m_threshold = atof(optarg);
+        break;
+      case orientation_opt:
+        m_orientation = atoi(optarg);
         break;
       case 'b':
         m_blank_background = true;
@@ -924,7 +931,10 @@ int main(int argc, char *argv[])
         printf("Seeking start of video to %i seconds\n", m_seek_pos);
         m_omx_reader.SeekTime(m_seek_pos * 1000.0f, false, &startpts);  // from seconds to DVD_TIME_BASE
   }
-  
+ 
+  // insert orientation
+  m_hints_video.orientation = m_orientation;
+ 
   if(m_has_video && !m_player_video.Open(m_hints_video, m_av_clock, DestRect, m_Deinterlace ? VS_DEINTERLACEMODE_FORCE:m_NoDeinterlace ? VS_DEINTERLACEMODE_OFF:VS_DEINTERLACEMODE_AUTO,
                                          m_hdmi_clock_sync, m_thread_player, m_display_aspect, video_queue_size, video_fifo_size))
     goto do_exit;

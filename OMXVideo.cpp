@@ -724,7 +724,7 @@ bool COMXVideo::Open(COMXStreamInfo &hints, OMXClock *clock, const CRect &DestRe
   m_setStartTime      = true;
   m_setStartTimeText  = true;
 
-  switch(0)
+  switch(hints.orientation)
   {
     case 90:
       m_transform = OMX_DISPLAY_ROT90;
