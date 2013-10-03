@@ -537,7 +537,9 @@ int main(int argc, char *argv[])
   double                startpts              = 0;
   CRect                 DestRect              = {0,0,0,0};
   bool                  m_blank_background    = false;
-  bool sentStarted = false;
+  bool                  sentStarted           = false;
+  int                   m_orientation         = 0;
+  bool                  m_has_orientation     = false;
   float audio_fifo_size = 0.0; // zero means use default
   float video_fifo_size = 0.0;
   float audio_queue_size = 0.0;
@@ -749,6 +751,7 @@ int main(int argc, char *argv[])
         m_threshold = atof(optarg);
         break;
       case orientation_opt:
+        m_has_orientation = true;
         m_orientation = atoi(optarg);
         break;
       case 'b':
@@ -933,7 +936,8 @@ int main(int argc, char *argv[])
   }
  
   // insert orientation
-  m_hints_video.orientation = m_orientation;
+  if(m_has_orientation)
+    m_hints_video.orientation = m_orientation;
  
   if(m_has_video && !m_player_video.Open(m_hints_video, m_av_clock, DestRect, m_Deinterlace ? VS_DEINTERLACEMODE_FORCE:m_NoDeinterlace ? VS_DEINTERLACEMODE_OFF:VS_DEINTERLACEMODE_AUTO,
                                          m_hdmi_clock_sync, m_thread_player, m_display_aspect, video_queue_size, video_fifo_size))

@@ -818,6 +818,17 @@ bool OMXReader::GetHints(AVStream *stream, COMXStreamInfo *hints)
   hints->height        = stream->codec->height;
   hints->profile       = stream->codec->profile;
 
+  //FCC : Stream Orientation
+  hints->orientation   = 0;
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(52,83,0)
+  AVDictionaryEntry *rotTag = m_dllAvUtil.av_dict_get(stream->metadata,"rotate", NULL, 0);
+  if (rotTag)
+    hints->orientation = atoi(rotTag->value);
+#else
+  hints->orientation = atoi(stream->rotate);
+#endif
+  CLog::Log(LOGDEBUG, "COMXPlayer::OpenFile - Orientation %d", hints->orientation);
+
   if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO)
   {
     hints->fpsrate       = stream->r_frame_rate.num;
