@@ -758,6 +758,32 @@ bool COMXVideo::Open(COMXStreamInfo &hints, OMXClock *clock, const CRect &DestRe
   return true;
 }
 
+void COMXVideo::SetOrientation(int orientation)
+{
+   switch(orientation)
+   {
+     case 90:
+       m_transform = OMX_DISPLAY_ROT90;
+       break;
+     case 180:
+       m_transform = OMX_DISPLAY_ROT180;
+       break;
+     case 270:
+       m_transform = OMX_DISPLAY_ROT270;
+       break;
+     default:
+       m_transform = OMX_DISPLAY_ROT0;
+       break;
+   }
+   OMX_CONFIG_DISPLAYREGIONTYPE configDisplay;
+   OMX_INIT_STRUCTURE(configDisplay);
+   configDisplay.nPortIndex = m_omx_render.GetInputPort();
+ 
+   configDisplay.set = OMX_DISPLAY_SET_TRANSFORM;
+   configDisplay.transform = m_transform;
+   m_omx_render.SetConfig(OMX_IndexConfigDisplayRegion, &configDisplay);
+}
+
 void COMXVideo::Close()
 {
   m_omx_tunnel_decoder.Flush();

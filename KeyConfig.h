@@ -30,7 +30,8 @@ class KeyConfig
         ACTION_SEEK_BACK_LARGE,
         ACTION_SEEK_FORWARD_LARGE,
         ACTION_STEP,
-        ACTION_BLANK
+        ACTION_BLANK,
+        ACTION_ROTATE
     };
 
     #define KEY_LEFT 0x5b44

@@ -56,6 +56,7 @@ public:
   bool NaluFormatStartCodes(enum AVCodecID codec, uint8_t *in_extradata, int in_extrasize);
   bool Open(COMXStreamInfo &hints, OMXClock *clock, const CRect &m_DestRect, float display_aspect = 0.0f, EDEINTERLACEMODE deinterlace = VS_DEINTERLACEMODE_OFF, bool hdmi_clock_sync = false, float fifo_size = 0.0f);
   bool PortSettingsChanged();
+  void SetOrientation(int orientation);
   void Close(void);
   unsigned int GetFreeSpace();
   unsigned int GetSize();

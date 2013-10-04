@@ -1084,6 +1084,14 @@ int main(int argc, char *argv[])
         printf("Playspeed %.3f\n", playspeeds[playspeed_current]/1000.0f);
         m_Pause = false;
         break;
+      case KeyConfig::ACTION_ROTATE:
+         if(m_orientation >= 0)
+         {
+           m_orientation += 90;
+           if(m_orientation == 360) m_orientation = 0;
+           m_player_video.SetOrientation(m_orientation);
+         }
+         break;
       case KeyConfig::ACTION_STEP:
         m_av_clock->OMXStep();
         printf("Step\n");

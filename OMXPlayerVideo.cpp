@@ -152,6 +152,12 @@ bool OMXPlayerVideo::Open(COMXStreamInfo &hints, OMXClock *av_clock, const CRect
   return true;
 }
 
+void OMXPlayerVideo::SetOrientation(int orientation)
+{
+  m_hints.orientation = orientation;
+  if(m_decoder) m_decoder->SetOrientation(orientation);
+}
+
 bool OMXPlayerVideo::Close()
 {
   m_bAbort  = true;

@@ -58,7 +58,8 @@ int convertStringToAction(string str_action)
         return KeyConfig::ACTION_SEEK_FORWARD_LARGE;
     if(str_action == "STEP")
         return KeyConfig::ACTION_STEP;
-            
+    if(str_action == "ROTATE")
+        return KeyConfig::ACTION_ROTATE;        
     return -1;
 }
 /* Grabs the substring prior to the ':', this is the Action */
@@ -122,6 +123,7 @@ map<int, int> KeyConfig::buildDefaultKeymap()
     keymap[KEY_DOWN] = ACTION_SEEK_BACK_LARGE;
     keymap[KEY_UP] = ACTION_SEEK_FORWARD_LARGE;
     keymap['v'] = ACTION_STEP;
+    keymap['r'] = ACTION_ROTATE;
 
     return keymap;
 }

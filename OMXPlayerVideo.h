@@ -95,6 +95,7 @@ public:
   ~OMXPlayerVideo();
   bool Open(COMXStreamInfo &hints, OMXClock *av_clock, const CRect& DestRect, EDEINTERLACEMODE deinterlace, bool hdmi_clock_sync, bool use_thread,
                    float display_aspect, float queue_size, float fifo_size);
+  void SetOrientation(int orientation);
   bool Close();
   bool Decode(OMXPacket *pkt);
   void Process();
