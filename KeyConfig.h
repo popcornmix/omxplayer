@@ -31,7 +31,8 @@ class KeyConfig
         ACTION_SEEK_FORWARD_LARGE,
         ACTION_STEP,
         ACTION_BLANK,
-        ACTION_ROTATE
+        ACTION_ROTATE,
+        ACTION_MUTE_AUDIO
     };
 
     #define KEY_LEFT 0x5b44

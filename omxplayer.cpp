@@ -80,6 +80,7 @@ volatile sig_atomic_t g_abort           = false;
 bool              m_passthrough         = false;
 long              m_Volume              = 0;
 long              m_Amplification       = 0;
+bool              m_Mute_Audio          = false;
 bool              m_Deinterlace         = false;
 bool              m_NoDeinterlace       = false;
 bool              m_HWDecode            = false;
@@ -1283,6 +1284,19 @@ int main(int argc, char *argv[])
         DISPLAY_TEXT_SHORT(strprintf("Volume: %.2f dB",
           m_Volume / 100.0f));
         printf("Current Volume: %.2fdB\n", m_Volume / 100.0f);
+        break;
+      case KeyConfig::ACTION_MUTE_AUDIO:
+        m_player_audio.SetMute(m_Mute_Audio);
+        if(m_Mute_Audio) 
+        {
+           m_Mute_Audio = false;
+           DISPLAY_TEXT_SHORT("MUTE : ON");
+        }
+        else
+        { 
+           m_Mute_Audio = true;
+           DISPLAY_TEXT_SHORT("MUTE : OFF");
+        }
         break;
       default:
         break;

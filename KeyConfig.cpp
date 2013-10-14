@@ -60,6 +60,8 @@ int convertStringToAction(string str_action)
         return KeyConfig::ACTION_STEP;
     if(str_action == "ROTATE")
         return KeyConfig::ACTION_ROTATE;        
+    if(str_action == "MUTE_AUDIO")
+        return KeyConfig::ACTION_MUTE_AUDIO;
     return -1;
 }
 /* Grabs the substring prior to the ':', this is the Action */
@@ -95,8 +97,8 @@ map<int, int> KeyConfig::buildDefaultKeymap()
 {
     map<int,int> keymap;
 
-    keymap['1'] = ACTION_DECREASE_SPEED;
-    keymap['2'] = ACTION_INCREASE_SPEED;
+    keymap['/'] = ACTION_DECREASE_SPEED;
+    keymap['*'] = ACTION_INCREASE_SPEED;
     keymap['<'] = ACTION_REWIND;
     keymap[','] = ACTION_REWIND;
     keymap['>'] = ACTION_FAST_FORWARD;
@@ -124,6 +126,7 @@ map<int, int> KeyConfig::buildDefaultKeymap()
     keymap[KEY_UP] = ACTION_SEEK_FORWARD_LARGE;
     keymap['v'] = ACTION_STEP;
     keymap['r'] = ACTION_ROTATE;
+    keymap['a'] = ACTION_MUTE_AUDIO;
 
     return keymap;
 }
