@@ -121,6 +121,8 @@ bool              m_has_subtitle        = false;
 float             m_display_aspect      = 0.0f;
 bool              m_boost_on_downmix    = true;
 bool              m_gen_log             = false;
+static double     m_start_time;
+
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -185,6 +187,7 @@ void print_usage()
   printf("              --threshold   n           Amount of buffered data required to come out of buffering in seconds\n");
   printf("              --orientation n           Set orientation of video (0, 90, 180 or 270)\n");
   printf("              --live                    Set for live tv or vod type stream\n");
+  printf("              --syn hh:mm:ss            Start playback at specified time\n");
   printf("              --layout                  Set output speaker layout (e.g. 5.1)\n");
   printf("              --key-config <file>       Uses key bindings specified in <file> instead of the default\n");
 }
@@ -547,6 +550,7 @@ int main(int argc, char *argv[])
   float m_threshold      = -1.0f; // amount of audio/video required to come out of buffering
   int m_orientation      = -1; // unset
   bool m_live            = false; // set to true for live tv or vod for low buffering
+  bool m_sync            = false;
   enum PCMLayout m_layout = PCM_LAYOUT_2_0;
   TV_DISPLAY_STATE_T   tv_state;
 
@@ -573,6 +577,7 @@ int main(int argc, char *argv[])
   const int orientation_opt = 0x204;
   const int live_opt = 0x205;
   const int layout_opt = 0x206;
+  const int sync_opt = 0x208;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -615,6 +620,7 @@ int main(int argc, char *argv[])
     { "no-osd",       no_argument,        NULL,          no_osd_opt },
     { "orientation",  required_argument,  NULL,          orientation_opt },
     { "live",         no_argument,        NULL,          live_opt },
+    { "sync",         required_argument,  NULL,          sync_opt },
     { "layout",       required_argument,  NULL,          layout_opt },
     { 0, 0, 0, 0 }
   };
@@ -769,6 +775,21 @@ int main(int argc, char *argv[])
       case live_opt:
         m_live = true;
         break;
+      case sync_opt:
+        m_sync = true;
+        
+        struct timeval tmp_now;
+        gettimeofday(&tmp_now, NULL);
+
+        struct tm* tmp_tm;
+        time_t tmp_wall;
+
+        tmp_tm = localtime (&tmp_now.tv_sec); // fill in date part
+        sscanf(optarg, "%d:%d:%d", &tmp_tm->tm_hour, &tmp_tm->tm_min, &tmp_tm->tm_sec);
+        tmp_wall = mktime(tmp_tm);
+
+        m_start_time = (double) tmp_wall;
+      break;
       case layout_opt:
       {
         const char *layouts[] = {"2.0", "2.1", "3.0", "3.1", "4.0", "4.1", "5.0", "5.1", "7.0", "7.1"};
@@ -899,7 +920,7 @@ int main(int argc, char *argv[])
 
   m_thread_player = true;
 
-  if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_live))
+  if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_live | m_sync))
     goto do_exit;
 
   if(m_dump_format)
@@ -1028,7 +1049,8 @@ int main(int argc, char *argv[])
 
   if(m_has_audio && !m_player_audio.Open(m_hints_audio, m_av_clock, &m_omx_reader, deviceString, 
                                          m_passthrough, m_use_hw_audio,
-                                         m_boost_on_downmix, m_thread_player, m_live, m_layout, audio_queue_size, audio_fifo_size))
+                                         //m_boost_on_downmix, m_thread_player, m_live, m_layout, audio_queue_size, audio_fifo_size))
+                                         m_boost_on_downmix, m_thread_player, m_live | m_sync, m_layout, audio_queue_size, audio_fifo_size))
     goto do_exit;
 
   if(m_has_audio)
@@ -1039,7 +1061,9 @@ int main(int argc, char *argv[])
   }
 
   if (m_threshold < 0.0f)
-    m_threshold = m_live ? 0.7f : 0.2f;
+  {
+    m_threshold = (m_live | m_sync) ? 0.7f : 0.2f;
+  }
 
   PrintSubtitleInfo();
 
@@ -1497,6 +1521,65 @@ int main(int argc, char *argv[])
           }
         }
       }
+      else if (m_sync)
+      {
+        struct timeval tmp_now;
+        gettimeofday(&tmp_now, NULL);
+        
+        double d_now = (double) tmp_now.tv_sec + ((double) tmp_now.tv_usec)/1.e6;
+        double delta = d_now - m_start_time;
+
+        double tpts = m_av_clock->OMXMediaTime();
+        double tseek_pos = (tpts / DVD_TIME_BASE);        
+
+        float latency = DVD_NOPTS_VALUE;
+        
+        if (m_has_audio && audio_pts != DVD_NOPTS_VALUE)
+          latency = audio_fifo;
+        else if (!m_has_audio && m_has_video && video_pts != DVD_NOPTS_VALUE)
+          latency = video_fifo;
+
+        latency += (delta-tseek_pos);
+
+        printf("delta %lf latency %lf - %lf\n", delta, latency, (delta-tseek_pos));
+        
+        if (!m_Pause && latency != DVD_NOPTS_VALUE)
+        {
+          if (m_av_clock->OMXIsPaused())
+          {
+            if (latency > m_threshold)
+            {
+              CLog::Log(LOGDEBUG, "Sync Resume %.2f,%.2f (%d,%d,%d,%d) EOF:%d PKT:%p\n", audio_fifo, video_fifo, audio_fifo_low, video_fifo_low, audio_fifo_high, video_fifo_high, m_omx_reader.IsEof(), m_omx_pkt);
+              m_av_clock->OMXStateExecute();
+              m_av_clock->OMXResume();
+              m_latency = latency;
+            }
+          }
+          else
+          {
+            m_latency = m_latency*0.99f + latency*0.01f;
+            float speed = 1.0f;
+
+            if (m_latency < 0.25f*m_threshold)
+              speed = 0.800f;
+            else if (m_latency < 0.5f*m_threshold)
+              speed = 0.990f;
+            else if (m_latency < 0.9f*m_threshold)
+              speed = 0.999f;
+            else if (m_latency > 4.0f*m_threshold)
+              speed = 1.200f;
+            else if (m_latency > 2.0f*m_threshold)
+              speed = 1.010f;
+            else if (m_latency > 1.1f*m_threshold)
+              speed = 1.001f;
+
+            m_av_clock->OMXSetSpeed(S(speed));
+            m_av_clock->OMXSetSpeed(S(speed), true, true);
+            CLog::Log(LOGDEBUG, "Sync: %.2f (%.2f) S:%.3f T:%.2f\n", m_latency, latency, speed, m_threshold);
+          }
+        }
+      }
+      
       else if(!m_Pause && (m_omx_reader.IsEof() || m_omx_pkt || TRICKPLAY(m_av_clock->OMXPlaySpeed()) || (audio_fifo_high && video_fifo_high)))
       {
         if (m_av_clock->OMXIsPaused())
