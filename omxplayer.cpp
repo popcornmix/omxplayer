@@ -187,6 +187,7 @@ void print_usage()
   printf("              --live                    Set for live tv or vod type stream\n");
   printf("              --layout                  Set output speaker layout (e.g. 5.1)\n");
   printf("              --key-config <file>       Uses key bindings specified in <file> instead of the default\n");
+  printf("              --loop                    Loop the feed\n");
 }
 
 void print_keybindings()
@@ -548,6 +549,11 @@ int main(int argc, char *argv[])
   int m_orientation      = -1; // unset
   bool m_live            = false; // set to true for live tv or vod for low buffering
   enum PCMLayout m_layout = PCM_LAYOUT_2_0;
+  bool m_loop            = false;
+  double loop_offset     = 0.0;
+  double last_packet_pts = 0.0;
+  double last_packet_dts = 0.0;
+  double last_packet_duration = 0.0;
   TV_DISPLAY_STATE_T   tv_state;
 
   const int font_opt        = 0x100;
@@ -573,6 +579,7 @@ int main(int argc, char *argv[])
   const int orientation_opt = 0x204;
   const int live_opt = 0x205;
   const int layout_opt = 0x206;
+  const int loop_opt = 0x208;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -616,6 +623,7 @@ int main(int argc, char *argv[])
     { "orientation",  required_argument,  NULL,          orientation_opt },
     { "live",         no_argument,        NULL,          live_opt },
     { "layout",       required_argument,  NULL,          layout_opt },
+    { "loop",         no_argument,        NULL,          loop_opt },
     { 0, 0, 0, 0 }
   };
 
@@ -786,6 +794,9 @@ int main(int argc, char *argv[])
         }
         break;
       }
+      case loop_opt:
+        m_loop = true;
+        break;
       case 'b':
         m_blank_background = true;
         break;
@@ -904,6 +915,11 @@ int main(int argc, char *argv[])
 
   if(m_dump_format)
     goto do_exit;
+
+  if(m_loop && !m_omx_reader.CanSeek()) {
+    printf("Looping requested on an input that doesn't support seeking\n");
+    goto do_exit;
+  }
 
   m_has_video     = m_omx_reader.VideoStreamCount();
   m_has_audio     = m_omx_reader.AudioStreamCount();
@@ -1529,6 +1545,41 @@ int main(int argc, char *argv[])
 
     if(m_omx_pkt)
       m_send_eos = false;
+
+    if(m_loop && m_omx_reader.IsEof() && !m_omx_pkt) {
+      CLog::Log(LOGINFO, "EOF detected; looping requested");
+      if(m_omx_reader.SeekTime(0, true, &startpts)) {
+        m_omx_pkt = m_omx_reader.Read();
+        if(m_omx_pkt && last_packet_pts != DVD_NOPTS_VALUE) {
+          CLog::Log(LOGDEBUG, "Using last packet's PTS value for loop-offset: %.0f + %.0f", last_packet_pts, last_packet_duration);
+          loop_offset = last_packet_pts + last_packet_duration;
+        }
+        else if(m_omx_pkt && last_packet_dts != DVD_NOPTS_VALUE) {
+          CLog::Log(LOGDEBUG, "Using last packet's DTS value for loop-offset: %.0f + %.0f", last_packet_dts, last_packet_duration);
+          loop_offset = last_packet_dts + last_packet_duration;
+        }
+      }
+    }
+
+    if(m_loop && m_omx_pkt) {
+      if(m_omx_pkt->pts != DVD_NOPTS_VALUE) {
+        if(m_omx_pkt->pts < loop_offset) {
+          CLog::Log(LOGDEBUG, "Applying loop-offset to packet's PTS %.0f->%.0f", m_omx_pkt->pts, m_omx_pkt->pts + loop_offset);
+          m_omx_pkt->pts += loop_offset;
+        }
+        if(m_omx_pkt->pts > last_packet_pts)
+          last_packet_pts = m_omx_pkt->pts;
+      }
+      if(m_omx_pkt->dts != DVD_NOPTS_VALUE) {
+        if(m_omx_pkt->dts < loop_offset) {
+          CLog::Log(LOGDEBUG, "Applying loop-offset to packet's DTS %.0f->%.0f", m_omx_pkt->dts, m_omx_pkt->dts + loop_offset);
+          m_omx_pkt->dts += loop_offset;
+        }
+        if(m_omx_pkt->dts > last_packet_dts)
+          last_packet_dts = m_omx_pkt->dts;
+      }
+      last_packet_duration = m_omx_pkt->duration;
+    }
 
     if(m_omx_reader.IsEof() && !m_omx_pkt)
     {
