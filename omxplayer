@@ -41,28 +41,34 @@ if [ -e $FBSET ]; then
   fbset -xres 1 -yres 1
 fi
 
-OMXPLAYER_DBUS_ADDR="/tmp/omxplayer_dbus_addr"
-OMXPLAYER_DBUS_PID="/tmp/omxplayer_dbus_pid"
+OMXPLAYER_DBUS_ADDR="/tmp/omxplayer_dbus_addr-${USER}"
+OMXPLAYER_DBUS_PID="/tmp/omxplayer_dbus_pid-${USER}"
 
-exec 5> $OMXPLAYER_DBUS_ADDR
-exec 6> $OMXPLAYER_DBUS_PID
+touch "$OMXPLAYER_DBUS_ADDR"
+touch "$OMXPLAYER_DBUS_PID"
 
-dbus-daemon --fork --print-address 5 --print-pid 6 --session
-
-DBUS_SESSION_BUS_ADDRESS=`cat $OMXPLAYER_DBUS_ADDR`
-DBUS_SESSION_BUS_PID=`cat $OMXPLAYER_DBUS_PID`
+DBUS_SESSION_BUS_ADDRESS="`cat $OMXPLAYER_DBUS_ADDR`"
+DBUS_SESSION_BUS_PID="`cat $OMXPLAYER_DBUS_PID`"
 
 export DBUS_SESSION_BUS_ADDRESS
 export DBUS_SESSION_BUS_PID
 
+if ! test -n "$DBUS_SESSION_BUS_PID"; then
+  exec 5> "$OMXPLAYER_DBUS_ADDR"
+  exec 6> "$OMXPLAYER_DBUS_PID"
+  dbus-daemon --fork --print-address 5 --print-pid 6 --session
+  DBUS_SESSION_BUS_ADDRESS="`cat $OMXPLAYER_DBUS_ADDR`"
+  DBUS_SESSION_BUS_PID="`cat $OMXPLAYER_DBUS_PID`"
+fi
+
 $OMXPLAYER --font $FONT --italic-font $ITALIC_FONT "$@"; true
 
 if [ -n "$DBUS_SESSION_BUS_PID" ]; then
-    kill -2 "$DBUS_SESSION_BUS_PID"
+  kill -2 "$DBUS_SESSION_BUS_PID"
 fi
 
-rm -f $OMXPLAYER_DBUS_ADDR
-rm -f $OMXPLAYER_DBUS_PID
+rm -f "$OMXPLAYER_DBUS_ADDR"
+rm -f "$OMXPLAYER_DBUS_PID"
 
 if [ -e $FBSET ]; then
   fbset -xres ${XRES} -yres ${YRES}
