@@ -42,6 +42,7 @@ OMXPlayerVideo::OMXPlayerVideo()
   m_decoder       = NULL;
   m_fps           = 25.0f;
   m_flush         = false;
+  m_flush_requested = false;
   m_cached_size   = 0;
   m_hdmi_clock_sync = false;
   m_iVideoDelay   = 0;
@@ -155,7 +156,6 @@ bool OMXPlayerVideo::Open(COMXStreamInfo &hints, OMXClock *av_clock, const CRect
 bool OMXPlayerVideo::Close()
 {
   m_bAbort  = true;
-  m_flush   = true;
 
   Flush();
 
@@ -195,8 +195,6 @@ bool OMXPlayerVideo::Decode(OMXPacket *pkt)
 {
   if(!pkt)
     return false;
-
-  bool ret = false;
 
   if(pkt->hints.codec == CODEC_ID_TEXT ||
      pkt->hints.codec == CODEC_ID_SSA )
@@ -262,36 +260,33 @@ bool OMXPlayerVideo::Decode(OMXPacket *pkt)
           m_decoder->DecodeText((uint8_t *)strSubtitle.c_str(), strSubtitle.length(), overlay->iPTSStartTime, overlay->iPTSStartTime);
       }
     }
-
-    ret = true;
   }
   else
   {
-    if((int)m_decoder->GetFreeSpace() > pkt->size)
+    // some packed bitstream AVI files set almost all pts values to DVD_NOPTS_VALUE, but have a scattering of real pts values.
+    // the valid pts values match the dts values.
+    // if a stream has had more than 4 valid pts values in the last 16, the use UNKNOWN, otherwise use dts
+    m_history_valid_pts = (m_history_valid_pts << 1) | (pkt->pts != DVD_NOPTS_VALUE);
+    double pts = pkt->pts;
+    if(pkt->pts == DVD_NOPTS_VALUE && (m_iCurrentPts == DVD_NOPTS_VALUE || count_bits(m_history_valid_pts & 0xffff) < 4))
+      pts = pkt->dts;
+
+    if (pts != DVD_NOPTS_VALUE)
+      pts += m_iVideoDelay;
+
+    if(pts != DVD_NOPTS_VALUE)
+      m_iCurrentPts = pts;
+
+    while((int) m_decoder->GetFreeSpace() < pkt->size)
     {
-      // some packed bitstream AVI files set almost all pts values to DVD_NOPTS_VALUE, but have a scattering of real pts values.
-      // the valid pts values match the dts values.
-      // if a stream has had more than 4 valid pts values in the last 16, the use UNKNOWN, otherwise use dts
-      m_history_valid_pts = (m_history_valid_pts << 1) | (pkt->pts != DVD_NOPTS_VALUE);
-      double pts = pkt->pts;
-      if(pkt->pts == DVD_NOPTS_VALUE && (m_iCurrentPts == DVD_NOPTS_VALUE || count_bits(m_history_valid_pts & 0xffff) < 4))
-        pts = pkt->dts;
-
-      if (pts != DVD_NOPTS_VALUE)
-        pts += m_iVideoDelay;
-
-      if(pts != DVD_NOPTS_VALUE)
-        m_iCurrentPts = pts;
-
-      CLog::Log(LOGINFO, "CDVDPlayerVideo::Decode dts:%.0f pts:%.0f cur:%.0f, size:%d", pkt->dts, pkt->pts, m_iCurrentPts, pkt->size);
-      m_decoder->Decode(pkt->data, pkt->size, pts);
-      ret = true;
-    }
-    else
-      // video fifo is full, allow other tasks to run
       OMXClock::OMXSleep(10);
+      if(m_flush_requested) return true;
+    }
+
+    CLog::Log(LOGINFO, "CDVDPlayerVideo::Decode dts:%.0f pts:%.0f cur:%.0f, size:%d", pkt->dts, pkt->pts, m_iCurrentPts, pkt->size);
+    m_decoder->Decode(pkt->data, pkt->size, pts);
   }
-  return ret;
+  return true;
 }
 
 void OMXPlayerVideo::Process()
@@ -377,8 +372,10 @@ void OMXPlayerVideo::FlushSubtitles()
 
 void OMXPlayerVideo::Flush()
 {
+  m_flush_requested = true;
   Lock();
   LockDecoder();
+  m_flush_requested = false;
   m_flush = true;
   while (!m_packets.empty())
   {
