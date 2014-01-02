@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <dbus/dbus.h>
+#include <errno.h>
 
 #include "utils/log.h"
 #include "Keyboard.h"
