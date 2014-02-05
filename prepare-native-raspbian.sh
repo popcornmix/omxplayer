@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 echo "Patching makefiles..."
 echo "FLOAT=hard
@@ -20,6 +20,7 @@ LDFLAGS		+= -L/opt/vc/lib -L/lib -L/usr/lib -lfreetype
 INCLUDES	+= -I/opt/vc/include/interface/vcos/pthreads \
 			-I/opt/vc/include \
 			-I/opt/vc/include/interface/vmcs_host \
+			-I/opt/vc/include/interface/vmcs_host/linux \
 			-I/usr/include \
 			-I/usr/include/freetype2" > Makefile.include
 
