@@ -88,6 +88,7 @@ Using OMXPlayer
               --live                    Set for live tv or vod type stream
               --layout                  Set output speaker layout (e.g. 5.1)
               --key-config <file>       Uses key bindings specified in <file> instead of the default
+              --loop                    Loop the feed
 
 For example:
 
