@@ -407,6 +407,29 @@ OMXControlResult OMXControl::getEvent()
     dbus_respond_ok(m);
     return KeyConfig::ACTION_UNHIDE_VIDEO;
   }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "VideoLayer"))
+  {
+    DBusError error;
+    dbus_error_init(&error);
+
+    int64_t layer;
+    dbus_message_get_args(m, &error, DBUS_TYPE_INT64, &layer, DBUS_TYPE_INVALID);
+
+    // Make sure a value is sent for setting VideoLayer
+    if (dbus_error_is_set(&error))
+    {
+      CLog::Log(LOGWARNING, "VideoLayer D-Bus Error: %s", error.message );
+      dbus_error_free(&error);
+      dbus_respond_ok(m);
+      return KeyConfig::ACTION_BLANK;
+    }
+    else
+    {
+      dbus_respond_int64(m, layer);
+      // OMX_CONFIG_DISPLAYREGIONTYPE struct, layer element is 32bit signed.
+      return OMXControlResult(KeyConfig::ACTION_LAYER_VIDEO, (int32_t)layer);
+    }
+  }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "ListAudio"))
   {
     int count = reader->AudioStreamCount();

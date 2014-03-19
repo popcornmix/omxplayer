@@ -555,6 +555,50 @@ static void blank_background(bool enable)
   assert( ret == 0 );
 }
 
+bool initialise_subtitles()
+{
+  if(m_has_subtitle || m_osd)
+  {
+    std::vector<Subtitle> external_subtitles;
+    if(m_has_external_subtitles &&
+       !ReadSrt(m_external_subtitles_path, external_subtitles))
+    {
+       puts("Unable to read the subtitle file.");
+       return false;
+    }
+
+    if(!m_player_subtitles.Open(m_omx_reader.SubtitleStreamCount(),
+                                std::move(external_subtitles),
+                                m_font_path,
+                                m_italic_font_path,
+                                m_font_size,
+                                m_centered,
+                                m_ghost_box,
+                                m_subtitle_lines,
+                                m_layer + 1,
+                                m_av_clock))
+      return false;
+  }
+
+  if(m_has_subtitle)
+  {
+    if(!m_has_external_subtitles)
+    {
+      if(m_subtitle_index != -1)
+      {
+        m_player_subtitles.SetActiveStream(
+          std::min(m_subtitle_index, m_omx_reader.SubtitleStreamCount()-1));
+      }
+      m_player_subtitles.SetUseExternalSubtitles(false);
+    }
+
+    if(m_subtitle_index == -1 && !m_has_external_subtitles)
+      m_player_subtitles.SetVisible(false);
+  }
+  
+  return true;
+}
+
 int main(int argc, char *argv[])
 {
   signal(SIGSEGV, sig_handler);
@@ -1050,44 +1094,8 @@ int main(int argc, char *argv[])
                                          m_hdmi_clock_sync, m_thread_player, m_display_aspect, m_layer, video_queue_size, video_fifo_size))
     goto do_exit;
 
-  if(m_has_subtitle || m_osd)
-  {
-    std::vector<Subtitle> external_subtitles;
-    if(m_has_external_subtitles &&
-       !ReadSrt(m_external_subtitles_path, external_subtitles))
-    {
-       puts("Unable to read the subtitle file.");
-       goto do_exit;
-    }
-
-    if(!m_player_subtitles.Open(m_omx_reader.SubtitleStreamCount(),
-                                std::move(external_subtitles),
-                                m_font_path,
-                                m_italic_font_path,
-                                m_font_size,
-                                m_centered,
-                                m_ghost_box,
-                                m_subtitle_lines,
-                                m_layer + 1,
-                                m_av_clock))
-      goto do_exit;
-  }
-
-  if(m_has_subtitle)
-  {
-    if(!m_has_external_subtitles)
-    {
-      if(m_subtitle_index != -1)
-      {
-        m_player_subtitles.SetActiveStream(
-          std::min(m_subtitle_index, m_omx_reader.SubtitleStreamCount()-1));
-      }
-      m_player_subtitles.SetUseExternalSubtitles(false);
-    }
-
-    if(m_subtitle_index == -1 && !m_has_external_subtitles)
-      m_player_subtitles.SetVisible(false);
-  }
+  if (initialise_subtitles() == false) 
+    goto do_exit;
 
   m_omx_reader.GetHints(OMXSTREAM_AUDIO, m_hints_audio);
 
@@ -1408,6 +1416,45 @@ int main(int argc, char *argv[])
           if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, true))
             goto do_exit;
         }
+        m_new_win_pos = true;
+        m_seek_flush = true;
+        break;
+      case KeyConfig::ACTION_LAYER_VIDEO:
+        if (m_blank_background)
+        {
+          CLog::Log(LOGWARNING, "Changing video layer with blank enabled is unsupported"); 
+          break;
+        }
+        m_layer = result.getArg();
+        if (m_has_subtitle || m_osd)
+        {
+          int delay = 0;
+          size_t active_stream = 0;
+          bool visible = false;
+          
+          if (m_has_subtitle)
+          {
+            // save current subtitle settings
+            delay = m_player_subtitles.GetDelay();
+            active_stream = m_player_subtitles.GetActiveStream();
+            visible = m_player_subtitles.GetVisible();
+          }
+          
+          // restart subtitle renderer, simplest way is to close and reopen
+  	      m_player_subtitles.Close();
+  	      if (initialise_subtitles() == false) 
+            goto do_exit;
+          
+          if (m_has_subtitle)
+          {  
+            // restore previous subtitle settings
+            m_player_subtitles.SetDelay(delay);
+            m_player_subtitles.SetActiveStream(active_stream);
+            if (visible)
+              m_player_subtitles.SetVisible(true);
+          }
+        }
+        
         m_new_win_pos = true;
         m_seek_flush = true;
         break;
