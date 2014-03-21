@@ -68,7 +68,9 @@ dist: omxplayer.bin
 	mkdir -p $(DIST)/usr/lib/omxplayer
 	mkdir -p $(DIST)/usr/bin
 	mkdir -p $(DIST)/usr/share/doc
+	mkdir -p $(DIST)/usr/share/bash-completion/completions
 	cp omxplayer omxplayer.bin $(DIST)/usr/bin
+	cp omxplayer-completion.sh $(DIST)/usr/share/bash-completion/completions/omxplayer
 	cp COPYING $(DIST)/usr/share/doc/
 	cp README.md $(DIST)/usr/share/doc/README
 	cp -a ffmpeg_compiled/usr/local/lib/*.so* $(DIST)/usr/lib/omxplayer/
