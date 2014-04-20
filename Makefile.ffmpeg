@@ -1,25 +1,17 @@
-include Makefile.include
 
 CFLAGS=-D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX -DTARGET_LINUX -fPIC -DPIC -D_REENTRANT -D_HAVE_SBRK -D_LARGEFILE64_SOURCE -DHAVE_CMAKE_CONFIG -DHAVE_VMCS_CONFIG -D_REENTRANT -DUSE_VCHIQ_ARM -DVCHI_BULK_ALIGN=1 -DVCHI_BULK_GRANULARITY=1 -DEGL_SERVER_DISPMANX -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D__VIDEOCORE4__ -DGRAPHICS_X_VG=1 -U_FORTIFY_SOURCE -Wall -DHAVE_OMXLIB -DUSE_EXTERNAL_FFMPEG  -DHAVE_LIBAVCODEC_AVCODEC_H -DHAVE_LIBAVUTIL_MEM_H -DHAVE_LIBAVUTIL_AVUTIL_H -DHAVE_LIBAVFORMAT_AVFORMAT_H -DHAVE_LIBAVFILTER_AVFILTER_H -DOMX -DOMX_SKIP64BIT
 
 WORK=$(PWD)
 
-all: checkout configure compile
+all: ffmpeg.checkout ffmpeg.configure compile
 
-copy:
-	find ffmpeg -name '*.so*' -exec cp {} . \;
-	$(HOST)-strip *.so*
 
-compile: 
-	+$(MAKE) -C ffmpeg
-
-configure: 
+ffmpeg.configure: ffmpeg.checkout
 	cd ffmpeg; \
 	CFLAGS="$(CFLAGS) ${INCLUDES}" \
 	LDFLAGS="" \
   ./configure \
 			--extra-cflags="-mfpu=vfp -mfloat-abi=$(FLOAT) -mno-apcs-stack-check -mstructure-size-boundary=32 -mno-sched-prolog" \
-			--enable-cross-compile \
 			--enable-shared \
 			--disable-static \
 			--arch=arm \
@@ -239,15 +231,18 @@ configure:
 			--disable-decoder=bintext \
 			--disable-decoder=xbin \
 			--disable-decoder=idf \
-			--cross-prefix=$(HOST)-
+			--prefix=$(WORK)/ffmpeg_compiled && touch ../ffmpeg.configure
 
 clean:
 	@rm -rf ffmpeg
+	@rm -rf ffmpeg.checkout
+	
 
-checkout:
-	git clone git://source.ffmpeg.org/ffmpeg ffmpeg -b n2.2 --depth=1
+ffmpeg.checkout:
+	git clone git://source.ffmpeg.org/ffmpeg ffmpeg -b n2.2 --depth=1 && touch ffmpeg.checkout
+	
 
-install:
-	cd ffmpeg; make -j9 DESTDIR="$(WORK)/ffmpeg_compiled" install
-	$(HOST)-strip ffmpeg_compiled/usr/local/lib/*.so
+ffmpeg.install: ffmpeg.configure
+	cd ffmpeg; make -j1  install
+	strip ffmpeg_compiled/lib/*.so
 
