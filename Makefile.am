@@ -32,6 +32,8 @@ omxplayer_bin_SOURCES = linux/XMemUtils.cpp \
                 Keyboard.cpp \
                 omxplayer.cpp 
 
+omxplayer.cpp : version.h 
+
 version.h: configure.in
 	bash gen_version.sh > version.h
 
@@ -41,15 +43,27 @@ omxplayer_bin_LDADD = $(INTI_LIBS) $(AVCODEC_LIBS) $(DBUS_LIBS) $(VC_LIBS) $(AVC
 clean-local:
 	rm -f README
 	rm -f configure
-	rm -f Makefile
 	rm -f Makefile.in
 	rm -f version.h
+	rm -f depcomp
+	rm -f config.log
+	rm -f config.status
+	rm -rf autom4te.cache
+	rm -f install-sh
+	rm -f Makefile
+	rm -f missing
+	rm -f omxplayer
+	rm -f aclocal.m4
+	rm -f INSTALL
+	rm -rf .deps
 
 install-data-local:
 	chmod a+x omxplayer
-	cp omxplayer $(prefix)/bin/omxplayer
-	mkdir -p $(prefix)/lib/omxplayer
-	cp ffmpeg_compiled/lib/*.so* $(prefix)/lib/omxplayer
+	cp omxplayer $(DESTDIR)/$(prefix)/bin/omxplayer
+	mkdir -p $(DESTDIR)/$(prefix)/lib/omxplayer
+	cp ffmpeg_compiled/lib/*.so* $(DESTDIR)/$(prefix)/lib/omxplayer
+	mkdir -p $(DESTDIR)/$(prefix)/share/doc/omxplayer/
+	cp README.md $(DESTDIR)/$(prefix)/share/doc/omxplayer/
 	
 
 README: README.md
