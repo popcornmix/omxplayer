@@ -12,7 +12,7 @@ else
 BUILDROOT	:=/opt/bcm-rootfs
 SDKSTAGE	:=/opt/bcm-rootfs
 TARGETFS	:=/opt/bcm-rootfs
-TOOLCHAIN	:=/home/dc4/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/
+TOOLCHAIN	:=/usr/
 HOST		:=arm-linux-gnueabihf
 #SYSROOT		:=$(TOOLCHAIN)/arm-bcm2708hardfp-linux-gnueabi/sysroot
 SYSROOT		:=/opt/bcm-rootfs
@@ -20,16 +20,16 @@ endif
 
 JOBS=7
 
-CFLAGS			:= -isystem$(PREFIX)/include
+CFLAGS			:= -I/usr/include/ -I/usr/include/arm-linux-gnueabihf/ -I/usr/lib/arm-linux-gnueabihf/dbus-1.0/include  -I/opt/vc/include/ -I/opt/vc/include/interface/vcos/pthreads/ -I/opt/vc/include/interface/vmcs_host/linux
 CXXFLAGS		:= $(CFLAGS)
 CPPFLAGS		:= $(CFLAGS)
-LDFLAGS			:= -L$(BUILDROOT)/lib
-LD					:= $(TOOLCHAIN)/bin/$(HOST)-ld --sysroot=$(SYSROOT)
-CC					:= $(TOOLCHAIN)/bin/$(HOST)-gcc --sysroot=$(SYSROOT)
-CXX         := $(TOOLCHAIN)/bin/$(HOST)-g++ --sysroot=$(SYSROOT)
+LDFLAGS			:= -L$(BUILDROOT)/lib -L/opt/vc/lib/
+LD					:= $(TOOLCHAIN)/bin/$(HOST)-ld 
+CC					:= $(TOOLCHAIN)/bin/$(HOST)-gcc-4.7
+CXX         := $(TOOLCHAIN)/bin/$(HOST)-g++-4.7
 OBJDUMP			:= $(TOOLCHAIN)/bin/$(HOST)-objdump
 RANLIB			:= $(TOOLCHAIN)/bin/$(HOST)-ranlib
-STRIP				:= $(TOOLCHAIN)/bin/$(HOST)-strip
+STRIP				:= strip
 AR 					:= $(TOOLCHAIN)/bin/$(HOST)-ar
 CXXCP 			:= $(CXX) -E
 PATH 				:= $(PREFIX)/bin:$(BUILDROOT)/output/host/usr/bin:$(PATH)
@@ -37,4 +37,4 @@ PATH 				:= $(PREFIX)/bin:$(BUILDROOT)/output/host/usr/bin:$(PATH)
 CFLAGS			+= -pipe -mfloat-abi=$(FLOAT) -mcpu=arm1176jzf-s -fomit-frame-pointer -mabi=aapcs-linux -mtune=arm1176jzf-s -mfpu=vfp -Wno-psabi -mno-apcs-stack-check -g -mstructure-size-boundary=32 -mno-sched-prolog
 LDFLAGS			+= -L$(SDKSTAGE)/lib -L$(SDKSTAGE)/usr/lib -L$(SDKSTAGE)/opt/vc/lib/ -Lpcre/build
 #INCLUDES		+= -isystem$(SDKSTAGE)/usr/include -isystem$(SDKSTAGE)/opt/vc/include -isystem$(SYSROOT)/usr/include -isystem$(SDKSTAGE)/opt/vc/include/interface/vcos/pthreads -isystem$(SDKSTAGE)/usr/include/freetype2
-INCLUDES		+= -isystem$(SDKSTAGE)/opt/vc/include -isystem$(SYSROOT)/usr/include -isystem$(SDKSTAGE)/opt/vc/include/interface/vcos/pthreads -Ipcre/build -Iboost-trunk -Ifreetype2/include
+INCLUDES		+=  -Ipcre/build -Iboost-trunk -Ifreetype2/include
