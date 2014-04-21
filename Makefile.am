@@ -34,7 +34,7 @@ omxplayer_bin_SOURCES = linux/XMemUtils.cpp \
 
 omxplayer.cpp : version.h 
 
-version.h: configure.in
+version.h: configure.ac
 	bash gen_version.sh > version.h
 
 omxplayer_bin_LDADD = $(INTI_LIBS) $(AVCODEC_LIBS) $(DBUS_LIBS) $(VC_LIBS) $(AVCODEC_LIBS) $(FREETYPE2_LIBS) \

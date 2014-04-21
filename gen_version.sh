@@ -12,7 +12,7 @@ date=$(date -R 2> /dev/null)
 hash="UNKNOWN"
 branch="UNKNOWN"
 repo="UNKNOWN"
-version=`grep  "^VERSION=" configure.in | sed s/VERSION=// `
+version=`grep  "^VERSION=" configure.ac | sed s/VERSION=// `
 
 ref=$(git symbolic-ref -q HEAD 2> /dev/null)
 if [ x"$?" = x"0" ]; then
