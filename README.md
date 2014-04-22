@@ -17,29 +17,77 @@ GCC version 4.7 is required.
 
 ### Cross Compiling
 
-You need the content of your sdcard somewhere mounted or copied. There might be
-development headers to install on the running Pi system for the crosscompiling.
+not encurraged
 
-Edit Makefile.include and change the settings according your locations.
+### Buildin in an emulator
 
-    make ffmpeg
-    make
-    make dist
+you can skip directly to Installing OMXPlayer if you want to use you RPi.
+
+
+wget http://xecdesign.com/downloads/linux-qemu/kernel-qemu
+wget http://downloads.raspberrypi.org/raspbian_latest
+mv raspbian_latest raspbian_latest.zip
+unzip raspbian_latest.zip
+qemu-system-arm -kernel kernel-qemu -cpu arm1176 -m 256 -M versatilepb -no-reboot -serial stdio -append "root=/dev/sda2 panic=1 rootfstype=ext4 rw init=/bin/bash" -hda *-wheezy-raspbian.img
+
+Inside the emulator do this
+
+nano /etc/ld.so.preload
+Put a # in front of the first line so that it looks like this:
+#/usr/lib/arm-linux-gnueabihf/libcofi_rpi.so
+
+poweroff -f
+
+close the emulator, restart the emulator
+
+qemu-system-arm -kernel kernel-qemu -cpu arm1176 -m 256 -M versatilepb -no-reboot -serial stdio -append "root=/dev/sda2 panic=1 rootfstype=ext4 rw"  -hda *-wheezy-raspbian.img -net nic -net tap
+
+on the HOST:
+ifconfig  tap0 192.168.3.1
+echo "1" > /proc/sys/net/ipv4/ip_forward
+iptables  -t nat -A POSTROUTING -o wlan0 -j MASQUERADE #wlan0 is the external interface
+
+on the emulator
+finish the first boot dialog
+passwd
+sudo ifconfig eth0 192.168.3.2
+sudo route add default gw 192.168.3.1
+sudo bash -c "/bin/echo nameserver 8.8.8.8 > /etc/resolv.conf"
+
+
+continue with Installing the OMXPlayer
+
 
 Installing OMXPlayer
 --------------------
 
-Copy over `omxplayer-dist/*` to the Pi `/`. You may want to specify a valid font
-path inside the `omxplayer` shell script.
+provided you are using a distribution, which is derived from debian. Otherwise sskip to the next section.
 
-### Compiling on the Pi
+sudo apt-get update
+sudo apt-get install dpkg-dev
+sudo date -s 2014-04-23 # set the correct date
+git clone https://github.com/TWilmer/omxplayer.git omxplayer-0.4.0
+cd omxplayer-0.4.0
+dpkg-checkbuilddeps # shows unmet build dependencies, in stall them
+sudo apt-get install libdbus-1-dev libpcre++-dev autotools-dev libpcre3-dev libboost1.50-dev libssl-dev gcc-4.7 g++-4.7
+sudo apt-get clean #give some space
+fakeroot debian/rules binary
+sudo dpkg -i ../omxplayer*.deb
 
-You can also compile it on the PI the native way ;)
-Run this script (which will install packages and update firmware)
-    ./prepare-native-raspbian.sh
-and build with
-    make ffmpeg
-    make
+
+
+
+Installing OMXPlayer without Debian package
+--------------------
+
+Install gcc 4.7 or later.  You need to install the dependcies, like dbus.
+
+./autogen.sh
+make -f Makefile ffmpeg.install
+./configure --prefix=/opt/omxplayer
+make
+sudo make install
+
 
 Using OMXPlayer
 ---------------

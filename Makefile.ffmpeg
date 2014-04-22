@@ -11,7 +11,7 @@ ffmpeg.configure: ffmpeg.checkout
 	CFLAGS="$(CFLAGS) ${INCLUDES}" \
 	LDFLAGS="" \
   ./configure \
-			--extra-cflags="-mfpu=vfp -mfloat-abi=$(FLOAT) -mno-apcs-stack-check -mstructure-size-boundary=32 -mno-sched-prolog" \
+			--extra-cflags="-mfpu=vfp -mfloat-abi=hard -mno-apcs-stack-check -mstructure-size-boundary=32 -mno-sched-prolog" \
 			--enable-shared \
 			--disable-static \
 			--arch=arm \
@@ -236,6 +236,7 @@ ffmpeg.configure: ffmpeg.checkout
 clean:
 	@rm -rf ffmpeg
 	@rm -rf ffmpeg.checkout
+	@rm -rf ffmpeg.configure
 	
 
 ffmpeg.checkout:

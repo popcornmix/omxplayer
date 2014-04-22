@@ -51,6 +51,15 @@ PKG_CHECK_MODULES(FREETYPE2, freetype2 >= $FREETYPE2_REQUIRED_VERSION)
 AC_SUBST(FREETYPE2_CFLAGS)
 AC_SUBST(FREETYPE2_LIBS)
 
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADERS([boost/circular_buffer.hpp], [],
+    [AC_MSG_ERROR(You need the Boost libraries.)])
+AC_CHECK_HEADERS([boost/algorithm/string.hpp], [],
+    [AC_MSG_ERROR(You need the Boost libraries.)])
+AC_CHECK_HEADERS([boost/config.hpp], [],
+    [AC_MSG_ERROR(You need the Boost libraries.)])
+AC_LANG_POP([C++])
+
 
 VCDIR=/opt/vc
 AC_ARG_WITH([vc], 
