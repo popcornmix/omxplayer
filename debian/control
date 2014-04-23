@@ -2,7 +2,7 @@ Source: omxplayer
 Section: video
 Priority: optional
 Maintainer: Thorsten Wilmer <wilmer.thorsten@gmail.com>
-Build-Depends: debhelper (>= 8.0.0), libdbus-1-dev, libraspberrypi-dev, libfreetype6-dev, libpcre++-dev, autotools-dev, libpcre3-dev, libboost1.50-dev, libssl-dev, gcc-4.7, g++-4.7
+Build-Depends: debhelper (>= 8.0.0), libdbus-1-dev, libraspberrypi-dev, libfreetype6-dev, libpcre++-dev, autotools-dev, libpcre3-dev, libboost1.50-dev, libssl-dev, gcc-4.7, g++-4.7, libdvdnav-dev (>=4.2.0)
 Standards-Version: 3.9.3
 Homepage: <insert the upstream URL, if relevant>
 #Vcs-Git: git://git.debian.org/collab-maint/omxplayer.git
