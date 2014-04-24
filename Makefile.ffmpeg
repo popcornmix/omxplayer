@@ -236,6 +236,7 @@ ffmpeg.configure: ffmpeg.checkout
 clean:
 	@rm -rf ffmpeg
 	@rm -rf ffmpeg.checkout
+	@rm -rf ffmpeg.configure
 	
 
 ffmpeg.checkout:
