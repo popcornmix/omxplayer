@@ -12,6 +12,7 @@ date=$(date -R 2> /dev/null)
 hash="UNKNOWN"
 branch="UNKNOWN"
 repo="UNKNOWN"
+version=`grep  "^VERSION=" configure.ac | sed s/VERSION=// `
 
 ref=$(git symbolic-ref -q HEAD 2> /dev/null)
 if [ x"$?" = x"0" ]; then
@@ -30,4 +31,5 @@ echo "#define VERSION_DATE \"$date\""
 echo "#define VERSION_HASH \"$hash\""
 echo "#define VERSION_BRANCH \"$branch\""
 echo "#define VERSION_REPO \"$repo\""
+echo "#define VERSION \"$version\""
 echo "#endif"

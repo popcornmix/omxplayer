@@ -5,12 +5,12 @@
 
 OMXPLAYER_DIR=`dirname $0`
 OMXPLAYER_BIN="$OMXPLAYER_DIR/omxplayer.bin"
-OMXPLAYER_LIBS="/opt/vc/lib"
+OMXPLAYER_LIBS="@VCDIR@/lib"
 
 if [ -e "$OMXPLAYER_DIR/ffmpeg_compiled" ]; then
-    OMXPLAYER_LIBS="$OMXPLAYER_LIBS:$OMXPLAYER_DIR/ffmpeg_compiled"
+    OMXPLAYER_LIBS="$OMXPLAYER_LIBS:$OMXPLAYER_DIR/ffmpeg_compiled/lib/"
 else
-    OMXPLAYER_LIBS="$OMXPLAYER_LIBS:/usr/lib/omxplayer"
+    OMXPLAYER_LIBS="$OMXPLAYER_LIBS:@prefix@/lib/omxplayer"
 fi
 
 refresh_regex='(|.* )(-r|--refresh)( .*|$)'
