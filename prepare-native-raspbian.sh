@@ -36,7 +36,14 @@ sed -i 's/arm-unknown-linux-gnueabi-strip/strip/g;' Makefile
 
 echo "
 install: dist
-	cp omxplayer-dist/* / -r" >> Makefile
+	cp omxplayer-dist/* / -r
+
+uninstall:
+	rm -rf /usr/bin/omxplayer
+	rm -rf /usr/bin/omxplayer.bin
+	rm -rf /usr/lib/omxplayer
+	rm -rf /usr/share/doc/omxplayer
+" >> Makefile
 
 echo "Installing packages..."
 sudo apt-get update

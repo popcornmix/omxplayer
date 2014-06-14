@@ -4,7 +4,7 @@ CFLAGS+=-std=c++0x -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX
 
 LDFLAGS+=-L./ -Lffmpeg_compiled/usr/local/lib/ -lc -lWFC -lGLESv2 -lEGL -lbcm_host -lopenmaxil -lfreetype -lz
 
-INCLUDES+=-I./ -Ilinux -Iffmpeg_compiled/usr/local/include/
+INCLUDES+=-I./ -Ilinux -Iffmpeg_compiled/usr/local/include/ -I /usr/include/dbus-1.0 -I /usr/lib/arm-linux-gnueabihf/dbus-1.0/include
 
 DIST ?= omxplayer-dist
 
@@ -67,9 +67,9 @@ ffmpeg:
 dist: omxplayer.bin
 	mkdir -p $(DIST)/usr/lib/omxplayer
 	mkdir -p $(DIST)/usr/bin
-	mkdir -p $(DIST)/usr/share/doc
+	mkdir -p $(DIST)/usr/share/doc/omxplayer
 	cp omxplayer omxplayer.bin $(DIST)/usr/bin
-	cp COPYING $(DIST)/usr/share/doc/
-	cp README.md $(DIST)/usr/share/doc/README
+	cp COPYING $(DIST)/usr/share/doc/omxplayer
+	cp README.md $(DIST)/usr/share/doc/omxplayer/README
 	cp -a ffmpeg_compiled/usr/local/lib/*.so* $(DIST)/usr/lib/omxplayer/
 	cd $(DIST); tar -czf ../$(DIST).tgz *

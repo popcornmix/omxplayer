@@ -36,10 +36,18 @@ path inside the `omxplayer` shell script.
 
 You can also compile it on the PI the native way ;)
 Run this script (which will install packages and update firmware)
+
     ./prepare-native-raspbian.sh
+
 and build with
+
     make ffmpeg
     make
+
+Install with
+    
+    sudo make install
+    
 
 Using OMXPlayer
 ---------------
@@ -175,7 +183,7 @@ For example:
 
 `omxplayer` can be controlled via DBUS.  There are three interfaces, all of
 which present a different set of commands.  For examples on working with DBUS
-take a look at the supplied [dbuscontrol.sh](blob/master/dbuscontrol.sh) file.
+take a look at the supplied [dbuscontrol.sh](dbuscontrol.sh) file.
 
 ### Root Interface
 
