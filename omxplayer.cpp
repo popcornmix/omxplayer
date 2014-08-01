@@ -79,6 +79,7 @@ enum PCMChannels  *m_pChannelMap        = NULL;
 volatile sig_atomic_t g_abort           = false;
 bool              m_passthrough         = false;
 long              m_Volume              = 0;
+DISPMANX_ELEMENT_HANDLE_T   element_Video = DISPMANX_NO_HANDLE;
 long              m_Amplification       = 0;
 bool              m_Mute_Audio          = false;
 bool              m_Deinterlace         = false;
