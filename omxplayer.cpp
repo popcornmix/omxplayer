@@ -528,6 +528,31 @@ static void blank_background(bool enable)
   assert(element);
 }
 
+static void blank_video(bool mute)
+{
+  DISPMANX_UPDATE_HANDLE_T    update;
+  int                         ret;
+
+  if (mute) {
+    element_Video = blank_omx(m_layer);
+    assert(element_Video);
+  }
+  else {
+    if (element_Video != DISPMANX_NO_HANDLE) {
+      update = vc_dispmanx_update_start(0);
+      assert(update);
+
+      ret = vc_dispmanx_element_remove(update, element_Video);
+      assert( ret == DISPMANX_SUCCESS );
+
+      ret = vc_dispmanx_update_submit_sync( update );
+      assert( ret == DISPMANX_SUCCESS );
+
+      element_Video = DISPMANX_NO_HANDLE;
+    }
+  }
+}
+
 int main(int argc, char *argv[])
 {
   signal(SIGSEGV, sig_handler);
