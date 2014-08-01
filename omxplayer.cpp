@@ -476,10 +476,8 @@ static int get_mem_gpu(void)
    return gpu_mem;
 }
 
-static void blank_background(bool enable)
+static DISPMANX_ELEMENT_HANDLE_T blank_omx(int layer)
 {
-  if (!enable)
-    return;
   // we create a 1x1 black pixel image that is added to display just behind video
   DISPMANX_DISPLAY_HANDLE_T   display;
   DISPMANX_UPDATE_HANDLE_T    update;
@@ -501,7 +499,7 @@ static void blank_background(bool enable)
   vc_dispmanx_rect_set( &dst_rect, 0, 0, 1, 1);
 
   ret = vc_dispmanx_resource_write_data( resource, type, sizeof(image), &image, &dst_rect );
-  assert(ret == 0);
+  assert(ret == DISPMANX_SUCCESS);
 
   vc_dispmanx_rect_set( &src_rect, 0, 0, 1<<16, 1<<16);
   vc_dispmanx_rect_set( &dst_rect, 0, 0, 0, 0);
@@ -509,12 +507,25 @@ static void blank_background(bool enable)
   update = vc_dispmanx_update_start(0);
   assert(update);
 
-  element = vc_dispmanx_element_add(update, display, -1 /*layer*/, &dst_rect, resource, &src_rect,
+  element = vc_dispmanx_element_add(update, display, layer, &dst_rect, resource, &src_rect,
                                     DISPMANX_PROTECTION_NONE, NULL, NULL, (DISPMANX_TRANSFORM_T)0 );
   assert(element);
 
   ret = vc_dispmanx_update_submit_sync( update );
-  assert( ret == 0 );
+  assert( ret == DISPMANX_SUCCESS );
+
+  return element;
+}
+
+static void blank_background(bool enable)
+{
+  DISPMANX_ELEMENT_HANDLE_T   element;
+
+  if (!enable)
+    return;
+
+  element = blank_omx(m_layer - 1);
+  assert(element);
 }
 
 int main(int argc, char *argv[])
