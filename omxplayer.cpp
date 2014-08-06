@@ -535,7 +535,7 @@ static void blank_video(bool mute)
   int                         ret;
 
   if (mute) {
-    element_Video = blank_omx(m_layer);
+    element_Video = blank_omx(m_layer + 1);
     assert(element_Video);
   }
   else {
