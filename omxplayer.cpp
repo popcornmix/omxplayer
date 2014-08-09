@@ -512,6 +512,8 @@ static DISPMANX_ELEMENT_HANDLE_T blank_omx(int layer)
                                     DISPMANX_PROTECTION_NONE, NULL, NULL, (DISPMANX_TRANSFORM_T)0 );
   assert(element);
 
+  ret = vc_dispmanx_resource_delete( resource );
+    
   ret = vc_dispmanx_update_submit_sync( update );
   assert( ret == DISPMANX_SUCCESS );
 
