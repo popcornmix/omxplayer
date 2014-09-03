@@ -58,6 +58,10 @@ unhidevideo)
 	dbus-send --print-reply=literal --session --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Action int32:29 >/dev/null
 	;;
 
+setvideolayer)
+	dbus-send --print-reply=literal --session --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.VideoLayer int64:$2 >/dev/null
+	;;
+
 volumeup)
 	dbus-send --print-reply=literal --session --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Action int32:18 >/dev/null
 	;;
@@ -67,7 +71,7 @@ volumedown)
 	;;
 
 *)
-	echo "usage: $0 status|pause|stop|seek|volumeup|volumedown|setposition [position in microseconds]|hidevideo|unhidevideo|setvideopos [x1 y1 x2 y2]" >&2
+	echo "usage: $0 status|pause|stop|seek|volumeup|volumedown|setposition [position in microseconds]|hidevideo|unhidevideo|setvideopos [x1 y1 x2 y2]|setvideolay n" >&2
 	exit 1
 	;;
 esac
