@@ -73,6 +73,7 @@ public:
   virtual void avcodec_flush_buffers(AVCodecContext *avctx)=0;
   virtual int avcodec_open2_dont_call(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options)=0;
   virtual AVCodec *avcodec_find_decoder(enum AVCodecID id)=0;
+  virtual AVCodec *avcodec_find_decoder_by_name(const char *name)=0;
   virtual AVCodec *avcodec_find_encoder(enum AVCodecID id)=0;
   virtual int avcodec_close_dont_call(AVCodecContext *avctx)=0;
   virtual AVFrame *av_frame_alloc(void)=0;
@@ -125,6 +126,7 @@ public:
   virtual int avcodec_open2_dont_call(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options) { *(int *)0x0 = 0; return 0; }
   virtual int avcodec_close_dont_call(AVCodecContext *avctx) { *(int *)0x0 = 0; return 0; }
   virtual AVCodec *avcodec_find_decoder(enum AVCodecID id) { return ::avcodec_find_decoder(id); }
+  virtual AVCodec *avcodec_find_decoder_by_name(const char *name) { return ::avcodec_find_decoder_by_name(name); }
   virtual AVCodec *avcodec_find_encoder(enum AVCodecID id) { return ::avcodec_find_encoder(id); }
   virtual int avcodec_close(AVCodecContext *avctx)
   {
@@ -195,6 +197,7 @@ class DllAvCodec : public DllDynamic, DllAvCodecInterface
 
   DEFINE_METHOD0(void, avcodec_register_all_dont_call)
   DEFINE_METHOD1(AVCodec*, avcodec_find_decoder, (enum AVCodecID p1))
+  DEFINE_METHOD1(AVCodec*, avcodec_find_decoder_by_name, (const char *p1))
   DEFINE_METHOD1(AVCodec*, avcodec_find_encoder, (enum AVCodecID p1))
   DEFINE_METHOD1(int, avcodec_close_dont_call, (AVCodecContext *p1))
   DEFINE_METHOD0(AVFrame*, av_frame_alloc)
@@ -218,6 +221,7 @@ class DllAvCodec : public DllDynamic, DllAvCodecInterface
     RESOLVE_METHOD_RENAME(avcodec_open2,avcodec_open2_dont_call)
     RESOLVE_METHOD_RENAME(avcodec_close,avcodec_close_dont_call)
     RESOLVE_METHOD(avcodec_find_decoder)
+    RESOLVE_METHOD(avcodec_find_decoder_by_name)
     RESOLVE_METHOD(avcodec_find_encoder)
     RESOLVE_METHOD(av_frame_alloc)
     RESOLVE_METHOD_RENAME(avcodec_register_all, avcodec_register_all_dont_call)

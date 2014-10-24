@@ -69,7 +69,16 @@ bool COMXAudioCodecOMX::Open(COMXStreamInfo &hints, enum PCMLayout layout)
 
   m_dllAvCodec.avcodec_register_all();
 
-  pCodec = m_dllAvCodec.avcodec_find_decoder(hints.codec);
+  if( hints.codec != AV_CODEC_ID_AAC ){
+      pCodec = m_dllAvCodec.avcodec_find_decoder(hints.codec);
+  } else {
+      pCodec = m_dllAvCodec.avcodec_find_decoder_by_name("libfdk_aac");
+      if (!pCodec){
+          pCodec = m_dllAvCodec.avcodec_find_decoder(hints.codec);
+      }
+  }
+  printf( "[Audio codec is %s]\n", pCodec->long_name );
+
   if (!pCodec)
   {
     CLog::Log(LOGDEBUG,"COMXAudioCodecOMX::Open() Unable to find codec %d", hints.codec);
