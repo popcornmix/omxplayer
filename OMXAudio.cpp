@@ -87,8 +87,34 @@ bool COMXAudio::PortSettingsChanged()
 
   if (m_settings_changed)
   {
+    /* setup mixer input */
+    OMX_INIT_STRUCTURE(m_pcm_output);
+    m_pcm_output.nPortIndex = m_omx_decoder.GetOutputPort();
+    omx_err = m_omx_decoder.GetParameter(OMX_IndexParamAudioPcm, &m_pcm_output);
+    if(omx_err != OMX_ErrorNone)
+    {
+      CLog::Log(LOGERROR, "%s::%s - error m_omx_decoder GetParameter omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    }
+
+    //// decoder output -> mixer input
+    memcpy(m_pcm_output.eChannelMapping, m_input_channels, sizeof(m_input_channels));
+    // round up to power of 2
+    m_pcm_output.nChannels = m_InputChannels > 4 ? 8 : m_InputChannels > 2 ? 4 : m_InputChannels;
+    /* limit samplerate (through resampling) if requested */
+    m_pcm_output.nSamplingRate = std::min(std::max((int)m_pcm_output.nSamplingRate, 8000), 192000);
+
     m_omx_decoder.DisablePort(m_omx_decoder.GetOutputPort(), true);
-    m_omx_decoder.EnablePort(m_omx_decoder.GetOutputPort(), true);
+    m_omx_mixer.DisablePort(m_omx_mixer.GetInputPort(), false);
+
+    m_pcm_output.nPortIndex = m_omx_mixer.GetInputPort();
+    omx_err = m_omx_mixer.SetParameter(OMX_IndexParamAudioPcm, &m_pcm_output);
+    if(omx_err != OMX_ErrorNone)
+    {
+      CLog::Log(LOGERROR, "%s::%s - error m_omx_mixer(input) SetParameter omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    }
+    m_omx_decoder.EnablePort(m_omx_decoder.GetOutputPort(), false);
+    m_omx_mixer.EnablePort(m_omx_mixer.GetInputPort(), false);
+
     return true;
   }
 
@@ -466,7 +492,8 @@ bool COMXAudio::Initialize(OMXClock *clock, const OMXAudioConfig &config, uint64
   // should be big enough that common formats (e.g. 6 channel DTS) fit in a single packet.
   // we don't mind less common formats being split (e.g. ape/wma output large frames)
   // 6 channel 32bpp float to 8 channel 16bpp in, so a full 48K input buffer will fit the output buffer
-  m_ChunkLen = AUDIO_DECODE_OUTPUT_BUFFER * (m_InputChannels * m_BitsPerSample) >> (rounded_up_channels_shift[m_InputChannels] + 4);
+//  m_ChunkLen = AUDIO_DECODE_OUTPUT_BUFFER * (m_InputChannels * m_BitsPerSample) >> (rounded_up_channels_shift[m_InputChannels] + 4);
+  m_ChunkLen = AUDIO_DECODE_OUTPUT_BUFFER * (6 * m_BitsPerSample) >> (rounded_up_channels_shift[6] + 4);
 
   m_wave_header.Samples.wSamplesPerBlock    = 0;
   m_wave_header.Format.nChannels            = m_InputChannels;
@@ -656,6 +683,207 @@ bool COMXAudio::Initialize(OMXClock *clock, const OMXAudioConfig &config, uint64
 
   return true;
 }
+
+bool COMXAudio::ChangeInputFormat(const CStdString& device, int iChannels, uint64_t channelMap,
+                           COMXStreamInfo &hints, enum PCMLayout layout, unsigned int uiSampleRate, unsigned int uiBitsPerSample, bool boostOnDownmix,
+                           OMXClock *clock, bool bUsePassthrough, bool bUseHWDecode, bool is_live, float fifo_size)
+{
+  CSingleLock lock (m_critSection);
+  OMX_ERRORTYPE omx_err;
+
+  layout = PCM_LAYOUT_2_0;
+
+  m_InputChannels = iChannels;
+
+  if(m_InputChannels == 0)
+    return false;
+
+//  if(hints.samplerate == 0)
+//    return false;
+
+  memset(m_input_channels, 0x0, sizeof(m_input_channels));
+//  memset(m_output_channels, 0x0, sizeof(m_output_channels));
+  memset(&m_wave_header, 0x0, sizeof(m_wave_header));
+
+  m_wave_header.Format.nChannels  = 2;
+  m_wave_header.dwChannelMask     = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
+
+  // set the input format, and get the channel layout so we know what we need to open
+  if (!m_Passthrough && channelMap)
+  {
+    enum PCMChannels inLayout[OMX_AUDIO_MAXCHANNELS];
+    enum PCMChannels outLayout[OMX_AUDIO_MAXCHANNELS];
+    // force out layout to stereo if input is not multichannel - it gives the receiver a chance to upmix
+    if (channelMap == (AV_CH_FRONT_LEFT | AV_CH_FRONT_RIGHT) || channelMap == AV_CH_FRONT_CENTER)
+      layout = PCM_LAYOUT_2_0;
+    BuildChannelMap(inLayout, channelMap);
+    m_OutputChannels = BuildChannelMapCEA(outLayout, GetChannelLayout(layout));
+    CPCMRemap m_remap;
+    m_remap.Reset();
+    /*outLayout = */m_remap.SetInputFormat (m_InputChannels, inLayout, uiBitsPerSample / 8, uiSampleRate, layout, !m_normalize_downmix);
+    m_remap.SetOutputFormat(m_OutputChannels, outLayout);
+    m_remap.GetDownmixMatrix(m_downmix_matrix);
+    m_wave_header.dwChannelMask = channelMap;
+    BuildChannelMapOMX(m_input_channels, channelMap);
+    BuildChannelMapOMX(m_output_channels, GetChannelLayout(layout));
+  }
+
+  m_SampleRate = uiSampleRate;
+  m_BitsPerSample = uiBitsPerSample;
+
+  m_BytesPerSec   = m_SampleRate * 2 << rounded_up_channels_shift[m_InputChannels];
+  m_BufferLen     = m_BytesPerSec * AUDIO_BUFFER_SECONDS;
+  m_InputBytesPerSec = m_SampleRate * m_BitsPerSample * m_InputChannels >> 3;
+
+  // should be big enough that common formats (e.g. 6 channel DTS) fit in a single packet.
+  // we don't mind less common formats being split (e.g. ape/wma output large frames)
+  // 6 channel 32bpp float to 8 channel 16bpp in, so a full 48K input buffer will fit the output buffer
+//  m_ChunkLen = AUDIO_DECODE_OUTPUT_BUFFER * (m_InputChannels * m_BitsPerSample) >> (rounded_up_channels_shift[m_InputChannels] + 4);
+
+  m_wave_header.Samples.wSamplesPerBlock    = 0;
+  m_wave_header.Format.nChannels            = m_InputChannels;
+  m_wave_header.Format.nBlockAlign          = m_InputChannels * (m_BitsPerSample >> 3);
+  // 0x8000 is custom format interpreted by GPU as WAVE_FORMAT_IEEE_FLOAT_PLANAR
+  m_wave_header.Format.wFormatTag           = m_BitsPerSample == 32 ? 0x8000 : WAVE_FORMAT_PCM;
+  m_wave_header.Format.nSamplesPerSec       = m_SampleRate;
+  m_wave_header.Format.nAvgBytesPerSec      = m_BytesPerSec;
+  m_wave_header.Format.wBitsPerSample       = m_BitsPerSample;
+  m_wave_header.Samples.wValidBitsPerSample = m_BitsPerSample;
+  m_wave_header.Format.cbSize               = 0;
+  m_wave_header.SubFormat                   = KSDATAFORMAT_SUBTYPE_PCM;
+
+  OMX_INIT_STRUCTURE(m_pcm_input);
+  memcpy(m_pcm_input.eChannelMapping, m_input_channels, sizeof(m_input_channels));
+  m_pcm_input.eNumData              = OMX_NumericalDataSigned;
+  m_pcm_input.eEndian               = OMX_EndianLittle;
+  m_pcm_input.bInterleaved          = OMX_TRUE;
+  m_pcm_input.nBitPerSample         = m_BitsPerSample;
+  m_pcm_input.ePCMMode              = OMX_AUDIO_PCMModeLinear;
+  m_pcm_input.nChannels             = m_InputChannels;
+  m_pcm_input.nSamplingRate         = m_SampleRate;
+
+  // set up the number/size of buffers for decoder input
+  OMX_PARAM_PORTDEFINITIONTYPE port_param;
+  OMX_INIT_STRUCTURE(port_param);
+  port_param.nPortIndex = m_omx_decoder.GetInputPort();
+
+  omx_err = m_omx_decoder.GetParameter(OMX_IndexParamPortDefinition, &port_param);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "COMXAudio::ChangeInputFormat error get OMX_IndexParamPortDefinition (input) omx_err(0x%08x)\n", omx_err);
+    return false;
+  }
+
+  port_param.format.audio.eEncoding = m_eEncoding;
+  port_param.nBufferSize = m_ChunkLen;
+  port_param.nBufferCountActual = std::max(port_param.nBufferCountMin, 16U);
+
+  // set up the number/size of buffers for decoder output
+  OMX_INIT_STRUCTURE(port_param);
+  port_param.nPortIndex = m_omx_decoder.GetOutputPort();
+
+  omx_err = m_omx_decoder.GetParameter(OMX_IndexParamPortDefinition, &port_param);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "COMXAudio::ChangeInputFormat error get OMX_IndexParamPortDefinition (output) omx_err(0x%08x)\n", omx_err);
+    return false;
+  }
+
+  port_param.nBufferCountActual = std::max((unsigned int)port_param.nBufferCountMin, m_BufferLen / port_param.nBufferSize);
+
+  if(m_eEncoding == OMX_AUDIO_CodingPCM)
+  {
+    /* setup decoder input */
+    OMX_INIT_STRUCTURE(m_pcm_output);
+    m_pcm_output.nPortIndex = m_omx_decoder.GetOutputPort();
+    omx_err = m_omx_decoder.GetParameter(OMX_IndexParamAudioPcm, &m_pcm_output);
+    if(omx_err != OMX_ErrorNone)
+    {
+      CLog::Log(LOGERROR, "%s::%s - error m_omx_decoder GetParameter omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    }
+
+    printf( "m_omx_decoder OMX_IndexParamAudioPcm nChannels %d\n", m_pcm_output.nChannels );
+
+    //// decoder output -> mixer input
+    memcpy(m_pcm_output.eChannelMapping, m_input_channels, sizeof(m_input_channels));
+    // round up to power of 2
+    m_pcm_output.nChannels = m_InputChannels > 4 ? 8 : m_InputChannels > 2 ? 4 : m_InputChannels;
+    /* limit samplerate (through resampling) if requested */
+    m_pcm_output.nSamplingRate = std::min(std::max((int)m_pcm_output.nSamplingRate, 8000), 192000);
+
+    printf( "m_omx_decoder OMX_IndexParamAudioPcm nChannels %d\n", m_pcm_output.nChannels );
+
+    m_omx_decoder.DisablePort(m_omx_decoder.GetInputPort(), false);
+    m_omx_decoder.EnablePort(m_omx_decoder.GetInputPort(), true);
+
+    OMX_BUFFERHEADERTYPE *omx_buffer = m_omx_decoder.GetInputBuffer();
+    if(omx_buffer == NULL)
+    {
+      CLog::Log(LOGERROR, "COMXAudio::ChangeInputFormat - buffer error 0x%08x", omx_err);
+      return false;
+    }
+
+    omx_buffer->nOffset = 0;
+    omx_buffer->nFilledLen = sizeof(m_wave_header);
+    if(omx_buffer->nFilledLen > omx_buffer->nAllocLen)
+    {
+      CLog::Log(LOGERROR, "COMXAudio::ChangeInputFormat - omx_buffer->nFilledLen > omx_buffer->nAllocLen");
+      return false;
+    }
+    memset((unsigned char *)omx_buffer->pBuffer, 0x0, omx_buffer->nAllocLen);
+    memcpy((unsigned char *)omx_buffer->pBuffer, &m_wave_header, omx_buffer->nFilledLen);
+    omx_buffer->nFlags = OMX_BUFFERFLAG_CODECCONFIG | OMX_BUFFERFLAG_ENDOFFRAME;
+
+    omx_err = m_omx_decoder.EmptyThisBuffer(omx_buffer);
+    if (omx_err != OMX_ErrorNone)
+    {
+      CLog::Log(LOGERROR, "%s::%s - OMX_EmptyThisBuffer() failed with result(0x%x)\n", CLASSNAME, __func__, omx_err);
+      return false;
+    }
+  } 
+  else if(m_HWDecode)
+  {
+    // send decoder config
+    if(m_extrasize > 0 && m_extradata != NULL)
+    {
+      OMX_BUFFERHEADERTYPE *omx_buffer = m_omx_decoder.GetInputBuffer();
+  
+      if(omx_buffer == NULL)
+      {
+        CLog::Log(LOGERROR, "%s::%s - buffer error 0x%08x", CLASSNAME, __func__, omx_err);
+        return false;
+      }
+  
+      omx_buffer->nOffset = 0;
+      omx_buffer->nFilledLen = m_extrasize;
+      if(omx_buffer->nFilledLen > omx_buffer->nAllocLen)
+      {
+        CLog::Log(LOGERROR, "%s::%s - omx_buffer->nFilledLen > omx_buffer->nAllocLen", CLASSNAME, __func__);
+        return false;
+      }
+
+      memset((unsigned char *)omx_buffer->pBuffer, 0x0, omx_buffer->nAllocLen);
+      memcpy((unsigned char *)omx_buffer->pBuffer, m_extradata, omx_buffer->nFilledLen);
+      omx_buffer->nFlags = OMX_BUFFERFLAG_CODECCONFIG | OMX_BUFFERFLAG_ENDOFFRAME;
+  
+      omx_err = m_omx_decoder.EmptyThisBuffer(omx_buffer);
+      if (omx_err != OMX_ErrorNone)
+      {
+        CLog::Log(LOGERROR, "%s::%s - OMX_EmptyThisBuffer() failed with result(0x%x)\n", CLASSNAME, __func__, omx_err);
+        return false;
+      }
+    }
+  }
+
+  CLog::Log(LOGDEBUG, "COMXAudio::ChangeInputFormat Input bps %d samplerate %d channels %d buffer size %d bytes per second %d",
+      (int)m_pcm_input.nBitPerSample, (int)m_pcm_input.nSamplingRate, (int)m_pcm_input.nChannels, m_BufferLen, m_InputBytesPerSec);
+  PrintPCM(&m_pcm_input, std::string("input"));
+  CLog::Log(LOGDEBUG, "COMXAudio::ChangeInputFormat device %s passthrough %d hwdecode %d",
+      device.c_str(), m_Passthrough, m_HWDecode);
+
+  return true;
+}
+
 
 //***********************************************************************************************
 bool COMXAudio::Deinitialize()
