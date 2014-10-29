@@ -492,8 +492,7 @@ bool COMXAudio::Initialize(OMXClock *clock, const OMXAudioConfig &config, uint64
   // should be big enough that common formats (e.g. 6 channel DTS) fit in a single packet.
   // we don't mind less common formats being split (e.g. ape/wma output large frames)
   // 6 channel 32bpp float to 8 channel 16bpp in, so a full 48K input buffer will fit the output buffer
-//  m_ChunkLen = AUDIO_DECODE_OUTPUT_BUFFER * (m_InputChannels * m_BitsPerSample) >> (rounded_up_channels_shift[m_InputChannels] + 4);
-  m_ChunkLen = AUDIO_DECODE_OUTPUT_BUFFER * (6 * m_BitsPerSample) >> (rounded_up_channels_shift[6] + 4);
+  m_ChunkLen = AUDIO_DECODE_OUTPUT_BUFFER * (m_InputChannels * m_BitsPerSample) >> (rounded_up_channels_shift[m_InputChannels] + 4);
 
   m_wave_header.Samples.wSamplesPerBlock    = 0;
   m_wave_header.Format.nChannels            = m_InputChannels;
@@ -690,8 +689,6 @@ bool COMXAudio::ChangeInputFormat(const CStdString& device, int iChannels, uint6
 {
   CSingleLock lock (m_critSection);
   OMX_ERRORTYPE omx_err;
-
-  layout = PCM_LAYOUT_2_0;
 
   m_InputChannels = iChannels;
 
