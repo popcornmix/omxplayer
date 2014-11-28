@@ -101,6 +101,8 @@ Usage: omxplayer [OPTIONS] [FILE]
         --key-config <file>     Uses key bindings in <file> instead of the default
         --layer n               Set video render layer number (higher numbers are on top)
         --display n             Set display to output to
+        --cookie "cookie"       Send specified cookie as part of HTTP requests
+        --user-agent "ua"       Send specified User-Agent as part of HTTP requests
 
 For example:
 
