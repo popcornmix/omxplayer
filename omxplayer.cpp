@@ -534,6 +534,8 @@ int main(int argc, char *argv[])
   TV_DISPLAY_STATE_T   tv_state;
   double last_seek_pos = 0;
   bool idle = false;
+  std::string            m_cookie              = "";
+  std::string            m_user_agent          = "";
 
   const int font_opt        = 0x100;
   const int italic_font_opt = 0x201;
@@ -567,6 +569,8 @@ int main(int argc, char *argv[])
   const int anaglyph_opt    = 0x20d;
   const int native_deinterlace_opt = 0x20e;
   const int display_opt     = 0x20f;
+  const int http_cookie_opt = 0x300;
+  const int http_user_agent_opt = 0x301;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -620,6 +624,8 @@ int main(int argc, char *argv[])
     { "loop",         no_argument,        NULL,          loop_opt },
     { "layer",        required_argument,  NULL,          layer_opt },
     { "display",      required_argument,  NULL,          display_opt },
+    { "cookie",       required_argument,  NULL,          http_cookie_opt },
+    { "user-agent",   required_argument,  NULL,          http_user_agent_opt },
     { 0, 0, 0, 0 }
   };
 
@@ -838,6 +844,12 @@ int main(int argc, char *argv[])
       case display_opt:
         m_display = atoi(optarg);
         break;
+      case http_cookie_opt:
+        m_cookie = optarg;
+        break;
+      case http_user_agent_opt:
+        m_user_agent = optarg;
+        break;    
       case 0:
         break;
       case 'h':
@@ -959,7 +971,7 @@ int main(int argc, char *argv[])
 
   m_thread_player = true;
 
-  if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_live, m_timeout))
+  if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_live, m_timeout, m_cookie.c_str(), m_user_agent.c_str()))
     goto do_exit;
 
   if (m_dump_format_exit)

@@ -132,7 +132,7 @@ private:
 public:
   OMXReader();
   ~OMXReader();
-  bool Open(std::string filename, bool dump_format, bool live = false, float timeout = 0.0f);
+  bool Open(std::string filename, bool dump_format, bool live = false, float timeout = 0.0f, std::string cookie = "", std::string user_agent = "");
   void ClearStreams();
   bool Close();
   //void FlushRead();
