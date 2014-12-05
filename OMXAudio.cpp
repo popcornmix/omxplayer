@@ -50,6 +50,7 @@ static const char rounded_up_channels_shift[] = {0,0,1,2,2,3,3,3,3};
 COMXAudio::COMXAudio() :
   m_Initialized     (false  ),
   m_CurrentVolume   (0      ),
+  m_Balance         (0.5f   ),
   m_Mute            (false  ),
   m_drc             (0      ),
   m_Passthrough     (false  ),
@@ -789,6 +790,20 @@ void COMXAudio::SetDynamicRangeCompression(long drc)
 }
 
 //***********************************************************************************************
+void COMXAudio::SetBalance(float fBalance)
+{
+  CSingleLock lock (m_critSection);
+  m_Balance = std::min(1.0f, std::max(0.0f, fBalance));
+  if (m_settings_changed)
+    UpdateAttenuation();
+}
+
+float COMXAudio::GetBalance() 
+{
+  return m_Balance;
+}
+
+//***********************************************************************************************
 void COMXAudio::SetMute(bool bMute)
 {
   CSingleLock lock (m_critSection);
@@ -820,8 +835,6 @@ bool COMXAudio::ApplyVolume(void)
   if(!m_Initialized || m_Passthrough)
     return false;
 
-  float fVolume = m_Mute ? VOLUME_MINIMUM : m_CurrentVolume;
-
   // the analogue volume is too quiet for some. Allow use of an advancedsetting to boost this (at risk of distortion) (deprecated)
   double gain = pow(10, (m_ac3Gain - 12.0f) / 20.0);
 
@@ -848,8 +861,21 @@ bool COMXAudio::ApplyVolume(void)
       return false;
     }
   }
+
+  float fVolumes[2];
+  if(m_Mute) 
+  {
+    fVolumes[0] = VOLUME_MINIMUM;
+    fVolumes[1] = VOLUME_MINIMUM;
+  } 
+  else
+  {
+    fVolumes[0] = std::max((float)VOLUME_MINIMUM, 2.0f * m_Balance * m_CurrentVolume);
+    fVolumes[1] = std::max((float)VOLUME_MINIMUM, 2.0f * (1.0f - m_Balance) * m_CurrentVolume);
+  }
+
   for(size_t i = 0; i < 8*8; ++i)
-    mix.coeff[i] = static_cast<unsigned int>(0x10000 * (coeff[i] * gain * fVolume * m_amplification * m_attenuation));
+    mix.coeff[i] = static_cast<unsigned int>(0x10000 * (coeff[i] * gain * fVolumes[i % 2] * m_amplification * m_attenuation));
 
   mix.nPortIndex = m_omx_mixer.GetInputPort();
   omx_err = m_omx_mixer.SetConfig(OMX_IndexConfigBrcmAudioDownmixCoefficients8x8, &mix);
@@ -859,7 +885,7 @@ bool COMXAudio::ApplyVolume(void)
               CLASSNAME, __func__, omx_err);
     return false;
   }
-  CLog::Log(LOGINFO, "%s::%s - Volume=%.2f (* %.2f * %.2f)\n", CLASSNAME, __func__, fVolume, m_amplification, m_attenuation);
+  CLog::Log(LOGINFO, "%s::%s - Volume=%.2f/%.2f (* %.2f * %.2f)\n", CLASSNAME, __func__, fVolumes[0], fVolumes[1], m_amplification, m_attenuation);
   return true;
 }
 

@@ -314,6 +314,27 @@ OMXControlResult OMXControl::getEvent()
       return KeyConfig::ACTION_BLANK;
     }
   }
+  else if (dbus_message_is_method_call(m, DBUS_INTERFACE_PROPERTIES, "Balance"))
+  {
+    DBusError error;
+    dbus_error_init(&error);
+
+    double balance;
+    dbus_message_get_args(m, &error, DBUS_TYPE_DOUBLE, &balance, DBUS_TYPE_INVALID);
+
+    if (dbus_error_is_set(&error))
+    {
+      dbus_error_free(&error);
+      dbus_respond_double(m, audio->GetBalance());
+      return KeyConfig::ACTION_BLANK;
+    }
+    else
+    {
+      audio->SetBalance(balance);
+      dbus_respond_double(m, balance);
+      return KeyConfig::ACTION_BLANK;
+    }
+  }
   else if (dbus_message_is_method_call(m, DBUS_INTERFACE_PROPERTIES, "Mute"))
   {
     audio->SetMute(true);
