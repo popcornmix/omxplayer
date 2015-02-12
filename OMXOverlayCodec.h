@@ -37,10 +37,9 @@ class COMXOverlayCodec
 {
 public:
 
-  COMXOverlayCodec(const char* name)
-  {
-    m_codecName = name;
-  }
+  COMXOverlayCodec(const char* name):
+  m_codecName(name)
+  {}
 
   virtual ~COMXOverlayCodec() {}
 

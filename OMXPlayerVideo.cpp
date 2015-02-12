@@ -33,7 +33,8 @@
 
 #include "linux/XMemUtils.h"
 
-OMXPlayerVideo::OMXPlayerVideo()
+OMXPlayerVideo::OMXPlayerVideo():
+m_flush_requested(false)
 {
   m_open          = false;
   m_stream_id     = -1;
@@ -42,7 +43,6 @@ OMXPlayerVideo::OMXPlayerVideo()
   m_decoder       = NULL;
   m_fps           = 25.0f;
   m_flush         = false;
-  m_flush_requested = false;
   m_cached_size   = 0;
   m_hdmi_clock_sync = false;
   m_iVideoDelay   = 0;

@@ -28,11 +28,11 @@ DllDynamic::DllDynamic()
   m_DelayUnload=true;
 }
 
-DllDynamic::DllDynamic(const CStdString& strDllName)
-{
-  m_strDllName=strDllName;
-  m_dll=NULL;
-  m_DelayUnload=true;
+DllDynamic::DllDynamic(const CStdString& strDllName):
+m_strDllName(strDllName),
+m_dll(NULL),
+m_DelayUnload(true)
+{	
 }
 
 DllDynamic::~DllDynamic()

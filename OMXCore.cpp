@@ -961,7 +961,7 @@ OMX_ERRORTYPE COMXCoreComponent::WaitForEvent(OMX_EVENTTYPE eventType, long time
   add_timespecs(endtime, timeout);
   while(true) 
   {
-    for (std::vector<omx_event>::iterator it = m_omx_events.begin(); it != m_omx_events.end(); it++) 
+    for (std::vector<omx_event>::iterator it = m_omx_events.begin(); it != m_omx_events.end(); ++it) 
     {
       omx_event event = *it;
 
@@ -1030,7 +1030,7 @@ OMX_ERRORTYPE COMXCoreComponent::WaitForCommand(OMX_U32 command, OMX_U32 nData2,
   add_timespecs(endtime, timeout);
   while(true) 
   {
-    for (std::vector<omx_event>::iterator it = m_omx_events.begin(); it != m_omx_events.end(); it++) 
+    for (std::vector<omx_event>::iterator it = m_omx_events.begin(); it != m_omx_events.end(); ++it) 
     {
       omx_event event = *it;
 
