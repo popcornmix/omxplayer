@@ -78,6 +78,7 @@ enum PCMChannels  *m_pChannelMap        = NULL;
 volatile sig_atomic_t g_abort           = false;
 bool              m_passthrough         = false;
 long              m_Volume              = 0;
+float             m_Balance             = 0.5f;
 long              m_Amplification       = 0;
 bool              m_Deinterlace         = false;
 bool              m_NoDeinterlace       = false;
@@ -581,6 +582,7 @@ int main(int argc, char *argv[])
   const int display_opt     = 0x20f;
   const int http_cookie_opt = 0x300;
   const int http_user_agent_opt = 0x301;
+  const int balance_opt         = 0x302;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -593,6 +595,7 @@ int main(int argc, char *argv[])
     { "stats",        no_argument,        NULL,          's' },
     { "passthrough",  no_argument,        NULL,          'p' },
     { "vol",          required_argument,  NULL,          vol_opt },
+    { "balance",      required_argument,  NULL,          balance_opt },
     { "amp",          required_argument,  NULL,          amp_opt },
     { "deinterlace",  no_argument,        NULL,          'd' },
     { "nodeinterlace",no_argument,        NULL,          no_deinterlace_opt },
@@ -783,6 +786,9 @@ int main(int argc, char *argv[])
         break;
       case vol_opt:
 	m_Volume = atoi(optarg);
+        break;
+      case balance_opt:
+        m_Balance = std::min(1.0f, std::max(0.0f, (float)atof(optarg)));
         break;
       case amp_opt:
 	m_Amplification = atoi(optarg);
@@ -1124,6 +1130,8 @@ int main(int argc, char *argv[])
   if(m_has_audio)
   {
     m_player_audio.SetVolume(pow(10, m_Volume / 2000.0));
+    m_player_audio.SetBalance(m_Balance);
+
     if (m_Amplification)
       m_player_audio.SetDynamicRangeCompression(m_Amplification);
   }
@@ -1457,6 +1465,18 @@ int main(int argc, char *argv[])
         DISPLAY_TEXT_SHORT(strprintf("Volume: %.2f dB",
           m_Volume / 100.0f));
         printf("Current Volume: %.2fdB\n", m_Volume / 100.0f);
+        break;
+      case KeyConfig::ACTION_DECREASE_BALANCE:
+        m_Balance = std::max(0.0, m_Balance - 0.05);
+        m_player_audio.SetBalance(m_Balance);
+        DISPLAY_TEXT_SHORT(strprintf("Balance: %.2f", m_Balance));
+        printf("Current Balance: %.2f\n", m_Balance);
+        break;
+      case KeyConfig::ACTION_INCREASE_BALANCE:
+        m_Balance = std::min(1.0, m_Balance + 0.05);
+        m_player_audio.SetBalance(m_Balance);
+        DISPLAY_TEXT_SHORT(strprintf("Balance: %.2f", m_Balance));
+        printf("Balance: %.2f\n", m_Balance);
         break;
       default:
         break;

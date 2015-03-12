@@ -48,6 +48,10 @@ int convertStringToAction(string str_action)
         return KeyConfig::ACTION_DECREASE_VOLUME;
     if(str_action == "INCREASE_VOLUME")
         return KeyConfig::ACTION_INCREASE_VOLUME;
+    if(str_action == "DECREASE_BALANCE")
+        return KeyConfig::ACTION_DECREASE_BALANCE;
+    if(str_action == "INCREASE_BALANCE")
+        return KeyConfig::ACTION_INCREASE_BALANCE;
     if(str_action == "SEEK_BACK_SMALL")
        return KeyConfig::ACTION_SEEK_BACK_SMALL;
     if(str_action == "SEEK_FORWARD_SMALL")
@@ -121,6 +125,8 @@ map<int, int> KeyConfig::buildDefaultKeymap()
     keymap['-'] = ACTION_DECREASE_VOLUME;
     keymap['+'] = ACTION_INCREASE_VOLUME;
     keymap['='] = ACTION_INCREASE_VOLUME;
+    keymap['('] = ACTION_DECREASE_BALANCE;
+    keymap[')'] = ACTION_INCREASE_BALANCE;
     keymap[KEY_LEFT] = ACTION_SEEK_BACK_SMALL;
     keymap[KEY_RIGHT] = ACTION_SEEK_FORWARD_SMALL;
     keymap[KEY_DOWN] = ACTION_SEEK_BACK_LARGE;

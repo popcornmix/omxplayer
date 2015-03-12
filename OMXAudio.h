@@ -72,6 +72,8 @@ public:
 
   void SetVolume(float nVolume);
   float GetVolume();
+  void SetBalance(float nBalance);
+  float GetBalance();
   void SetMute(bool bOnOff);
   void SetDynamicRangeCompression(long drc);
   bool ApplyVolume();
@@ -98,6 +100,7 @@ public:
 private:
   bool          m_Initialized;
   float         m_CurrentVolume;
+  float         m_Balance;
   bool          m_Mute;
   long          m_drc;
   bool          m_Passthrough;
