@@ -56,7 +56,7 @@ public:
   bool SendDecoderConfig();
   bool NaluFormatStartCodes(enum AVCodecID codec, uint8_t *in_extradata, int in_extrasize);
   bool Open(COMXStreamInfo &hints, OMXClock *clock, const CRect &m_DestRect, float display_aspect = 0.0f, EDEINTERLACEMODE deinterlace = VS_DEINTERLACEMODE_OFF,
-            OMX_IMAGEFILTERANAGLYPHTYPE anaglyph = OMX_ImageFilterAnaglyphNone, bool hdmi_clock_sync = false, int display = 0, int layer = 0, float fifo_size = 0.0f);
+            OMX_IMAGEFILTERANAGLYPHTYPE anaglyph = OMX_ImageFilterAnaglyphNone, bool hdmi_clock_sync = false, int alpha = 255, int display = 0, int layer = 0, float fifo_size = 0.0f);
   bool PortSettingsChanged();
   void Close(void);
   unsigned int GetFreeSpace();
@@ -66,6 +66,7 @@ public:
   void SetDropState(bool bDrop);
   std::string GetDecoderName() { return m_video_codec_name; };
   void SetVideoRect(const CRect& SrcRect, const CRect& DestRect);
+  void SetAlpha(int alpha);
   int GetInputBufferSize();
   void SubmitEOS();
   bool IsEOS();
@@ -114,6 +115,7 @@ protected:
   CCriticalSection  m_critSection;
   int               m_display;
   int               m_layer;
+  int               m_alpha;
 };
 
 #endif

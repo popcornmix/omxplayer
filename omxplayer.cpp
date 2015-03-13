@@ -127,6 +127,8 @@ bool              m_gen_log             = false;
 bool              m_loop                = false;
 int               m_layer               = 0;
 int               m_display             = 0;
+int               m_alpha               = 255;
+int               newAlpha              = 0;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -579,6 +581,7 @@ int main(int argc, char *argv[])
   const int anaglyph_opt    = 0x20d;
   const int native_deinterlace_opt = 0x20e;
   const int display_opt     = 0x20f;
+  const int alpha_opt       = 0x210;
   const int http_cookie_opt = 0x300;
   const int http_user_agent_opt = 0x301;
 
@@ -633,6 +636,7 @@ int main(int argc, char *argv[])
     { "dbus_name",    required_argument,  NULL,          dbus_name_opt },
     { "loop",         no_argument,        NULL,          loop_opt },
     { "layer",        required_argument,  NULL,          layer_opt },
+    { "alpha",        required_argument,  NULL,          alpha_opt },
     { "display",      required_argument,  NULL,          display_opt },
     { "cookie",       required_argument,  NULL,          http_cookie_opt },
     { "user-agent",   required_argument,  NULL,          http_user_agent_opt },
@@ -854,6 +858,9 @@ int main(int argc, char *argv[])
       case layer_opt:
         m_layer = atoi(optarg);
         break;
+      case alpha_opt:
+        m_alpha = atoi(optarg);
+        break;
       case display_opt:
         m_display = atoi(optarg);
         break;
@@ -1057,7 +1064,7 @@ int main(int argc, char *argv[])
   if (m_orientation >= 0)
     m_hints_video.orientation = m_orientation;
   if(m_has_video && !m_player_video.Open(m_hints_video, m_av_clock, DestRect, m_Deinterlace ? VS_DEINTERLACEMODE_FORCE:m_NoDeinterlace ? VS_DEINTERLACEMODE_OFF:VS_DEINTERLACEMODE_AUTO,
-                                         m_anaglyph, m_hdmi_clock_sync, m_thread_player, m_display_aspect, m_display, m_layer, video_queue_size, video_fifo_size))
+                                         m_anaglyph, m_hdmi_clock_sync, m_thread_player, m_display_aspect, m_alpha, m_display, m_layer, video_queue_size, video_fifo_size))
     goto do_exit;
 
   if(m_has_subtitle || m_osd)
@@ -1388,6 +1395,11 @@ int main(int argc, char *argv[])
           oldPos = m_av_clock->OMXMediaTime()*1e-6;
           m_incr = newPos - oldPos;
           break;
+      case KeyConfig::ACTION_SET_ALPHA:
+          newAlpha = result.getArg();
+          m_player_video.SetAlpha(newAlpha);
+
+          break;
       case KeyConfig::ACTION_PAUSE:
         m_Pause = !m_Pause;
         if (m_av_clock->OMXPlaySpeed() != DVD_PLAYSPEED_NORMAL && m_av_clock->OMXPlaySpeed() != DVD_PLAYSPEED_PAUSE)
@@ -1520,7 +1532,7 @@ int main(int argc, char *argv[])
       {
         // Full re-open because video player was closed.
         if (m_has_video && !m_player_video.Open(m_hints_video, m_av_clock, DestRect, m_Deinterlace ? VS_DEINTERLACEMODE_FORCE:m_NoDeinterlace ? VS_DEINTERLACEMODE_OFF:VS_DEINTERLACEMODE_AUTO,
-                                           m_anaglyph, m_hdmi_clock_sync, m_thread_player, m_display_aspect, m_display, m_layer, video_queue_size, video_fifo_size))
+                                           m_anaglyph, m_hdmi_clock_sync, m_thread_player, m_display_aspect, m_alpha, m_display, m_layer, video_queue_size, video_fifo_size))
           goto do_exit;
       }
 
