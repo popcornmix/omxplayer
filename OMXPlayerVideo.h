@@ -76,6 +76,7 @@ protected:
   uint32_t                  m_history_valid_pts;
   int                       m_display;
   int                       m_layer;
+  int                       m_alpha;
 
   void Lock();
   void UnLock();
@@ -86,7 +87,7 @@ public:
   OMXPlayerVideo();
   ~OMXPlayerVideo();
   bool Open(COMXStreamInfo &hints, OMXClock *av_clock, const CRect& DestRect, EDEINTERLACEMODE deinterlace, OMX_IMAGEFILTERANAGLYPHTYPE anaglyph, bool hdmi_clock_sync, bool use_thread,
-                   float display_aspect, int display, int layer, float queue_size, float fifo_size);
+                   float display_aspect, int alpha, int display, int layer, float queue_size, float fifo_size);
   bool Close();
   bool Reset();
   bool Decode(OMXPacket *pkt);
@@ -106,5 +107,7 @@ public:
   bool IsEOS();
   void SetDelay(double delay) { m_iVideoDelay = delay; }
   double GetDelay() { return m_iVideoDelay; }
+  void SetAlpha(int alpha);
+
 };
 #endif
