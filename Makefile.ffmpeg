@@ -10,7 +10,7 @@ all: checkout configure compile
 .PHONY : copy
 copy:
 	find ffmpeg -name '*.so*' -exec cp {} . \;
-	strip *.so*
+	$(HOST)-strip *.so*
 
 .PHONY : compile
 compile: 
@@ -23,6 +23,7 @@ configure:
 	LDFLAGS="" \
   ./configure \
 			--extra-cflags="-mfpu=vfp -mfloat-abi=$(FLOAT) -mno-apcs-stack-check -mstructure-size-boundary=32 -mno-sched-prolog" \
+			--enable-cross-compile \
 			--enable-shared \
 			--disable-static \
 			--arch=arm \
@@ -244,7 +245,7 @@ configure:
 			--disable-decoder=idf \
 			--disable-decoder=hevc \
 			--enable-decoder=opus \
-
+			--cross-prefix=$(HOST)-
 
 .PHONY : clean
 clean:
@@ -256,6 +257,6 @@ checkout:
 
 .PHONY : install
 install:
-	cd ffmpeg; make DESTDIR="$(WORK)/ffmpeg_compiled" install
-	strip ffmpeg_compiled/usr/local/lib/*.so
+	cd ffmpeg; make -j9 DESTDIR="$(WORK)/ffmpeg_compiled" install
+	$(HOST)-strip ffmpeg_compiled/usr/local/lib/*.so
 
