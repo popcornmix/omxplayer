@@ -127,6 +127,7 @@ bool              m_gen_log             = false;
 bool              m_loop                = false;
 int               m_layer               = 0;
 int               m_display             = 0;
+int               m_allow_mvc           = 0;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -600,6 +601,7 @@ int main(int argc, char *argv[])
     { "anaglyph",     required_argument,  NULL,          anaglyph_opt },
     { "hw",           no_argument,        NULL,          'w' },
     { "3d",           required_argument,  NULL,          '3' },
+    { "allow-mvc",    no_argument,        NULL,          'M' },
     { "hdmiclocksync", no_argument,       NULL,          'y' },
     { "nohdmiclocksync", no_argument,     NULL,          'z' },
     { "refresh",      no_argument,        NULL,          'r' },
@@ -651,7 +653,7 @@ int main(int argc, char *argv[])
   //Build default keymap just in case the --key-config option isn't used
   map<int,int> keymap = KeyConfig::buildDefaultKeymap();
 
-  while ((c = getopt_long(argc, argv, "wiIhvkn:l:o:cslbpd3:yzt:rg", longopts, NULL)) != -1)
+  while ((c = getopt_long(argc, argv, "wiIhvkn:l:o:cslbpd3:Myzt:rg", longopts, NULL)) != -1)
   {
     switch (c) 
     {
@@ -680,6 +682,9 @@ int main(int argc, char *argv[])
           m_3d = CONF_FLAGS_FORMAT_FP;
         else
           m_3d = CONF_FLAGS_FORMAT_SBS;
+        break;
+      case 'M':
+        m_allow_mvc = true;
         break;
       case 'd':
         m_Deinterlace = true;
@@ -1057,7 +1062,7 @@ int main(int argc, char *argv[])
   if (m_orientation >= 0)
     m_hints_video.orientation = m_orientation;
   if(m_has_video && !m_player_video.Open(m_hints_video, m_av_clock, DestRect, m_Deinterlace ? VS_DEINTERLACEMODE_FORCE:m_NoDeinterlace ? VS_DEINTERLACEMODE_OFF:VS_DEINTERLACEMODE_AUTO,
-                                         m_anaglyph, m_hdmi_clock_sync, m_thread_player, m_display_aspect, m_display, m_layer, video_queue_size, video_fifo_size))
+                                         m_anaglyph, m_hdmi_clock_sync, m_thread_player, m_display_aspect, m_display, m_layer, video_queue_size, video_fifo_size, m_allow_mvc))
     goto do_exit;
 
   if(m_has_subtitle || m_osd)

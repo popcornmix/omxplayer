@@ -375,7 +375,7 @@ bool COMXVideo::PortSettingsChanged()
 }
 
 bool COMXVideo::Open(COMXStreamInfo &hints, OMXClock *clock, const CRect &DestRect, float display_aspect, EDEINTERLACEMODE deinterlace,
-                     OMX_IMAGEFILTERANAGLYPHTYPE anaglyph, bool hdmi_clock_sync, int display, int layer, float fifo_size)
+                     OMX_IMAGEFILTERANAGLYPHTYPE anaglyph, bool hdmi_clock_sync, int display, int layer, float fifo_size, int allow_mvc)
 {
   CSingleLock lock (m_critSection);
   bool vflip = false;
@@ -450,6 +450,8 @@ bool COMXVideo::Open(COMXStreamInfo &hints, OMXClock *clock, const CRect &DestRe
           m_video_codec_name = "omx-h264";
           break;
       }
+      if (allow_mvc && m_codingType == OMX_VIDEO_CodingAVC)
+          m_codingType = OMX_VIDEO_CodingMVC;
     }
     m_codingType = OMX_VIDEO_CodingMVC;
     m_video_codec_name = "omx-mvc";

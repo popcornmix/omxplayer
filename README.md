@@ -66,6 +66,7 @@ Usage: omxplayer [OPTIONS] [FILE]
         --anaglyph type         convert 3d to anaglyph
     -w  --hw                    Hw audio decoding
     -3  --3d mode               Switch tv into 3d mode (e.g. SBS/TB)
+    -M  --allow-mvc             Allow decoding of both views of MVC stereo stream
     -y  --hdmiclocksync         Display refresh rate to match video (default)
     -z  --nohdmiclocksync       Do not adjust display refresh rate to match video
     -t  --sid index             Show subtitle with index
