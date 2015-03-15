@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if [ -z `which pkg-config`] ; then
+    apt-get install -y pkg-config
+fi
+
 echo "Patching makefiles..."
 echo "FLOAT=hard
 
