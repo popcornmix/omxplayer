@@ -425,6 +425,9 @@ CBitstreamConverter::CBitstreamConverter()
   m_dllAvUtil         = NULL;
   m_dllAvFormat       = NULL;
   m_convert_bytestream = false;
+  m_sps_pps_size = 0;
+  m_sps_pps_context.sps_pps_data = NULL;
+  m_codec =AV_CODEC_ID_NONE;
 }
 
 CBitstreamConverter::~CBitstreamConverter()
@@ -658,12 +661,12 @@ bool CBitstreamConverter::Convert(uint8_t *pData, int iSize)
           if (m_dllAvFormat->avio_open_dyn_buf(&pb) < 0)
             return false;
 
-          uint32_t nal_size;
+          
           uint8_t *end = pData + iSize;
           uint8_t *nal_start = pData;
           while (nal_start < end)
           {
-            nal_size = OMX_RB24(nal_start);
+            uint32_t nal_size = OMX_RB24(nal_start);
             m_dllAvFormat->avio_wb16(pb, nal_size);
             nal_start += 3;
             m_dllAvFormat->avio_write(pb, nal_start, nal_size);
@@ -719,7 +722,7 @@ bool CBitstreamConverter::BitstreamConvertInit(void *in_extradata, int in_extras
   if (!in_extradata || in_extrasize < 6)
     return false;
 
-  uint16_t unit_size;
+  
   uint32_t total_size = 0;
   uint8_t *out = NULL, unit_nb, sps_done = 0;
   const uint8_t *extradata = (uint8_t*)in_extradata + 4;
@@ -739,16 +742,22 @@ bool CBitstreamConverter::BitstreamConvertInit(void *in_extradata, int in_extras
   }
   while (unit_nb--)
   {
-    unit_size = extradata[0] << 8 | extradata[1];
+    uint16_t unit_size = extradata[0] << 8 | extradata[1];
     total_size += unit_size + 4;
     if ( (extradata + 2 + unit_size) > ((uint8_t*)in_extradata + in_extrasize) )
     {
       free(out);
       return false;
     }
-    out = (uint8_t*)realloc(out, total_size);
-    if (!out)
+    uint8_t *new_out = (uint8_t*)realloc(out, total_size);
+    if (!new_out)
+    {  // could not realloc, but orig still valid
+      free(out);
       return false;
+	}
+	else
+	  out = new_out; 
+
 
     memcpy(out + total_size - unit_size - 4, nalu_header, 4);
     memcpy(out + total_size - unit_size, extradata + 2, unit_size);

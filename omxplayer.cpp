@@ -1040,6 +1040,33 @@ int main(int argc, char *argv[])
 
   if(m_audio_index_use > 0)
     m_omx_reader.SetActiveStream(OMXSTREAM_AUDIO, m_audio_index_use-1);
+  
+  if (deviceString == "")
+  {
+    if (m_BcmHost.vc_tv_hdmi_audio_supported(EDID_AudioFormat_ePCM, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit ) == 0)
+      deviceString = "omx:hdmi";
+    else
+      deviceString = "omx:local";
+  }
+
+  if ((m_hints_audio.codec == CODEC_ID_AC3 || m_hints_audio.codec == CODEC_ID_EAC3) &&
+      m_BcmHost.vc_tv_hdmi_audio_supported(EDID_AudioFormat_eAC3, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit ) != 0)
+    m_passthrough = false;
+  if (m_hints_audio.codec == CODEC_ID_DTS &&
+      m_BcmHost.vc_tv_hdmi_audio_supported(EDID_AudioFormat_eDTS, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit ) != 0)
+    m_passthrough = false;
+
+  if(m_has_audio && !m_player_audio.Open(m_hints_audio, m_av_clock, &m_omx_reader, deviceString, 
+                                         m_passthrough, m_use_hw_audio,
+                                         m_boost_on_downmix, m_thread_player, m_live, m_layout, audio_queue_size, audio_fifo_size))
+    goto do_exit;
+
+  if(m_has_audio)
+  {
+    m_player_audio.SetVolume(pow(10, m_Volume / 2000.0));
+    if (m_Amplification)
+      m_player_audio.SetDynamicRangeCompression(m_Amplification);
+  }
           
   if(m_has_video && m_refresh)
   {
@@ -1104,35 +1131,6 @@ int main(int argc, char *argv[])
 
     if(m_subtitle_index == -1 && !m_has_external_subtitles)
       m_player_subtitles.SetVisible(false);
-  }
-
-  m_omx_reader.GetHints(OMXSTREAM_AUDIO, m_hints_audio);
-
-  if (deviceString == "")
-  {
-    if (m_BcmHost.vc_tv_hdmi_audio_supported(EDID_AudioFormat_ePCM, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit ) == 0)
-      deviceString = "omx:hdmi";
-    else
-      deviceString = "omx:local";
-  }
-
-  if ((m_hints_audio.codec == CODEC_ID_AC3 || m_hints_audio.codec == CODEC_ID_EAC3) &&
-      m_BcmHost.vc_tv_hdmi_audio_supported(EDID_AudioFormat_eAC3, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit ) != 0)
-    m_passthrough = false;
-  if (m_hints_audio.codec == CODEC_ID_DTS &&
-      m_BcmHost.vc_tv_hdmi_audio_supported(EDID_AudioFormat_eDTS, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit ) != 0)
-    m_passthrough = false;
-
-  if(m_has_audio && !m_player_audio.Open(m_hints_audio, m_av_clock, &m_omx_reader, deviceString, 
-                                         m_passthrough, m_use_hw_audio,
-                                         m_boost_on_downmix, m_thread_player, m_live, m_layout, audio_queue_size, audio_fifo_size))
-    goto do_exit;
-
-  if(m_has_audio)
-  {
-    m_player_audio.SetVolume(pow(10, m_Volume / 2000.0));
-    if (m_Amplification)
-      m_player_audio.SetDynamicRangeCompression(m_Amplification);
   }
 
   if (m_threshold < 0.0f)

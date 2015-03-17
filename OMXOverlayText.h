@@ -38,7 +38,8 @@ public:
   class CElement
   {
   public:
-    CElement(ElementType type)
+    CElement(ElementType type):
+    pNext(NULL)
     {
       m_type = type;
     }
@@ -98,10 +99,10 @@ public:
 
   virtual ~COMXOverlayText()
   {
-    CElement* pTemp;
+    
     while (m_pHead)
     {
-      pTemp = m_pHead;
+      CElement* pTemp = m_pHead;
       m_pHead = m_pHead->pNext;
       delete pTemp;
     }

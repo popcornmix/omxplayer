@@ -32,27 +32,26 @@
 
 #include "linux/XMemUtils.h"
 
-OMXPlayerAudio::OMXPlayerAudio()
+OMXPlayerAudio::OMXPlayerAudio():
+  m_open(false),
+  m_stream_id(-1),
+  m_pStream(NULL),
+  m_av_clock(NULL),
+  m_omx_reader(NULL),
+  m_decoder(NULL),
+  m_flush(false),
+  m_flush_requested(false),
+  m_cached_size(0),
+  m_pAudioCodec(NULL),
+  m_player_error(true),
+  m_max_data_size(3 * 1024 * 1024),
+  m_fifo_size(2.0f),
+  m_live(false),
+  m_layout(PCM_LAYOUT_2_0),
+  m_CurrentVolume(0.0f),
+  m_amplification(0),
+  m_mute(false)
 {
-  m_open          = false;
-  m_stream_id     = -1;
-  m_pStream       = NULL;
-  m_av_clock      = NULL;
-  m_omx_reader    = NULL;
-  m_decoder       = NULL;
-  m_flush         = false;
-  m_flush_requested = false;
-  m_cached_size   = 0;
-  m_pAudioCodec   = NULL;
-  m_player_error  = true;
-  m_max_data_size = 3 * 1024 * 1024;
-  m_fifo_size     = 2.0f;
-  m_live          = false;
-  m_layout        = PCM_LAYOUT_2_0;
-  m_CurrentVolume = 0.0f;
-  m_amplification = 0;
-  m_mute          = false;
-
   pthread_cond_init(&m_packet_cond, NULL);
   pthread_cond_init(&m_audio_cond, NULL);
   pthread_mutex_init(&m_lock, NULL);
