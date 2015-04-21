@@ -1,5 +1,12 @@
 #!/bin/sh
 
+if [ -z `which pkg-config`] ; then
+    apt-get install -y pkg-config
+fi
+if [ -z `which sudo`] ; then
+    apt-get install -y sudo
+fi
+
 echo "Patching makefiles..."
 echo "FLOAT=hard
 
