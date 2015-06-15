@@ -564,6 +564,10 @@ int main(int argc, char *argv[])
   const int alpha_opt       = 0x210;
   const int http_cookie_opt = 0x300;
   const int http_user_agent_opt = 0x301;
+  const int screenshot_size_opt = 0x302;
+  const int screenshot_path_opt = 0x303;
+  const int screenshot_quality_opt = 0x304;
+  const int screenshot_sequence_opt = 0x305;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -621,6 +625,10 @@ int main(int argc, char *argv[])
     { "display",      required_argument,  NULL,          display_opt },
     { "cookie",       required_argument,  NULL,          http_cookie_opt },
     { "user-agent",   required_argument,  NULL,          http_user_agent_opt },
+    { "ss-size",      required_argument,  NULL,          screenshot_size_opt },
+    { "ss-path",      required_argument,  NULL,          screenshot_path_opt },
+    { "ss-quality",   required_argument,  NULL,          screenshot_quality_opt },
+    { "ss-sequence",  required_argument,  NULL,          screenshot_sequence_opt },
     { 0, 0, 0, 0 }
   };
 
@@ -854,7 +862,41 @@ int main(int argc, char *argv[])
         break;
       case http_user_agent_opt:
         m_user_agent = optarg;
-        break;    
+        break;
+      case screenshot_size_opt:
+        if(sscanf(optarg,"%dx%d",&m_config_video.screenshot_width,&m_config_video.screenshot_height) != 2) {
+          print_usage();
+          return 0;
+        }
+        
+        if(m_config_video.screenshot_width <= 0 && m_config_video.screenshot_height <= 0) {
+          print_usage();
+          return 0;
+        }
+        break;
+      case screenshot_path_opt:
+        m_config_video.screenshot_path = optarg;
+        break;
+      case screenshot_quality_opt:
+        m_config_video.screenshot_quality = atoi(optarg);
+        
+        if(m_config_video.screenshot_quality <= 0 || m_config_video.screenshot_quality > 100) {
+          print_usage();
+          return 0;
+        }
+        break;
+      case screenshot_sequence_opt:
+        if(!strcmp(optarg,"none")) {
+          m_config_video.screenshot_sequence = SS_NONE;
+        } else if(!strcmp(optarg,"timestamp")) {
+          m_config_video.screenshot_sequence = SS_TIMESTAMP;
+        } else if(!strcmp(optarg,"sequence")) {
+          m_config_video.screenshot_sequence = SS_SEQUENCE;
+        } else {
+          print_usage();
+          return 0;
+        }
+        break;
       case 0:
         break;
       case 'h':
@@ -960,6 +1002,7 @@ int main(int argc, char *argv[])
   int control_err = m_omxcontrol.init(
     m_av_clock,
     &m_player_audio,
+    &m_player_video,
     &m_player_subtitles,
     &m_omx_reader,
     m_dbus_name
@@ -1433,6 +1476,9 @@ int main(int argc, char *argv[])
         DISPLAY_TEXT_SHORT(strprintf("Volume: %.2f dB",
           m_Volume / 100.0f));
         printf("Current Volume: %.2fdB\n", m_Volume / 100.0f);
+        break;
+      case KeyConfig::ACTION_SCREENSHOT:
+        m_player_video.TakeScreenshot();
         break;
       default:
         break;

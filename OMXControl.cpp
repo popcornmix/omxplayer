@@ -14,6 +14,9 @@
 #include "OMXControl.h"
 #include "KeyConfig.h"
 
+#ifdef CLASSNAME
+#undef CLASSNAME
+#endif
 #define CLASSNAME "OMXControl"
 
 OMXControlResult::OMXControlResult( int newKey ) {
@@ -52,11 +55,12 @@ OMXControl::~OMXControl()
     dbus_disconnect();
 }
 
-int OMXControl::init(OMXClock *m_av_clock, OMXPlayerAudio *m_player_audio, OMXPlayerSubtitles *m_player_subtitles, OMXReader *m_omx_reader, std::string& dbus_name)
+int OMXControl::init(OMXClock *m_av_clock, OMXPlayerAudio *m_player_audio, OMXPlayerVideo *m_player_video, OMXPlayerSubtitles *m_player_subtitles, OMXReader *m_omx_reader, std::string& dbus_name)
 {
   int ret = 0;
   clock     = m_av_clock;
   audio     = m_player_audio;
+  video     = m_player_video;
   subtitles = m_player_subtitles;
   reader    = m_omx_reader;
 
@@ -575,6 +579,12 @@ OMXControlResult OMXControl::getEvent()
     subtitles->SetVisible(false);
     dbus_respond_ok(m);
     return KeyConfig::ACTION_HIDE_SUBTITLES;
+  }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "Screenshot"))
+  {
+    string image_name = video->TakeScreenshot();
+    dbus_respond_string(m, image_name.c_str());
+    return KeyConfig::ACTION_BLANK;
   }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "Action"))
   {

@@ -106,6 +106,11 @@ Usage: omxplayer [OPTIONS] [FILE]
         --display n             Set display to output to
         --cookie 'cookie'       Send specified cookie as part of HTTP requests
         --user-agent 'ua'       Send specified User-Agent as part of HTTP requests
+        --ss-size wxh           Screenshot size (e.g. 1280x720). One of the dimensions can be set to -1 to preserve aspect ratio
+        --ss-path 'path'        Screenshot path/filename, without file extension (e.g. 'image' or '/home/pi/image') (default: 'ss')
+        --ss-quality q          Screenshot JPEG compression quality (default: 85)
+        --ss-sequence type      Screenshot sequence number. 'none' disables sequence numbers, 'timestamp' adds
+                                the current UNIX timestamp, 'sequence' (default) uses a zero-based sequence number
 
 For example:
 
@@ -139,6 +144,7 @@ Key bindings to control omxplayer while playing:
     right arrow seek +30 seconds
     down arrow  seek -600 seconds
     up arrow    seek +600 seconds
+    c           take screenshot
 
 ## KEY CONFIG SYNTAX
 
@@ -547,6 +553,14 @@ Turns off subtitles.
    Params       |   Type 
 :-------------: | -------
  Return         | `null` 
+ 
+#### Screenshot
+
+Takes a screenshot of the video and saves to a JPEG file.
+
+   Params       |   Type    | Description
+:-------------: | ----------| ------------------------------------
+ Return         | `string`  | Returns the name of the generated file
 
 #### Action
 

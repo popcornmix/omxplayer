@@ -97,6 +97,6 @@ public:
   double GetDelay() { return m_iVideoDelay; }
   void SetAlpha(int alpha);
   void SetVideoRect(const CRect& SrcRect, const CRect& DestRect);
-
+  string TakeScreenshot();
 };
 #endif

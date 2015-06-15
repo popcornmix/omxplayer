@@ -33,6 +33,7 @@
 
 #include <sys/time.h>
 #include <inttypes.h>
+#include <sstream>
 
 #ifdef CLASSNAME
 #undef CLASSNAME
@@ -69,6 +70,7 @@ COMXVideo::COMXVideo() : m_video_codec_name("")
   m_setStartTime      = false;
   m_transform         = OMX_DISPLAY_ROT0;
   m_pixel_aspect      = 1.0f;
+  m_screenshot_count  = 0;
 }
 
 COMXVideo::~COMXVideo()
@@ -203,13 +205,134 @@ bool COMXVideo::PortSettingsChanged()
 
   if(!m_omx_sched.Initialize("OMX.broadcom.video_scheduler", OMX_IndexParamVideoInit))
     return false;
-
+  
+  if(!m_omx_splitter.Initialize("OMX.broadcom.video_splitter", OMX_IndexParamVideoInit))
+    return false;
+  
+  if(!m_omx_resize.Initialize("OMX.broadcom.resize", OMX_IndexParamImageInit))
+    return false;
+  
+  if(!m_omx_jpeg_encoder.Initialize("OMX.broadcom.image_encode", OMX_IndexParamImageInit))
+    return false;
+    
   if(m_deinterlace || m_config.anaglyph)
   {
     if(!m_omx_image_fx.Initialize("OMX.broadcom.image_fx", OMX_IndexParamImageInit))
       return false;
   }
-
+  
+  //Configure resizer input port:
+  OMX_PARAM_PORTDEFINITIONTYPE resize_input_port;
+  OMX_INIT_STRUCTURE(resize_input_port);
+  resize_input_port.nPortIndex = m_omx_splitter.GetOutputPort()+1;
+  m_omx_splitter.GetParameter(OMX_IndexParamPortDefinition, &resize_input_port);
+  resize_input_port.nPortIndex = m_omx_resize.GetInputPort();
+  m_omx_resize.SetParameter(OMX_IndexParamPortDefinition, &resize_input_port);
+  
+  //Configure resizer output port:
+  int width = port_image.format.video.nFrameWidth;
+  int height = port_image.format.video.nFrameHeight;
+  int resize_width,resize_height;
+  OMX_PARAM_PORTDEFINITIONTYPE resize_output_port;
+  OMX_INIT_STRUCTURE(resize_output_port);
+  resize_output_port.nPortIndex = m_omx_resize.GetOutputPort();
+  m_omx_resize.GetParameter(OMX_IndexParamPortDefinition, &resize_output_port);
+  resize_output_port.nPortIndex = m_omx_resize.GetOutputPort();
+  resize_output_port.format.image.eCompressionFormat = OMX_IMAGE_CodingUnused;
+  resize_output_port.format.image.eColorFormat = OMX_COLOR_Format32bitARGB8888;
+  
+  if(m_config.screenshot_width == -1 && m_config.screenshot_height == -1) {
+    resize_width = width;
+    resize_height = height;
+  } else if(m_config.screenshot_width == -1) {
+    resize_width = round(((float)width/(float)height)*m_config.screenshot_height);
+    resize_height = m_config.screenshot_height;
+  } else if(m_config.screenshot_height == -1) {
+    resize_width = m_config.screenshot_width;
+    resize_height = round(((float)height/(float)width)*m_config.screenshot_width);
+  } else {
+    resize_width = m_config.screenshot_width;
+    resize_height = m_config.screenshot_height;
+  }
+  
+  resize_output_port.format.image.nFrameWidth = resize_width;
+  resize_output_port.format.image.nFrameHeight = resize_height;
+  resize_output_port.format.image.nStride = 0;
+  resize_output_port.format.image.nSliceHeight = 0;
+  resize_output_port.format.image.bFlagErrorConcealment = OMX_FALSE;
+  omx_err = m_omx_resize.SetParameter(OMX_IndexParamPortDefinition, &resize_output_port);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s m_omx_resize.SetParameter result(0x%x)\n", CLASSNAME, __func__, omx_err);
+    return false;
+  }
+  
+  OMX_PARAM_PORTDEFINITIONTYPE jpeg_input_port;
+  jpeg_input_port.nPortIndex = m_omx_resize.GetOutputPort();
+  m_omx_resize.GetParameter(OMX_IndexParamPortDefinition, &jpeg_input_port);
+  jpeg_input_port.nPortIndex = m_omx_jpeg_encoder.GetInputPort();
+  m_omx_jpeg_encoder.SetParameter(OMX_IndexParamPortDefinition, &jpeg_input_port);
+  
+  OMX_PARAM_PORTDEFINITIONTYPE jpeg_output_port;
+  OMX_INIT_STRUCTURE(jpeg_output_port);
+  jpeg_output_port.nPortIndex = m_omx_jpeg_encoder.GetOutputPort();
+  omx_err = m_omx_jpeg_encoder.GetParameter(OMX_IndexParamPortDefinition, &jpeg_output_port);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - error m_omx_jpeg_encoder.GetParameter(OMX_IndexParamPortDefinition) omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+  }
+  
+  jpeg_output_port.format.image.nFrameWidth = resize_width;
+  jpeg_output_port.format.image.nFrameHeight = resize_height;
+  jpeg_output_port.format.image.eCompressionFormat = OMX_IMAGE_CodingJPEG;
+  jpeg_output_port.format.image.eColorFormat = OMX_COLOR_FormatUnused;
+  omx_err = m_omx_jpeg_encoder.SetParameter(OMX_IndexParamPortDefinition, &jpeg_output_port);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - error m_omx_jpeg_encoder.SetParameter(OMX_IndexParamPortDefinition) omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+  }
+  
+  OMX_IMAGE_PARAM_QFACTORTYPE quality;
+  OMX_INIT_STRUCTURE (quality);
+  quality.nPortIndex = m_omx_jpeg_encoder.GetOutputPort();
+  quality.nQFactor = m_config.screenshot_quality;
+  omx_err = m_omx_jpeg_encoder.SetParameter(OMX_IndexParamQFactor,&quality);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - error m_omx_jpeg_encoder.SetParameter(OMX_IndexParamQFactor) omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+  }
+  
+  OMX_CONFIG_BOOLEANTYPE exif;
+  OMX_INIT_STRUCTURE (exif);
+  exif.bEnabled = OMX_FALSE;
+  omx_err = m_omx_jpeg_encoder.SetParameter(OMX_IndexParamBrcmDisableEXIF,&exif);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - error m_omx_jpeg_encoder.SetParameter(OMX_IndexParamBrcmDisableEXIF) omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+  }
+  
+  OMX_PARAM_IJGSCALINGTYPE ijg;
+  OMX_INIT_STRUCTURE (ijg);
+  ijg.nPortIndex = m_omx_jpeg_encoder.GetOutputPort();
+  ijg.bEnabled = OMX_FALSE;
+  omx_err = m_omx_jpeg_encoder.SetParameter(OMX_IndexParamBrcmEnableIJGTableScaling, &ijg);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - error m_omx_jpeg_encoder.SetParameter(OMX_IndexParamBrcmEnableIJGTableScaling) omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+  }
+  
+  OMX_PARAM_BRCMTHUMBNAILTYPE thumbnail;
+  OMX_INIT_STRUCTURE (thumbnail);
+  thumbnail.bEnable = OMX_FALSE;
+  thumbnail.bUsePreview = OMX_FALSE;
+  thumbnail.nWidth = 0;
+  thumbnail.nHeight = 0;
+  omx_err = m_omx_jpeg_encoder.SetParameter(OMX_IndexParamBrcmThumbnail,&thumbnail);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - error m_omx_jpeg_encoder.SetParameter(OMX_IndexParamBrcmThumbnail) omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+  }
+  
   OMX_CONFIG_DISPLAYREGIONTYPE configDisplay;
   OMX_INIT_STRUCTURE(configDisplay);
   configDisplay.nPortIndex = m_omx_render.GetInputPort();
@@ -304,7 +427,10 @@ bool COMXVideo::PortSettingsChanged()
   {
     m_omx_tunnel_decoder.Initialize(&m_omx_decoder, m_omx_decoder.GetOutputPort(), &m_omx_sched, m_omx_sched.GetInputPort());
   }
-  m_omx_tunnel_sched.Initialize(&m_omx_sched, m_omx_sched.GetOutputPort(), &m_omx_render, m_omx_render.GetInputPort());
+  m_omx_tunnel_sched.Initialize(&m_omx_sched, m_omx_sched.GetOutputPort(), &m_omx_splitter, m_omx_splitter.GetInputPort());
+  m_omx_tunnel_render.Initialize(&m_omx_splitter, m_omx_splitter.GetOutputPort(), &m_omx_render, m_omx_render.GetInputPort());
+  m_omx_tunnel_resize.Initialize(&m_omx_splitter, m_omx_splitter.GetOutputPort()+1, &m_omx_resize, m_omx_resize.GetInputPort());
+  m_omx_tunnel_jpeg_encoder.Initialize(&m_omx_resize, m_omx_resize.GetOutputPort(), &m_omx_jpeg_encoder, m_omx_jpeg_encoder.GetInputPort());
   m_omx_tunnel_clock.Initialize(m_omx_clock, m_omx_clock->GetInputPort() + 1, &m_omx_sched, m_omx_sched.GetOutputPort() + 1);
 
   omx_err = m_omx_tunnel_clock.Establish();
@@ -351,11 +477,70 @@ bool COMXVideo::PortSettingsChanged()
     CLog::Log(LOGERROR, "%s::%s - m_omx_sched.SetStateForComponent omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
     return false;
   }
+  
+  omx_err = m_omx_splitter.SetStateForComponent(OMX_StateExecuting);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - m_omx_splitter.SetStateForComponent omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    return false;
+  }
+  
+  OMX_PARAM_U32TYPE singlestep_param;
+  OMX_INIT_STRUCTURE(singlestep_param);
+  singlestep_param.nPortIndex = m_omx_splitter.GetOutputPort()+1;               
+  singlestep_param.nU32 = 1;
+  omx_err = m_omx_splitter.SetParameter(OMX_IndexConfigSingleStep, &singlestep_param);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - error OMX_IndexConfigSingleStep omx_err(0x%08x)\n", CLASSNAME, __func__, omx_err);
+  }
+  
+  omx_err = m_omx_tunnel_render.Establish();
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - m_omx_tunnel_render.Establish omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    return false;
+  }
 
   omx_err = m_omx_render.SetStateForComponent(OMX_StateExecuting);
   if(omx_err != OMX_ErrorNone)
   {
     CLog::Log(LOGERROR, "%s::%s - m_omx_render.SetStateForComponent omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    return false;
+  }
+  
+  omx_err = m_omx_tunnel_resize.Establish();
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - m_omx_tunnel_resize.Establish omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    return false;
+  }
+  
+  omx_err = m_omx_resize.SetStateForComponent(OMX_StateExecuting);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - m_omx_resize.SetStateForComponent omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    return false;
+  }
+  
+  omx_err = m_omx_tunnel_jpeg_encoder.Establish();
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - m_omx_tunnel_jpeg_encoder.Establish omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    return false;
+  }
+  
+  omx_err = m_omx_jpeg_encoder.AllocOutputBuffers();
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - m_omx_jpeg_encoder.AllocOutputBuffers omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
+    return false;
+  }
+  
+  omx_err = m_omx_jpeg_encoder.SetStateForComponent(OMX_StateExecuting);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - m_omx_jpeg_encoder.SetStateForComponent omx_err(0x%08x)", CLASSNAME, __func__, omx_err);
     return false;
   }
 
@@ -669,10 +854,16 @@ void COMXVideo::Close()
   if(m_deinterlace || m_config.anaglyph)
     m_omx_tunnel_image_fx.Deestablish();
   m_omx_tunnel_sched.Deestablish();
+  m_omx_tunnel_render.Deestablish();
+  m_omx_tunnel_resize.Deestablish();
+  m_omx_tunnel_jpeg_encoder.Deestablish();
 
   m_omx_decoder.FlushInput();
 
   m_omx_sched.Deinitialize();
+  m_omx_splitter.Deinitialize();
+  m_omx_resize.Deinitialize();
+  m_omx_jpeg_encoder.Deinitialize();
   m_omx_decoder.Deinitialize();
   if(m_deinterlace || m_config.anaglyph)
     m_omx_image_fx.Deinitialize();
@@ -925,3 +1116,66 @@ bool COMXVideo::IsEOS()
   return true;
 }
 
+string COMXVideo::TakeScreenshot() {
+  CSingleLock lock (m_critSection);
+  
+  stringstream screenshot_name;
+  if(m_config.screenshot_sequence == SS_NONE) {
+    screenshot_name << m_config.screenshot_path << ".jpg";
+  } else if(m_config.screenshot_sequence == SS_TIMESTAMP) {
+    screenshot_name << m_config.screenshot_path << time(NULL) << ".jpg";
+  } else {
+    screenshot_name << m_config.screenshot_path << m_screenshot_count++ << ".jpg";
+  }
+  
+  const string& ss_name = screenshot_name.str();
+  const char* ss_name_cstr = ss_name.c_str();
+  
+  FILE *fp = fopen(ss_name_cstr,"w");
+  
+  if(fp == NULL) {
+    printf("Could not open file %s.\n",ss_name_cstr);
+    return "";
+  }
+  
+  OMX_BUFFERHEADERTYPE *omx_buffer_jpeg;
+  OMX_ERRORTYPE omx_err;
+  
+  while(!m_omx_jpeg_encoder.IsEOS()) {
+    omx_buffer_jpeg = m_omx_jpeg_encoder.GetOutputBuffer();
+    omx_err = m_omx_jpeg_encoder.FillThisBuffer(omx_buffer_jpeg);
+    if(omx_err != OMX_ErrorNone) {
+      CLog::Log(LOGERROR, "%s::%s - error m_omx_jpeg_encoder.FillThisBuffer omx_err(0x%08x)\n", CLASSNAME, __func__, omx_err);
+    }
+    
+    m_omx_jpeg_encoder.WaitForOutputDone();
+  }
+  
+  OMX_PARAM_U32TYPE singlestep_param;
+  OMX_INIT_STRUCTURE(singlestep_param);
+  singlestep_param.nPortIndex = m_omx_splitter.GetOutputPort()+1;               
+  singlestep_param.nU32 = 1;
+  omx_err = m_omx_splitter.SetParameter(OMX_IndexConfigSingleStep, &singlestep_param);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "%s::%s - error OMX_IndexConfigSingleStep omx_err(0x%08x)\n", CLASSNAME, __func__, omx_err);
+  }
+  m_omx_jpeg_encoder.ResetEos();
+  
+  while(!m_omx_jpeg_encoder.IsEOS()) {
+    omx_buffer_jpeg = m_omx_jpeg_encoder.GetOutputBuffer();
+    omx_err = m_omx_jpeg_encoder.FillThisBuffer(omx_buffer_jpeg);
+        if(omx_err != OMX_ErrorNone) {
+      CLog::Log(LOGERROR, "%s::%s - error m_omx_jpeg_encoder.FillThisBuffer omx_err(0x%08x)\n", CLASSNAME, __func__, omx_err);
+    }
+    
+    m_omx_jpeg_encoder.WaitForOutputDone();
+    fwrite(omx_buffer_jpeg->pBuffer, sizeof(char), omx_buffer_jpeg->nFilledLen, fp);
+  }
+  
+  fclose(fp);
+
+  printf("Screenshot taken: %s\n",ss_name_cstr);
+  
+  return ss_name;
+}
