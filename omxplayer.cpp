@@ -1674,7 +1674,13 @@ int main(int argc, char *argv[])
       }
       if (m_loop)
       {
-        m_incr = m_loop_from - (m_av_clock->OMXMediaTime() ? m_av_clock->OMXMediaTime() / DVD_TIME_BASE : last_seek_pos);
+      	double stamp = m_av_clock->OMXMediaTime();
+    	  double video_pts = m_player_video.GetCurrentPTS();
+    	  float video_fifo = video_pts == DVD_NOPTS_VALUE ? 0.0f : video_pts / DVD_TIME_BASE - stamp * 1e-6;
+    	  if( video_fifo <= 0)
+    		  m_incr = m_loop_from - (m_av_clock->OMXMediaTime() ? m_av_clock->OMXMediaTime() / DVD_TIME_BASE : last_seek_pos);
+    	  else
+    		  m_incr = 0;
         continue;
       }
       if (!m_send_eos && m_has_video)
