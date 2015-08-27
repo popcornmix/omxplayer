@@ -1,10 +1,22 @@
-*.in
 *.o
+*.log
+core.*
 
 .directory
-omxplayer.log
-omxplayer.old.log
-omxplayer.bin
+Makefile.in
+__danu_omxplayer
 
 /src/help.h
 /src/keys.h
+
+/aclocal.m4
+/autom4te.cache/*
+/m4/*
+/compile
+/config.guess
+/config.sub
+/configure
+/depcomp
+/install-sh
+/ltmain.sh
+/missing
