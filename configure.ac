@@ -38,7 +38,7 @@ if test -z "$OPT"; then
 fi
 
 
-AC_CONFIG_FILES([Makefile doc/Makefile scripts/Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile doc/Makefile src/Makefile])
 
 ## Tests: commands
 AC_CHECK_PROG([CMD_BASE64], [base64], [yes])
@@ -57,7 +57,8 @@ PKG_CHECK_MODULES([LIBFFMPEG],
 		libswresample >= 1.1.100
 		libswscale >= 3.1.101],
 	[],
-	[AC_MSG_ERROR(['FFmpeg-libs 2.6 or higher not found by pkg-config'])]
+	[AC_MSG_ERROR(['FFmpeg-libs 2.6 or higher not found by pkg-config.
+	Or you forgot to \"export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig\" ?'])]
 	)
 PKG_CHECK_MODULES([LIBPCRE], [libpcre >= 8.0])
 PKG_CHECK_MODULES([DBUS], [dbus-1 >= 1.0.0])

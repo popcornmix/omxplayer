@@ -3,15 +3,11 @@
 # OMXPlayer launcher script.
 #
 
-OMXPLAYER_DIR=`dirname $0`
-OMXPLAYER_BIN="$OMXPLAYER_DIR/omxplayer.bin"
-OMXPLAYER_LIBS="/opt/vc/lib"
+source danu_omxplayer-config
 
-if [ -e "$OMXPLAYER_DIR/ffmpeg_compiled" ]; then
-    OMXPLAYER_LIBS="$OMXPLAYER_LIBS:$OMXPLAYER_DIR/ffmpeg_compiled"
-else
-    OMXPLAYER_LIBS="$OMXPLAYER_LIBS:/usr/lib/omxplayer"
-fi
+OMXPLAYER_DIR=`dirname $0`
+OMXPLAYER_BIN="$OMXPLAYER_DIR/__danu_omxplayer"
+OMXPLAYER_LIBS="$__CONFIG_OPT/vc/lib"
 
 refresh_regex='(|.* )(-r|--refresh)( .*|$)'
 audio_regex='.*\.(mp3|wav|wma|cda|ogg|ogm|aac|ac3|flac)( .*|$)'

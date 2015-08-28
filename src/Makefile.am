@@ -12,9 +12,17 @@ OPTI_FLAGS += -O3
 endif
 
 AM_CXXFLAGS = $(WARNINGCFLAGS) $(DEBUG_FLAGS) $(OPTI_FLAGS) -std=c++0x
-
 bin_PROGRAMS = __danu_omxplayer
-__danu_omxplayer_CXXFLAGS = \
+bin_SCRIPTS = danu_omxplayer danu_omxplayer-config
+
+nodist___danu_omxplayer_SOURCES =\
+	keys.h\
+	help.h\
+	version.h\
+	fonts/BASE64_FreeSans.h\
+	fonts/BASE64_FreeSansOblique.h
+
+__danu_omxplayer_CXXFLAGS = $(AM_CXXFLAGS)\
 	-D__STDC_CONSTANT_MACROS\
 	-D__STDC_LIMIT_MACROS\
 	-DTARGET_POSIX\
@@ -46,6 +54,7 @@ __danu_omxplayer_CXXFLAGS = \
 	$(LIBPCRE_CFLAGS)\
 	$(DBUS_CFLAGS)\
 	$(FREETYPE2_CFLAGS)\
+	-Ilinux\
 	-I$(OPT)/vc/include\
 	-I$(OPT)/vc/include/interface/vcos/pthreads\
 	-I$(OPT)/vc/include/interface/vmcs_host/linux
@@ -78,9 +87,7 @@ __danu_omxplayer_SOURCES =\
 	KeyConfig.cpp \
 	OMXControl.cpp \
 	Keyboard.cpp \
-	omxplayer.cpp \
-	fonts/BASE64_FreeSans.h\
-	fonts/BASE64_FreeSansOblique.h
+	omxplayer.cpp
 
 __danu_omxplayer_LDADD =\
 	-lWFC\
@@ -88,6 +95,8 @@ __danu_omxplayer_LDADD =\
 	-lEGL\
 	-lbcm_host\
 	-lopenmaxil\
+	-lvchiq_arm\
+	-lvcos\
 	-lz\
 	$(LIBFFMPEG_LIBS)\
 	$(LIBPCRE_LIBS)\
@@ -95,8 +104,30 @@ __danu_omxplayer_LDADD =\
 	$(FREETYPE2_LIBS)\
 	-L$(OPT)/vc/lib
 
-#fonts/BASE64_FreeSans.h: fonts/FreeSans.h
-#	__gen_base64_fonts.sh FREESANS fonts/FreeSans.h
+CLEANFILES = help.h keys.h version.h fonts/BASE64_FreeSans.h fonts/BASE64_FreeSansOblique.h danu_omxplayer-config
 
-#fonts/BASE64_FreeSansOblique.h: fonts/FreeSansOblique.h
-#	__gen_base64_fonts.sh FREESANSOBLIQUE fonts/FreeSansOblique.h
+__danu_omxplayer-omxplayer.$(OBJEXT): $(nodist___danu_omxplayer_SOURCES)
+
+help.h: ../README.md
+	awk '/SYNOPSIS/{p=1;print;next} p&&/KEY BINDINGS/{p=0};p' $< \
+	| sed -e '1,3 d' -e 's/^/"/' -e 's/$$/\\n"/' \
+	> $@
+
+keys.h: ../README.md
+	awk '/KEY BINDINGS/{p=1;print;next} p&&/KEY CONFIG/{p=0};p' $< \
+	| sed -e '1,3 d' -e 's/^/"/' -e 's/$$/\\n"/' \
+	> $@
+
+version.h: gen_version.sh
+	./gen_version.sh > $@
+
+fonts/BASE64_FreeSans.h: fonts/__gen_base64_fonts.sh fonts/FreeSans.ttf
+	./fonts/__gen_base64_fonts.sh FREESANS fonts/FreeSans.ttf > $@
+
+fonts/BASE64_FreeSansOblique.h: fonts/__gen_base64_fonts.sh fonts/FreeSansOblique.ttf
+	./fonts/__gen_base64_fonts.sh FREESANSOBLIQUE fonts/FreeSansOblique.ttf > $@
+
+danu_omxplayer-config:
+	echo "#!/bin/bash" > $@
+	echo "__CONFIG_OPT=$(OPT)" >> $@
+
