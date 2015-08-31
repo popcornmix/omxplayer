@@ -70,9 +70,13 @@ PKG_CHECK_MODULES([LIBFFMPEG],
 PKG_CHECK_MODULES([LIBPCRE], [libpcre >= 8.0])
 PKG_CHECK_MODULES([DBUS], [dbus-1 >= 1.0.0])
 PKG_CHECK_MODULES([FREETYPE2], [freetype2 >= 17.0.0])
+# boost
+AC_CHECK_HEADERS([boost/config.hpp boost/algorithm/string.hpp boost/circular_buffer.hpp],
+	[],
+	[BOOST_HEADERS=no; break;])
+AS_IF([test "x$BOOST_HEADERS" == "xno"], [AC_MSG_ERROR([Unable to find 'boost' headers.])])
 
 AC_OUTPUT
-
 AC_MSG_NOTICE([
 * * *
 This configure script does not check for RPI headers and libs.
