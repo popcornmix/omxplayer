@@ -88,8 +88,13 @@ __danu_omxplayer_SOURCES =\
 	OMXControl.cpp \
 	Keyboard.cpp \
 	omxplayer.cpp
-
+	
 __danu_omxplayer_LDADD =\
+	-L$(OPT)/vc/lib\
+	$(LIBFFMPEG_LIBS)\
+	$(LIBPCRE_LIBS)\
+	$(DBUS_LIBS)\
+	$(FREETYPE2_LIBS)\
 	-lWFC\
 	-lGLESv2\
 	-lEGL\
@@ -97,12 +102,7 @@ __danu_omxplayer_LDADD =\
 	-lopenmaxil\
 	-lvchiq_arm\
 	-lvcos\
-	-lz\
-	$(LIBFFMPEG_LIBS)\
-	$(LIBPCRE_LIBS)\
-	$(DBUS_LIBS)\
-	$(FREETYPE2_LIBS)\
-	-L$(OPT)/vc/lib
+	-lz
 
 CLEANFILES = help.h keys.h version.h fonts/BASE64_FreeSans.h fonts/BASE64_FreeSansOblique.h danu_omxplayer-config
 
