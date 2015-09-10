@@ -38,7 +38,9 @@ class KeyConfig
         ACTION_UNHIDE_VIDEO = 29,
         ACTION_HIDE_SUBTITLES = 30,
         ACTION_SHOW_SUBTITLES = 31,
-        ACTION_SET_ALPHA=32
+        ACTION_SET_ALPHA=32,
+
+		ACTION_TEST_RELOAD = 1001
     };
 
     #define KEY_LEFT 0x5b44

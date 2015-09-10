@@ -58,6 +58,13 @@ __danu_omxplayer_CXXFLAGS = $(AM_CXXFLAGS)\
 	-I$(OPT)/vc/include\
 	-I$(OPT)/vc/include/interface/vcos/pthreads\
 	-I$(OPT)/vc/include/interface/vmcs_host/linux
+	
+if DEBUG
+__danu_omxplayer_CXXFLAGS += -D_DEBUG
+endif
+if PROFILING
+__danu_omxplayer_CXXFLAGS += -DPROFILE
+endif
 
 __danu_omxplayer_SOURCES =\
 	linux/XMemUtils.cpp \

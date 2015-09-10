@@ -18,16 +18,68 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.795546131." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.158784956" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.debug.2140602042" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.debug"/>
-							<builder buildPath="${workspace_loc:/danu_omxplayer}/Debug" id="cdt.managedbuild.target.gnu.builder.exe.debug.536596599" managedBuildOn="true" name="Gnu Make Builder.Debug" superClass="cdt.managedbuild.target.gnu.builder.exe.debug"/>
+							<builder buildPath="${workspace_loc:/danu_omxplayer}/Debug" id="cdt.managedbuild.target.gnu.builder.exe.debug.536596599" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.421699711" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.2030510709" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
-								<option id="gnu.cpp.compiler.exe.debug.option.optimization.level.752464721" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.602898610" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
+							<tool command="g++" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.2030510709" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
+								<option id="gnu.cpp.compiler.exe.debug.option.optimization.level.752464721" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
+								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.602898610" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.1723592569" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__STDC_CONSTANT_MACROS"/>
+									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
+									<listOptionValue builtIn="false" value="TARGET_POSIX"/>
+									<listOptionValue builtIn="false" value="TARGET_LINUX"/>
+									<listOptionValue builtIn="false" value="PIC"/>
+									<listOptionValue builtIn="false" value="_REENTRANT"/>
+									<listOptionValue builtIn="false" value="_LARGEFILE64_SOURCE"/>
+									<listOptionValue builtIn="false" value="HAVE_CMAKE_CONFIG"/>
+									<listOptionValue builtIn="false" value="__VIDEOCORE4__"/>
+									<listOptionValue builtIn="false" value="HAVE_OMXLIB"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_FFMPEG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVCODEC_AVCODEC_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_OPT_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_MEM_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_AVUTIL_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVFORMAT_AVFORMAT_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVFILTER_AVFILTER_H"/>
+									<listOptionValue builtIn="false" value="_FILE_OFFSET_BITS=64"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBSWRESAMPLE_SWRESAMPLE_H"/>
+									<listOptionValue builtIn="false" value="OMX"/>
+									<listOptionValue builtIn="false" value="OMX_SKIP64BIT"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_OMX"/>
+									<listOptionValue builtIn="false" value="TARGET_RASPBERRY_PI"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_LIBBCM_HOST"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.377223376" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1727297895" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
-								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.exe.debug.option.optimization.level.469671776" superClass="gnu.c.compiler.exe.debug.option.optimization.level" valueType="enumerated"/>
-								<option id="gnu.c.compiler.exe.debug.option.debugging.level.251640840" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
+								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.exe.debug.option.optimization.level.469671776" name="Optimization Level" superClass="gnu.c.compiler.exe.debug.option.optimization.level" valueType="enumerated"/>
+								<option id="gnu.c.compiler.exe.debug.option.debugging.level.251640840" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.1441264979" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__STDC_CONSTANT_MACROS"/>
+									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
+									<listOptionValue builtIn="false" value="TARGET_POSIX"/>
+									<listOptionValue builtIn="false" value="TARGET_LINUX"/>
+									<listOptionValue builtIn="false" value="PIC"/>
+									<listOptionValue builtIn="false" value="_REENTRANT"/>
+									<listOptionValue builtIn="false" value="_LARGEFILE64_SOURCE"/>
+									<listOptionValue builtIn="false" value="_FILE_OFFSET_BITS=64"/>
+									<listOptionValue builtIn="false" value="HAVE_CMAKE_CONFIG"/>
+									<listOptionValue builtIn="false" value="__VIDEOCORE4__"/>
+									<listOptionValue builtIn="false" value="HAVE_OMXLIB"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_FFMPEG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVCODEC_AVCODEC_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_OPT_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_MEM_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_AVUTIL_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVFORMAT_AVFORMAT_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVFILTER_AVFILTER_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBSWRESAMPLE_SWRESAMPLE_H"/>
+									<listOptionValue builtIn="false" value="OMX"/>
+									<listOptionValue builtIn="false" value="OMX_SKIP64BIT"/>
+									<listOptionValue builtIn="false" value="TARGET_RASPBERRY_PI"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_OMX"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_LIBBCM_HOST"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.227551017" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.26048870" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
@@ -63,16 +115,68 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.exe.release.866360671." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.1438637471" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.release">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.release.563797453" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.release"/>
-							<builder buildPath="${workspace_loc:/danu_omxplayer}/Release" id="cdt.managedbuild.target.gnu.builder.exe.release.1275789570" managedBuildOn="true" name="Gnu Make Builder.Release" superClass="cdt.managedbuild.target.gnu.builder.exe.release"/>
+							<builder buildPath="${workspace_loc:/danu_omxplayer}/Release" id="cdt.managedbuild.target.gnu.builder.exe.release.1275789570" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.274280369" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.539242013" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release">
-								<option id="gnu.cpp.compiler.exe.release.option.optimization.level.1392445819" superClass="gnu.cpp.compiler.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.exe.release.option.debugging.level.1379535384" superClass="gnu.cpp.compiler.exe.release.option.debugging.level" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.cpp.compiler.exe.release.option.optimization.level.1392445819" name="Optimization Level" superClass="gnu.cpp.compiler.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
+								<option id="gnu.cpp.compiler.exe.release.option.debugging.level.1379535384" name="Debug Level" superClass="gnu.cpp.compiler.exe.release.option.debugging.level" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.cpp.compiler.option.preprocessor.def.710409864" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__STDC_CONSTANT_MACROS"/>
+									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
+									<listOptionValue builtIn="false" value="TARGET_POSIX"/>
+									<listOptionValue builtIn="false" value="TARGET_LINUX"/>
+									<listOptionValue builtIn="false" value="PIC"/>
+									<listOptionValue builtIn="false" value="_REENTRANT"/>
+									<listOptionValue builtIn="false" value="_LARGEFILE64_SOURCE"/>
+									<listOptionValue builtIn="false" value="HAVE_CMAKE_CONFIG"/>
+									<listOptionValue builtIn="false" value="__VIDEOCORE4__"/>
+									<listOptionValue builtIn="false" value="HAVE_OMXLIB"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_FFMPEG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVCODEC_AVCODEC_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_OPT_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_MEM_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_AVUTIL_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVFORMAT_AVFORMAT_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVFILTER_AVFILTER_H"/>
+									<listOptionValue builtIn="false" value="_FILE_OFFSET_BITS=64"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBSWRESAMPLE_SWRESAMPLE_H"/>
+									<listOptionValue builtIn="false" value="OMX"/>
+									<listOptionValue builtIn="false" value="OMX_SKIP64BIT"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_OMX"/>
+									<listOptionValue builtIn="false" value="TARGET_RASPBERRY_PI"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_LIBBCM_HOST"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.2190990" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.39461594" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
-								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.exe.release.option.optimization.level.145018508" superClass="gnu.c.compiler.exe.release.option.optimization.level" valueType="enumerated"/>
-								<option id="gnu.c.compiler.exe.release.option.debugging.level.241510040" superClass="gnu.c.compiler.exe.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
+								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.exe.release.option.optimization.level.145018508" name="Optimization Level" superClass="gnu.c.compiler.exe.release.option.optimization.level" valueType="enumerated"/>
+								<option id="gnu.c.compiler.exe.release.option.debugging.level.241510040" name="Debug Level" superClass="gnu.c.compiler.exe.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.preprocessor.def.symbols.630595905" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="__STDC_CONSTANT_MACROS"/>
+									<listOptionValue builtIn="false" value="__STDC_LIMIT_MACROS"/>
+									<listOptionValue builtIn="false" value="TARGET_POSIX"/>
+									<listOptionValue builtIn="false" value="TARGET_LINUX"/>
+									<listOptionValue builtIn="false" value="PIC"/>
+									<listOptionValue builtIn="false" value="_REENTRANT"/>
+									<listOptionValue builtIn="false" value="_LARGEFILE64_SOURCE"/>
+									<listOptionValue builtIn="false" value="_FILE_OFFSET_BITS=64"/>
+									<listOptionValue builtIn="false" value="HAVE_CMAKE_CONFIG"/>
+									<listOptionValue builtIn="false" value="__VIDEOCORE4__"/>
+									<listOptionValue builtIn="false" value="HAVE_OMXLIB"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_FFMPEG"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVCODEC_AVCODEC_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_OPT_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_MEM_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVUTIL_AVUTIL_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVFORMAT_AVFORMAT_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBAVFILTER_AVFILTER_H"/>
+									<listOptionValue builtIn="false" value="HAVE_LIBSWRESAMPLE_SWRESAMPLE_H"/>
+									<listOptionValue builtIn="false" value="OMX"/>
+									<listOptionValue builtIn="false" value="OMX_SKIP64BIT"/>
+									<listOptionValue builtIn="false" value="TARGET_RASPBERRY_PI"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_OMX"/>
+									<listOptionValue builtIn="false" value="USE_EXTERNAL_LIBBCM_HOST"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.852001090" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1419754100" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
@@ -89,6 +193,7 @@
 					</folderInfo>
 				</configuration>
 			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
@@ -110,4 +215,13 @@
 		</scannerConfigBuildInfo>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/danu_omxplayer"/>
+		</configuration>
+		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/danu_omxplayer"/>
+		</configuration>
+	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
