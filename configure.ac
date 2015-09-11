@@ -31,6 +31,17 @@ esac],
 [profile=false])
 AM_CONDITIONAL(PROFILING, test x"$profile" = x"true")
 AM_COND_IF(PROFILING, [AM_CONDITIONAL(DEBUG, true)])
+AM_CONDITIONAL(DEBUG, test x"$debug" = x"true")
+AC_ARG_ENABLE(libdanu,
+AS_HELP_STRING([--enable-libdanu],
+               [Enable Danusys Protocol support. Default: no]),
+[case "${enableval}" in
+             yes) libdanu=true ;;
+             no)  libdanu=false ;;
+             *)   AC_MSG_ERROR([bad value ${enableval} for --enable-libdanu]) ;;
+esac],
+[libdanu=false])
+AM_CONDITIONAL(LIBDANU, test x"$libdanu" = x"true")
 
 AC_ARG_VAR(OPT, [The path to '/opt' of Raspberry Pi firmware. This option is only for cross-compiling. The program will look into '/opt' runtime. Default: /opt])
 if test -z "$OPT"; then
@@ -64,7 +75,7 @@ PKG_CHECK_MODULES([LIBFFMPEG],
 		libswresample >= 1.1.100
 		libswscale >= 3.1.101],
 	[],
-	[AC_MSG_ERROR(['FFmpeg-libs 2.6 or higher not found by pkg-config.
+	[AC_MSG_ERROR(['FFmpeg-libs 2.6 or higherhttps://github.com/ashegoulding/libashe not found by pkg-config.
 	Or you forgot to \"export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig\" ?'])]
 	)
 PKG_CHECK_MODULES([LIBPCRE], [libpcre >= 8.0])
@@ -75,6 +86,8 @@ AC_CHECK_HEADERS([boost/config.hpp boost/algorithm/string.hpp boost/circular_buf
 	[],
 	[BOOST_HEADERS=no; break;])
 AS_IF([test "x$BOOST_HEADERS" == "xno"], [AC_MSG_ERROR([Unable to find 'boost' headers.])])
+# libdanu
+AM_COND_IF(LIBDANU, [PKG_CHECK_MODULES([LIBDANU], [libdanu >= 0.0.1])])
 
 AC_OUTPUT
 AC_MSG_NOTICE([

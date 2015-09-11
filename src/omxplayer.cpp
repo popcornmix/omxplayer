@@ -49,7 +49,11 @@ extern "C" {
 #include "utils/PCMRemap.h"
 #include "OMXClock.h"
 #include "OMXAudio.h"
+#ifdef HAVE_LIBDANU
+#include "OMXDanuReader.h"
+#else
 #include "OMXReader.h"
+#endif
 #include "OMXPlayerVideo.h"
 #include "OMXPlayerAudio.h"
 #include "OMXPlayerSubtitles.h"
@@ -74,48 +78,48 @@ extern "C" {
 #define DISPLAY_TEXT_LONG(text) DISPLAY_TEXT(text, 2000)
 
 typedef enum {CONF_FLAGS_FORMAT_NONE, CONF_FLAGS_FORMAT_SBS, CONF_FLAGS_FORMAT_TB, CONF_FLAGS_FORMAT_FP } FORMAT_3D_T;
-enum PCMChannels  *m_pChannelMap        = NULL;
-volatile sig_atomic_t g_abort           = false;
-long              m_Volume              = 0;
-long              m_Amplification       = 0;
-bool              m_NativeDeinterlace   = false;
-bool              m_HWDecode            = false;
-bool              m_osd                 = true;
-bool              m_no_keys             = false;
+enum PCMChannels  *m_pChannelMap        ;
+volatile sig_atomic_t g_abort           ;
+long              m_Volume              ;
+long              m_Amplification       ;
+bool              m_NativeDeinterlace   ;
+bool              m_HWDecode            ;
+bool              m_osd                 ;
+bool              m_no_keys             ;
 std::string       m_external_subtitles_path;
-bool              m_has_external_subtitles = false;
+bool              m_has_external_subtitles ;
 std::string       m_font_path           = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
 std::string       m_italic_font_path    = "/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf";
 std::string       m_dbus_name           = "org.mpris.MediaPlayer2.omxplayer";
-bool              m_asked_for_font      = false;
-bool              m_asked_for_italic_font = false;
-float             m_font_size           = 0.055f;
-bool              m_centered            = false;
-bool              m_ghost_box           = true;
-unsigned int      m_subtitle_lines      = 3;
-bool              m_Pause               = false;
-OMXReader         *m_omx_reader_ptr = NULL;
-int               m_audio_index_use     = 0;
-OMXClock          *m_av_clock           = NULL;
+bool              m_asked_for_font      ;
+bool              m_asked_for_italic_font ;
+float             m_font_size           ;
+bool              m_centered            ;
+bool              m_ghost_box           ;
+unsigned int      m_subtitle_lines      ;
+bool              m_Pause               ;
+OMXReader         *m_omx_reader_ptr ;
+int               m_audio_index_use     ;
+OMXClock          *m_av_clock           ;
 OMXControl        m_omxcontrol;
-Keyboard          *m_keyboard           = NULL;
+Keyboard          *m_keyboard           ;
 OMXAudioConfig    m_config_audio;
 OMXVideoConfig    m_config_video;
-OMXPacket         *m_omx_pkt            = NULL;
-bool              m_no_hdmi_clock_sync  = false;
-bool              m_stop                = false;
-int               m_subtitle_index      = -1;
+OMXPacket         *m_omx_pkt            ;
+bool              m_no_hdmi_clock_sync  ;
+bool              m_stop                ;
+int               m_subtitle_index      ;
 DllBcmHost        m_BcmHost;
-OMXPlayerVideo    *m_player_video_ptr = NULL;
-OMXPlayerAudio    *m_player_audio_ptr = NULL;
-OMXPlayerSubtitles  *m_player_subtitles_ptr = NULL;
-int               m_tv_show_info        = 0;
-bool              m_has_video           = false;
-bool              m_has_audio           = false;
-bool              m_has_subtitle        = false;
-bool              m_gen_log             = true;
-bool              m_loop                = false;
-bool              m_reload				= false;
+OMXPlayerVideo    *m_player_video_ptr;
+OMXPlayerAudio    *m_player_audio_ptr ;
+OMXPlayerSubtitles  *m_player_subtitles_ptr ;
+int               m_tv_show_info        ;
+bool              m_has_video           ;
+bool              m_has_audio           ;
+bool              m_has_subtitle        ;
+bool              m_gen_log             ;
+bool              m_loop                ;
+bool              m_reload				;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -550,7 +554,11 @@ in_init:
   m_gen_log = false;
   m_loop = false;
   m_reload = false;
+#ifdef HAVE_LIBDANU
+  m_omx_reader_ptr = new danu::OMXDanuReader;
+#else
   m_omx_reader_ptr = new OMXReader;
+#endif
   m_player_audio_ptr = new OMXPlayerAudio;
   m_player_video_ptr = new OMXPlayerVideo;
   m_player_subtitles_ptr = new OMXPlayerSubtitles;

@@ -58,12 +58,14 @@ __danu_omxplayer_CXXFLAGS = $(AM_CXXFLAGS)\
 	-I$(OPT)/vc/include\
 	-I$(OPT)/vc/include/interface/vcos/pthreads\
 	-I$(OPT)/vc/include/interface/vmcs_host/linux
-	
 if DEBUG
 __danu_omxplayer_CXXFLAGS += -D_DEBUG
 endif
 if PROFILING
 __danu_omxplayer_CXXFLAGS += -DPROFILE
+endif
+if LIBDANU
+__danu_omxplayer_CXXFLAGS += $(LIBDANU_CFLAGS) -DHAVE_LIBDANU
 endif
 
 __danu_omxplayer_SOURCES =\
@@ -95,6 +97,9 @@ __danu_omxplayer_SOURCES =\
 	OMXControl.cpp \
 	Keyboard.cpp \
 	omxplayer.cpp
+if LIBDANU
+__danu_omxplayer_SOURCES += OMXDanuReader.cpp
+endif
 	
 __danu_omxplayer_LDADD =\
 	-L$(OPT)/vc/lib\
@@ -110,6 +115,9 @@ __danu_omxplayer_LDADD =\
 	-lvchiq_arm\
 	-lvcos\
 	-lz
+if LIBDANU
+__danu_omxplayer_LDADD += $(LIBDANU_LIBS)
+endif
 
 CLEANFILES = help.h keys.h version.h fonts/BASE64_FreeSans.h fonts/BASE64_FreeSansOblique.h danu_omxplayer-config
 
