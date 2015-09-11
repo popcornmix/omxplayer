@@ -49,7 +49,11 @@ extern "C" {
 #include "utils/PCMRemap.h"
 #include "OMXClock.h"
 #include "OMXAudio.h"
+#ifdef HAVE_LIBDANU
+#include "OMXDanuReader.h"
+#else
 #include "OMXReader.h"
+#endif
 #include "OMXPlayerVideo.h"
 #include "OMXPlayerAudio.h"
 #include "OMXPlayerSubtitles.h"
@@ -74,47 +78,48 @@ extern "C" {
 #define DISPLAY_TEXT_LONG(text) DISPLAY_TEXT(text, 2000)
 
 typedef enum {CONF_FLAGS_FORMAT_NONE, CONF_FLAGS_FORMAT_SBS, CONF_FLAGS_FORMAT_TB, CONF_FLAGS_FORMAT_FP } FORMAT_3D_T;
-enum PCMChannels  *m_pChannelMap        = NULL;
-volatile sig_atomic_t g_abort           = false;
-long              m_Volume              = 0;
-long              m_Amplification       = 0;
-bool              m_NativeDeinterlace   = false;
-bool              m_HWDecode            = false;
-bool              m_osd                 = true;
-bool              m_no_keys             = false;
+enum PCMChannels  *m_pChannelMap        ;
+volatile sig_atomic_t g_abort           ;
+long              m_Volume              ;
+long              m_Amplification       ;
+bool              m_NativeDeinterlace   ;
+bool              m_HWDecode            ;
+bool              m_osd                 ;
+bool              m_no_keys             ;
 std::string       m_external_subtitles_path;
-bool              m_has_external_subtitles = false;
+bool              m_has_external_subtitles ;
 std::string       m_font_path           = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
 std::string       m_italic_font_path    = "/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf";
 std::string       m_dbus_name           = "org.mpris.MediaPlayer2.omxplayer";
-bool              m_asked_for_font      = false;
-bool              m_asked_for_italic_font = false;
-float             m_font_size           = 0.055f;
-bool              m_centered            = false;
-bool              m_ghost_box           = true;
-unsigned int      m_subtitle_lines      = 3;
-bool              m_Pause               = false;
-OMXReader         m_omx_reader;
-int               m_audio_index_use     = 0;
-OMXClock          *m_av_clock           = NULL;
+bool              m_asked_for_font      ;
+bool              m_asked_for_italic_font ;
+float             m_font_size           ;
+bool              m_centered            ;
+bool              m_ghost_box           ;
+unsigned int      m_subtitle_lines      ;
+bool              m_Pause               ;
+OMXReader         *m_omx_reader_ptr ;
+int               m_audio_index_use     ;
+OMXClock          *m_av_clock           ;
 OMXControl        m_omxcontrol;
-Keyboard          *m_keyboard           = NULL;
+Keyboard          *m_keyboard           ;
 OMXAudioConfig    m_config_audio;
 OMXVideoConfig    m_config_video;
-OMXPacket         *m_omx_pkt            = NULL;
-bool              m_no_hdmi_clock_sync  = false;
-bool              m_stop                = false;
-int               m_subtitle_index      = -1;
+OMXPacket         *m_omx_pkt            ;
+bool              m_no_hdmi_clock_sync  ;
+bool              m_stop                ;
+int               m_subtitle_index      ;
 DllBcmHost        m_BcmHost;
-OMXPlayerVideo    m_player_video;
-OMXPlayerAudio    m_player_audio;
-OMXPlayerSubtitles  m_player_subtitles;
-int               m_tv_show_info        = 0;
-bool              m_has_video           = false;
-bool              m_has_audio           = false;
-bool              m_has_subtitle        = false;
-bool              m_gen_log             = false;
-bool              m_loop                = false;
+OMXPlayerVideo    *m_player_video_ptr;
+OMXPlayerAudio    *m_player_audio_ptr ;
+OMXPlayerSubtitles  *m_player_subtitles_ptr ;
+int               m_tv_show_info        ;
+bool              m_has_video           ;
+bool              m_has_audio           ;
+bool              m_has_subtitle        ;
+bool              m_gen_log             ;
+bool              m_loop                ;
+bool              m_reload				;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -160,25 +165,29 @@ void print_version()
 
 static void PrintSubtitleInfo()
 {
-  auto count = m_omx_reader.SubtitleStreamCount();
+	if(! m_omx_reader_ptr)
+		return;
+	else if(! m_player_subtitles_ptr)
+		return;
+  auto count = m_omx_reader_ptr->SubtitleStreamCount();
   size_t index = 0;
 
   if(m_has_external_subtitles)
   {
     ++count;
-    if(!m_player_subtitles.GetUseExternalSubtitles())
-      index = m_player_subtitles.GetActiveStream() + 1;
+    if(!m_player_subtitles_ptr->GetUseExternalSubtitles())
+      index = m_player_subtitles_ptr->GetActiveStream() + 1;
   }
   else if(m_has_subtitle)
   {
-      index = m_player_subtitles.GetActiveStream();
+      index = m_player_subtitles_ptr->GetActiveStream();
   }
 
   printf("Subtitle count: %d, state: %s, index: %d, delay: %d\n",
          count,
-         m_has_subtitle && m_player_subtitles.GetVisible() ? " on" : "off",
+         m_has_subtitle && m_player_subtitles_ptr->GetVisible() ? " on" : "off",
          index+1,
-         m_has_subtitle ? m_player_subtitles.GetDelay() : 0);
+         m_has_subtitle ? m_player_subtitles_ptr->GetDelay() : 0);
 }
 
 static void FlushStreams(double pts);
@@ -187,8 +196,10 @@ static void SetSpeed(int iSpeed)
 {
   if(!m_av_clock)
     return;
+  else if(!m_omx_reader_ptr)
+	  return;
 
-  m_omx_reader.SetSpeed(iSpeed);
+  m_omx_reader_ptr->SetSpeed(iSpeed);
 
   // flush when in trickplay mode
   if (TRICKPLAY(iSpeed) || TRICKPLAY(m_av_clock->OMXPlaySpeed()))
@@ -228,24 +239,26 @@ static float get_display_aspect_ratio(SDTV_ASPECT_T aspect)
 
 static void FlushStreams(double pts)
 {
+	if(!(m_player_video_ptr && m_player_audio_ptr && m_player_subtitles_ptr))
+			return;
   m_av_clock->OMXStop();
   m_av_clock->OMXPause();
 
   if(m_has_video)
-    m_player_video.Flush();
+    m_player_video_ptr->Flush();
 
   if(m_has_audio)
-    m_player_audio.Flush();
+    m_player_audio_ptr->Flush();
 
   if(pts != DVD_NOPTS_VALUE)
     m_av_clock->OMXMediaTime(pts);
 
   if(m_has_subtitle)
-    m_player_subtitles.Flush();
+    m_player_subtitles_ptr->Flush();
 
   if(m_omx_pkt)
   {
-    m_omx_reader.FreePacket(m_omx_pkt);
+	  OMXReader::FreePacket(m_omx_pkt);
     m_omx_pkt = NULL;
   }
 }
@@ -496,10 +509,65 @@ static void blank_background(bool enable)
 
 int main(int argc, char *argv[])
 {
+	CRBP                  g_RBP;
+	COMXCore              g_OMX;
   signal(SIGSEGV, sig_handler);
-  signal(SIGABRT, sig_handler);
+  // signal(SIGABRT, sig_handler);
   signal(SIGFPE, sig_handler);
   signal(SIGINT, sig_handler);
+
+  g_RBP.Initialize();
+  g_OMX.Initialize();
+
+in_init:
+  /* Globals */
+  m_pChannelMap = NULL;
+  g_abort = false;
+  m_Volume = 0;
+  m_Amplification = 0;
+  m_NativeDeinterlace = false;
+  m_HWDecode = false;
+  m_osd = true;
+  m_no_keys = false;
+  m_has_external_subtitles = false;
+  m_font_path = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
+  m_italic_font_path = "/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf";
+  m_dbus_name = "org.mpris.MediaPlayer2.omxplayer";
+  m_asked_for_font = false;
+  m_asked_for_italic_font = false;
+  m_font_size = 0.055f;
+  m_centered = false;
+  m_ghost_box = true;
+  m_subtitle_lines = 3;
+  m_Pause = false;
+  m_audio_index_use = 0;
+  m_av_clock = NULL;
+  m_keyboard = NULL;
+  m_omx_pkt = NULL;
+  m_no_hdmi_clock_sync = false;
+  m_stop = false;
+  m_subtitle_index = -1;
+  m_tv_show_info = 0;
+  m_has_video = false;
+  m_has_audio = false;
+  m_has_subtitle = false;
+  m_gen_log = false;
+  m_loop = false;
+  m_reload = false;
+#ifdef HAVE_LIBDANU
+  m_omx_reader_ptr = new danu::OMXDanuReader;
+#else
+  m_omx_reader_ptr = new OMXReader;
+#endif
+  m_player_audio_ptr = new OMXPlayerAudio;
+  m_player_video_ptr = new OMXPlayerVideo;
+  m_player_subtitles_ptr = new OMXPlayerSubtitles;
+  /**/
+
+  auto &m_omx_reader = *m_omx_reader_ptr;
+  auto &m_player_audio = *m_player_audio_ptr;
+  auto &m_player_video = *m_player_video_ptr;
+  auto &m_player_subtitles = *m_player_subtitles_ptr;
 
   bool                  m_send_eos            = false;
   bool                  m_packet_after_seek   = false;
@@ -508,8 +576,6 @@ int main(int argc, char *argv[])
   std::string           m_filename;
   double                m_incr                = 0;
   double                m_loop_from           = 0;
-  CRBP                  g_RBP;
-  COMXCore              g_OMX;
   bool                  m_stats               = false;
   bool                  m_dump_format         = false;
   bool                  m_dump_format_exit    = false;
@@ -945,9 +1011,6 @@ int main(int argc, char *argv[])
   } else {
     CLog::SetLogLevel(LOG_LEVEL_NONE);
   }
-
-  g_RBP.Initialize();
-  g_OMX.Initialize();
 
   blank_background(m_blank_background);
 
@@ -1434,8 +1497,10 @@ int main(int argc, char *argv[])
           m_Volume / 100.0f));
         printf("Current Volume: %.2fdB\n", m_Volume / 100.0f);
         break;
-      default:
-        break;
+      case KeyConfig::ACTION_TEST_RELOAD:
+    	  m_reload = true;
+    	  goto do_exit;
+    	  break;
     }
     }
 
@@ -1753,8 +1818,11 @@ do_exit:
     m_BcmHost.vc_tv_hdmi_power_on_explicit_new(HDMI_MODE_HDMI, (HDMI_RES_GROUP_T)tv_state.display.hdmi.group, tv_state.display.hdmi.mode);
   }
 
-  m_av_clock->OMXStop();
-  m_av_clock->OMXStateIdle();
+  if(m_av_clock)
+  {
+	  m_av_clock->OMXStop();
+	  m_av_clock->OMXStateIdle();
+  }
 
   m_player_subtitles.Close();
   m_player_video.Close();
@@ -1762,6 +1830,8 @@ do_exit:
   if (NULL != m_keyboard)
   {
     m_keyboard->Close();
+    delete m_keyboard;
+    m_keyboard = NULL;
   }
 
   if(m_omx_pkt)
@@ -1771,19 +1841,33 @@ do_exit:
   }
 
   m_omx_reader.Close();
+  delete m_omx_reader_ptr;
+  delete m_player_audio_ptr;
+  delete m_player_video_ptr;
+  delete m_player_subtitles_ptr;
+  m_omx_reader_ptr = NULL;
 
-  m_av_clock->OMXDeinitialize();
   if (m_av_clock)
-    delete m_av_clock;
+  {
+	  m_av_clock->OMXDeinitialize();
+	  delete m_av_clock;
+	  m_av_clock = NULL;
+  }
 
   vc_tv_show_info(0);
+
+  // normal exit status on user quit or playback end
+  if(m_reload)
+  {
+	  m_reload = false;
+	  goto in_init;
+  }
+
+  printf("have a nice day ;)\n");
 
   g_OMX.Deinitialize();
   g_RBP.Deinitialize();
 
-  printf("have a nice day ;)\n");
-
-  // normal exit status on user quit or playback end
   if (m_stop || m_send_eos)
     return 0;
   return 1;

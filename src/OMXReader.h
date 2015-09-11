@@ -131,18 +131,18 @@ protected:
 private:
 public:
   OMXReader();
-  ~OMXReader();
-  bool Open(std::string filename, bool dump_format, bool live = false, float timeout = 0.0f, std::string cookie = "", std::string user_agent = "");
+  virtual ~OMXReader();
+  virtual bool Open(std::string filename, bool dump_format, bool live = false, float timeout = 0.0f, std::string cookie = "", std::string user_agent = "");
   void ClearStreams();
-  bool Close();
+  virtual bool Close();
   //void FlushRead();
-  bool SeekTime(int time, bool backwords, double *startpts);
-  AVMediaType PacketType(OMXPacket *pkt);
-  OMXPacket *Read();
+  virtual bool SeekTime(int time, bool backwords, double *startpts);
+  virtual AVMediaType PacketType(OMXPacket *pkt);
+  virtual OMXPacket *Read();
   void Process();
   bool GetStreams();
   void AddStream(int id);
-  bool IsActive(int stream_index);
+  virtual bool IsActive(int stream_index);
   bool IsActive(OMXStreamType type, int stream_index);
   bool GetHints(AVStream *stream, COMXStreamInfo *hints);
   bool GetHints(OMXStreamType type, unsigned int index, COMXStreamInfo &hints);
@@ -159,12 +159,12 @@ public:
   OMXChapter GetChapter(unsigned int chapter) { return m_chapters[(chapter > MAX_OMX_CHAPTERS) ? MAX_OMX_CHAPTERS : chapter]; };
   static void FreePacket(OMXPacket *pkt);
   static OMXPacket *AllocPacket(int size);
-  void SetSpeed(int iSpeed);
+  virtual void SetSpeed(int iSpeed);
   void UpdateCurrentPTS();
   double ConvertTimestamp(int64_t pts, int den, int num);
-  int GetChapter();
+  virtual int GetChapter();
   void GetChapterName(std::string& strChapterName);
-  bool SeekChapter(int chapter, double* startpts);
+  virtual bool SeekChapter(int chapter, double* startpts);
   int GetAudioIndex() { return (m_audio_index >= 0) ? m_streams[m_audio_index].index : -1; };
   int GetSubtitleIndex() { return (m_subtitle_index >= 0) ? m_streams[m_subtitle_index].index : -1; };
   int GetVideoIndex() { return (m_video_index >= 0) ? m_streams[m_video_index].index : -1; };
@@ -175,7 +175,7 @@ public:
     return m_streams[index].index;
   }
 
-  int GetStreamLength();
+  virtual int GetStreamLength();
   static double NormalizeFrameduration(double frameduration);
   bool IsMatroska() { return m_bMatroska; };
   std::string GetCodecName(OMXStreamType type);

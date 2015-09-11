@@ -129,6 +129,8 @@ map<int, int> KeyConfig::buildDefaultKeymap()
     keymap['w'] = ACTION_SHOW_SUBTITLES;
     keymap['x'] = ACTION_HIDE_SUBTITLES;
 
+    keymap['r'] = ACTION_TEST_RELOAD;
+
     return keymap;
 }
 

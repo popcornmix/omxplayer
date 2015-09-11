@@ -139,6 +139,7 @@ Key bindings to control omxplayer while playing:
     right arrow seek +30 seconds
     down arrow  seek -600 seconds
     up arrow    seek +600 seconds
+    r           reload current media
 
 ## KEY CONFIG SYNTAX
 
