@@ -62,6 +62,8 @@ int convertStringToAction(string str_action)
         return KeyConfig::ACTION_SHOW_SUBTITLES;
     if(str_action == "HIDE_SUBTITLES")
         return KeyConfig::ACTION_HIDE_SUBTITLES;
+    if(str_action == "SCREENSHOT")
+        return KeyConfig::ACTION_SCREENSHOT;
             
     return -1;
 }
@@ -128,6 +130,7 @@ map<int, int> KeyConfig::buildDefaultKeymap()
     keymap['v'] = ACTION_STEP;
     keymap['w'] = ACTION_SHOW_SUBTITLES;
     keymap['x'] = ACTION_HIDE_SUBTITLES;
+    keymap['c'] = ACTION_SCREENSHOT;
 
     return keymap;
 }

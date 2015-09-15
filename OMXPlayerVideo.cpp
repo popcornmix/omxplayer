@@ -373,3 +373,11 @@ bool OMXPlayerVideo::IsEOS()
   return m_packets.empty() && (!m_decoder || m_decoder->IsEOS());
 }
 
+string OMXPlayerVideo::TakeScreenshot()
+{
+  if(m_decoder)
+    return m_decoder->TakeScreenshot();
+  else
+    return "";
+}
+

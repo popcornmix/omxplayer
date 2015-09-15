@@ -42,6 +42,13 @@ enum EDEINTERLACEMODE
   VS_DEINTERLACEMODE_FORCE=2
 };
 
+enum SCREENSHOTSEQUENCE
+{
+  SS_NONE=0,
+  SS_TIMESTAMP=1,
+  SS_SEQUENCE=2
+};
+
 #define CLASSNAME "COMXVideo"
 
 class OMXVideoConfig
@@ -61,6 +68,11 @@ public:
   int layer;
   float queue_size;
   float fifo_size;
+  int screenshot_width;
+  int screenshot_height;
+  int screenshot_quality;
+  string screenshot_path;
+  SCREENSHOTSEQUENCE screenshot_sequence;
 
   OMXVideoConfig()
   {
@@ -77,6 +89,11 @@ public:
     layer = 0;
     queue_size = 10.0f;
     fifo_size = (float)80*1024*60 / (1024*1024);
+    screenshot_width = -1;
+    screenshot_height = -1;
+    screenshot_quality = 85;
+    screenshot_path = "ss";
+    screenshot_sequence = SS_SEQUENCE;
   }
 };
 
@@ -107,6 +124,7 @@ public:
   bool IsEOS();
   bool SubmittedEOS() { return m_submitted_eos; }
   bool BadState() { return m_omx_decoder.BadState(); };
+  string TakeScreenshot();
 protected:
   // Video format
   bool              m_drop_state;
@@ -117,12 +135,18 @@ protected:
   COMXCoreComponent m_omx_render;
   COMXCoreComponent m_omx_sched;
   COMXCoreComponent m_omx_image_fx;
+  COMXCoreComponent m_omx_splitter;
+  COMXCoreComponent m_omx_resize;
+  COMXCoreComponent m_omx_jpeg_encoder;
   COMXCoreComponent *m_omx_clock;
   OMXClock           *m_av_clock;
 
   COMXCoreTunel     m_omx_tunnel_decoder;
   COMXCoreTunel     m_omx_tunnel_clock;
   COMXCoreTunel     m_omx_tunnel_sched;
+  COMXCoreTunel     m_omx_tunnel_resize;
+  COMXCoreTunel     m_omx_tunnel_jpeg_encoder;
+  COMXCoreTunel     m_omx_tunnel_render;
   COMXCoreTunel     m_omx_tunnel_image_fx;
   bool              m_is_open;
 
@@ -140,6 +164,7 @@ protected:
   OMX_DISPLAYTRANSFORMTYPE m_transform;
   bool              m_settings_changed;
   CCriticalSection  m_critSection;
+  int               m_screenshot_count;
 };
 
 #endif
