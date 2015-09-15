@@ -99,6 +99,7 @@ bool OMXDanuReader::Open(std::string filename, bool dump_format, bool live, floa
 		this->____close();
 		return false;
 	}
+
 	return true;
 }
 
@@ -170,119 +171,119 @@ bool OMXDanuReader::SeekChapter(int chapter, double* startpts)
 
 int OMXDanuReader::__danuRead(OMXPacket **pkt/* = NULL*/) noexcept
 {
+	Danu_MediaPayloadHead head;
+	head.payloadSize = 0;
 	int32_t feedRet;
-	int rwSize = 0;
+	int retSize = 0;
+	ssize_t rwSize;
+	auto __getPayload = [this, &head, &pkt, &rwSize]() -> bool
+	{
+		danu_peekMediaDemuxer_payload(this->__danuDemuxer, this->__danuContext.contextID, &head, NULL, 0);
+		if(head.payloadSize == 0 || pkt == NULL)
+		{
+			// TODO: Dispose
+			danu_getMediaDemuxer_payload(this->__danuDemuxer, this->__danuContext.contextID, NULL, NULL, 0);
+			return false;
+		}
+		OMXPacket &out = *(*pkt = motherClass::AllocPacket((int)head.payloadSize));
+		danu_getMediaDemuxer_payload(this->__danuDemuxer, this->__danuContext.contextID, NULL, out.data, out.size);
+
+		switch(head.type)
+		{
+		case DANU_MPT_AUDIOFRAME:
+			out.codec_type = AVMEDIA_TYPE_AUDIO;
+			break;
+		case DANU_MPT_PFRAME:
+		case DANU_MPT_IFRAME:
+			out.codec_type = AVMEDIA_TYPE_VIDEO;
+			break;
+		default:
+			out.codec_type = AVMEDIA_TYPE_UNKNOWN;
+		}
+		out.hints = this->m_streams[0].hints;
+		out.stream_index = 0;
+		return true;
+	};
+
 	if(this->__danuFD < 0 || ! __ISOPENED)
 		return -1;
+	else if(this->m_open && __getPayload())
+		return 0;
 
 	while(true)
 	{
-		rwSize += ::read(this->__danuFD, this->__danuBuf.data(), this->__danuBuf.size());
+		retSize += rwSize = ::read(this->__danuFD, this->__danuBuf.data(), this->__danuBuf.size());
 		if(rwSize <= 0)
 			break;
 
 		feedRet = danu_feedMediaDemuxerInput(this->__danuInput, this->__danuBuf.data(), rwSize);
 		if(feedRet & DANU_MEDIAMEMUXER_PENDING_CONTEXT)
 		{
-			if(danu_getMediaDemuxer_contextIDs(this->__danuDemuxer, DANU_MEDIAMEMUXER_PENDING_CONTEXT, &this->__danuContext.contextID, 1))
+			OMXStream *stream;
+			if(danu_getMediaDemuxer_contextIDs(this->__danuDemuxer, DANU_MEDIAMEMUXER_PENDING_CONTEXT, &this->__danuContext.contextID, 1) >= 0)
 			{
 				danu_getMediaDemuxer_context(this->__danuDemuxer, this->__danuContext.contextID, &this->__danuContext);
 				if(this->__danuContext.speakerLayout != DANU_SSL_NONE)
 				{
+					stream = &this->m_streams[1];
 					this->m_audio_count = 1;
 					this->m_audio_index = 1;
-					this->m_streams[1].index = 1;
-					this->m_streams[1].id = 1;
-					this->m_streams[1].type = OMXSTREAM_AUDIO;
+					stream->index = 1;
+					stream->id = 1;
+					stream->type = OMXSTREAM_AUDIO;
 				}
 				else if(this->__danuContext.width > 0 && this->__danuContext.height > 0)
 				{
+					stream = &this->m_streams[0];
 					this->m_video_count = 1;
 					this->m_video_index = 0;
-					this->m_streams[0].index = 0;
-					this->m_streams[0].id = 0;
-					this->m_streams[0].type = OMXSTREAM_VIDEO;
+					stream->index = 0;
+					stream->id = 0;
+					stream->type = OMXSTREAM_VIDEO;
 				}
+				else
+					return -1;
 			}
+			else
+				return -1;
+
 			this->m_open = true;
 			this->m_eof = false;
+			stream->stream = NULL;
 			switch(this->__danuContext.encoding)
 			{
 			case DANU_ME_H264:
-				this->m_streams[0].codec_name = "h264";
-				this->m_streams[0].hints.codec = AV_CODEC_ID_H264;
+				stream->codec_name = "h264";
+				stream->hints.codec = AV_CODEC_ID_H264;
 				break;
 			case DANU_ME_MJPEG:
-				this->m_streams[0].codec_name = "mjpeg";
-				this->m_streams[0].hints.codec = AV_CODEC_ID_MJPEG;
+				stream->codec_name = "mjpeg";
+				stream->hints.codec = AV_CODEC_ID_MJPEG;
 				break;
 			case DANU_ME_MPEG4VIDEO:
-				this->m_streams[0].codec_name = "mpeg4";
-				this->m_streams[0].hints.codec = AV_CODEC_ID_MPEG4;
+				stream->codec_name = "mpeg4";
+				stream->hints.codec = AV_CODEC_ID_MPEG4;
 				break;
 			case DANU_ME_MXPEG:
-				this->m_streams[0].codec_name = "mxpeg";
-				this->m_streams[0].hints.codec = AV_CODEC_ID_MXPEG;
+				stream->codec_name = "mxpeg";
+				stream->hints.codec = AV_CODEC_ID_MXPEG;
 				break;
 			}
-			this->m_streams[0].stream = NULL;
-			this->m_streams[0].name = this->__name + ":" + this->__port;
+			stream->name = this->__name + ":" + this->__port;
+			stream->hints.width = this->__danuContext.width;
+			stream->hints.height = this->__danuContext.height;
 
-			this->m_streams[0].hints.width = this->__danuContext.width;
-			this->m_streams[0].hints.height = this->__danuContext.height;
-		}
-		else if(feedRet & DANU_MEDIAMEMUXER_PENDING_PAYLOAD)
-		{
-			Danu_MediaPayloadHead head;
-			head.payloadSize = 0;
-			danu_peekMediaDemuxer_payload(this->__danuDemuxer, this->__danuContext.contextID, &head, NULL, 0);
-			if(head.payloadSize == 0 || (!pkt))
-			{
-				// TODO: Dispose
-				danu_getMediaDemuxer_payload(this->__danuDemuxer, this->__danuContext.contextID, &head, NULL, 0);
-				return -1;
-			}
-			OMXPacket &out = *(*pkt = motherClass::AllocPacket((int)head.payloadSize));
-			danu_getMediaDemuxer_payload(this->__danuDemuxer, this->__danuContext.contextID, NULL, out.data, out.size);
-
-			switch(head.type)
-			{
-			case DANU_MPT_AUDIOFRAME:
-				out.codec_type = AVMEDIA_TYPE_AUDIO;
-				break;
-			case DANU_MPT_PFRAME:
-			case DANU_MPT_IFRAME:
-				out.codec_type = AVMEDIA_TYPE_VIDEO;
-				break;
-			default:
-				out.codec_type = AVMEDIA_TYPE_UNKNOWN;
-			}
-			switch(this->__danuContext.encoding)
-			{
-			case DANU_ME_H264:
-				out.hints.codec = AV_CODEC_ID_H264;
-				break;
-			case DANU_ME_MJPEG:
-				out.hints.codec = AV_CODEC_ID_MJPEG;
-				break;
-			case DANU_ME_MPEG4VIDEO:
-				out.hints.codec = AV_CODEC_ID_MPEG4;
-				break;
-			case DANU_ME_MXPEG:
-				out.hints.codec = AV_CODEC_ID_MXPEG;
-				break;
-			default:
-				out.hints.codec = AV_CODEC_ID_NONE;
-			}
-			out.hints.width = this->__danuContext.width;
-			out.hints.height = this->__danuContext.height;
-
-			out.stream_index = 0;
 			break;
+		}
+		if(this->m_open && (feedRet & DANU_MEDIAMEMUXER_PENDING_PAYLOAD))
+		{
+			if(__getPayload())
+				break;
+			return -1;
 		}
 	}
 
-	return rwSize;
+	return retSize;
 }
 
 void OMXDanuReader::____close() noexcept

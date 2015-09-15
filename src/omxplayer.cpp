@@ -551,10 +551,11 @@ in_init:
   m_has_video = false;
   m_has_audio = false;
   m_has_subtitle = false;
-  m_gen_log = false;
+  m_gen_log = true;
   m_loop = false;
   m_reload = false;
 #ifdef HAVE_LIBDANU
+  danu_setVerbosityLevel(4);
   m_omx_reader_ptr = new danu::OMXDanuReader;
 #else
   m_omx_reader_ptr = new OMXReader;

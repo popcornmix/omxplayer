@@ -37,6 +37,8 @@
 #include "XMemUtils.h"
 #endif
 
+#include <iostream>
+
 //#define OMX_DEBUG_EVENTS
 //#define OMX_DEBUG_EVENTHANDLER
 
@@ -466,7 +468,10 @@ OMX_BUFFERHEADERTYPE *COMXCoreComponent::GetInputBuffer(long timeout /*=200*/)
   OMX_BUFFERHEADERTYPE *omx_input_buffer = NULL;
 
   if(!m_handle)
-    return NULL;
+  {
+	  std::cerr << "COMXCoreComponent::GetInputBuffer() call without m_handle." << std::endl;
+	  return NULL;
+  }
 
   pthread_mutex_lock(&m_omx_input_mutex);
   struct timespec endtime;
@@ -645,6 +650,11 @@ OMX_ERRORTYPE COMXCoreComponent::AllocInputBuffers(bool use_buffers /* = false *
     buffer->pAppPrivate     = (void*)i;  
     m_omx_input_buffers.push_back(buffer);
     m_omx_input_avaliable.push(buffer);
+  }
+  if(m_omx_input_buffers.size() != m_omx_input_avaliable.size())
+  {
+	  std::cerr << "Unable to allocate input buffer. Restart the system!" << std::endl;
+	  return OMX_ErrorUndefined;
   }
 
   omx_err = WaitForCommand(OMX_CommandPortEnable, m_input_port);
