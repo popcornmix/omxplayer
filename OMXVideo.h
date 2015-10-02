@@ -50,6 +50,7 @@ public:
   COMXStreamInfo hints;
   bool use_thread;
   CRect dst_rect;
+  CRect src_rect;
   float display_aspect;
   EDEINTERLACEMODE deinterlace;
   bool advanced_hd_deinterlace;
@@ -66,6 +67,7 @@ public:
   {
     use_thread = true;
     dst_rect.SetRect(0, 0, 0, 0);
+    src_rect.SetRect(0, 0, 0, 0);
     display_aspect = 0.0f;
     deinterlace = VS_DEINTERLACEMODE_AUTO;
     advanced_hd_deinterlace = false;
@@ -131,7 +133,6 @@ protected:
   std::string       m_video_codec_name;
 
   bool              m_deinterlace;
-  CRect             m_src_rect;
   OMXVideoConfig    m_config;
 
   float             m_pixel_aspect;

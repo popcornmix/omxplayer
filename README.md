@@ -90,6 +90,8 @@ Usage: omxplayer [OPTIONS] [FILE]
         --lines n               Number of lines in the subtitle buffer (default: 3)
         --win 'x1 y1 x2 y2'     Set position of video window
         --win x1,y1,x2,y2       Set position of video window
+        --crop 'x1 y1 x2 y2'    Set crop area for input video
+        --crop x1,y1,x2,y2      Set crop area for input video
         --audio_fifo  n         Size of audio output fifo in seconds
         --video_fifo  n         Size of video output fifo in MB
         --audio_queue n         Size of audio input queue in MB
