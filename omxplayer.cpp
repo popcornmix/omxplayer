@@ -452,7 +452,7 @@ static int get_mem_gpu(void)
    return gpu_mem;
 }
 
-static void blank_background(bool enable)
+static void render_background(bool enable)
 {
   if (!enable)
     return;
@@ -464,10 +464,19 @@ static void blank_background(bool enable)
   int             ret;
   uint32_t vc_image_ptr;
   VC_IMAGE_TYPE_T type = VC_IMAGE_RGB565;
-  uint16_t image = 0x0000; // black
+  uint16_t image = 0x0000;
   int             layer = m_config_video.layer - 1;
 
   VC_RECT_T dst_rect, src_rect;
+
+  // create a valid 16bit RGB565 pixel (5 bits red / 6 bits green / 5 bits blue)
+  //	according to http://www.theimagingsource.com/en_US/support/documentation/icimagingcontrol-class/PixelformatRGB565.htm
+  if(m_config_video.bg_r > 1.0) m_config_video.bg_r = 1.0;
+  if(m_config_video.bg_g > 1.0) m_config_video.bg_g = 1.0;
+  if(m_config_video.bg_b > 1.0) m_config_video.bg_b = 1.0;
+  image =  (unsigned char)(m_config_video.bg_r * 31) << 11;	// 5 bits red
+  image |= (unsigned char)(m_config_video.bg_g * 63) << 5;	// 6 bits green
+  image |= (unsigned char)(m_config_video.bg_b * 31);		// 5 bits blue
 
   display = vc_dispmanx_display_open(m_config_video.display);
   assert(display);
@@ -517,7 +526,7 @@ int main(int argc, char *argv[])
   bool                  m_refresh             = false;
   double                startpts              = 0;
   CRect                 SrcRect               = {0,0,0,0};
-  bool                  m_blank_background    = false;
+  bool                  m_render_background    = false;
   bool sentStarted = false;
   float m_threshold      = -1.0f; // amount of audio/video required to come out of buffering
   float m_timeout        = 10.0f; // amount of time file/network operation can stall for before timing out
@@ -536,6 +545,7 @@ int main(int argc, char *argv[])
   const int no_ghost_box_opt = 0x203;
   const int subtitles_opt   = 0x103;
   const int lines_opt       = 0x104;
+  const int bg_opt         = 0x111;
   const int pos_opt         = 0x105;
   const int vol_opt         = 0x106;
   const int audio_fifo_opt  = 0x107;
@@ -600,6 +610,7 @@ int main(int argc, char *argv[])
     { "no-ghost-box", no_argument,        NULL,          no_ghost_box_opt },
     { "subtitles",    required_argument,  NULL,          subtitles_opt },
     { "lines",        required_argument,  NULL,          lines_opt },
+    { "bg",	      required_argument,  NULL,          bg_opt },
     { "win",          required_argument,  NULL,          pos_opt },
     { "audio_fifo",   required_argument,  NULL,          audio_fifo_opt },
     { "video_fifo",   required_argument,  NULL,          video_fifo_opt },
@@ -771,6 +782,11 @@ int main(int argc, char *argv[])
       case lines_opt:
         m_subtitle_lines = std::max(atoi(optarg), 1);
         break;
+      case bg_opt:
+        m_render_background = true;
+        sscanf(optarg, "%f %f %f", &m_config_video.bg_r, &m_config_video.bg_g, &m_config_video.bg_b) == 3 ||
+        sscanf(optarg, "%f,%f,%f", &m_config_video.bg_r, &m_config_video.bg_g, &m_config_video.bg_b);
+        break;
       case pos_opt:
         sscanf(optarg, "%f %f %f %f", &m_config_video.dst_rect.x1, &m_config_video.dst_rect.y1, &m_config_video.dst_rect.x2, &m_config_video.dst_rect.y2) == 4 ||
         sscanf(optarg, "%f,%f,%f,%f", &m_config_video.dst_rect.x1, &m_config_video.dst_rect.y1, &m_config_video.dst_rect.x2, &m_config_video.dst_rect.y2);
@@ -840,7 +856,7 @@ int main(int argc, char *argv[])
         m_loop = true;
         break;
       case 'b':
-        m_blank_background = true;
+        m_render_background = true;
         break;
       case key_config_opt:
         keymap = KeyConfig::parseConfigFile(optarg);
@@ -954,7 +970,7 @@ int main(int argc, char *argv[])
   g_RBP.Initialize();
   g_OMX.Initialize();
 
-  blank_background(m_blank_background);
+  render_background(m_render_background);
 
   int gpu_mem = get_mem_gpu();
   int min_gpu_mem = 64;
