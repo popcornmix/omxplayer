@@ -461,22 +461,29 @@ static void render_background(bool enable)
   DISPMANX_UPDATE_HANDLE_T    update;
   DISPMANX_RESOURCE_HANDLE_T  resource;
   DISPMANX_ELEMENT_HANDLE_T   element;
-  int             ret;
-  uint32_t vc_image_ptr;
-  VC_IMAGE_TYPE_T type = VC_IMAGE_RGB565;
-  uint16_t image = 0x0000;
-  int             layer = m_config_video.layer - 1;
+  int                         ret;
+  uint32_t                    vc_image_ptr;
+  VC_IMAGE_TYPE_T             type = VC_IMAGE_RGB565;
+  int                         layer = m_config_video.layer - 1;
+  uint16_t                    image_pixel = 0x0000;
 
   VC_RECT_T dst_rect, src_rect;
 
-  // create a valid 16bit RGB565 pixel (5 bits red / 6 bits green / 5 bits blue)
-  //	according to http://www.theimagingsource.com/en_US/support/documentation/icimagingcontrol-class/PixelformatRGB565.htm
+  // range checks on user input for background color
   if(m_config_video.bg_r > 1.0) m_config_video.bg_r = 1.0;
+  if(m_config_video.bg_r < 0.0) m_config_video.bg_r = 0.0;
+
   if(m_config_video.bg_g > 1.0) m_config_video.bg_g = 1.0;
+  if(m_config_video.bg_g < 0.0) m_config_video.bg_g = 0.0;
+
   if(m_config_video.bg_b > 1.0) m_config_video.bg_b = 1.0;
-  image =  (unsigned char)(m_config_video.bg_r * 31) << 11;	// 5 bits red
-  image |= (unsigned char)(m_config_video.bg_g * 63) << 5;	// 6 bits green
-  image |= (unsigned char)(m_config_video.bg_b * 31);		// 5 bits blue
+  if(m_config_video.bg_b < 0.0) m_config_video.bg_b = 0.0;
+
+  // create a valid 16bit RGB565 pixel (5 bits red / 6 bits green / 5 bits blue)
+  // according to http://www.theimagingsource.com/en_US/support/documentation/icimagingcontrol-class/PixelformatRGB565.htm
+  image_pixel =  (unsigned char)(m_config_video.bg_r * 31) << 11;	// 5 bits red
+  image_pixel |= (unsigned char)(m_config_video.bg_g * 63) << 5;	// 6 bits green
+  image_pixel |= (unsigned char)(m_config_video.bg_b * 31);		// 5 bits blue
 
   display = vc_dispmanx_display_open(m_config_video.display);
   assert(display);
@@ -486,7 +493,7 @@ static void render_background(bool enable)
 
   vc_dispmanx_rect_set( &dst_rect, 0, 0, 1, 1);
 
-  ret = vc_dispmanx_resource_write_data( resource, type, sizeof(image), &image, &dst_rect );
+  ret = vc_dispmanx_resource_write_data( resource, type, sizeof(image_pixel), &image_pixel, &dst_rect );
   assert(ret == 0);
 
   vc_dispmanx_rect_set( &src_rect, 0, 0, 1<<16, 1<<16);
