@@ -1,4 +1,5 @@
 #include "OMXDanuReader.h"
+#include "OMXClock.h"
 
 #include <regex>
 #include <sys/types.h>
@@ -6,6 +7,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include <sys/time.h>
 #include <unistd.h>
 
 #include <libashe/Number.h>
@@ -100,6 +102,11 @@ bool OMXDanuReader::Open(std::string filename, bool dump_format, bool live, floa
 		return false;
 	}
 
+	this->m_seek = false;
+	this->m_bAVI = false;
+	this->m_bMatroska = false;
+	this->m_speed = DVD_PLAYSPEED_NORMAL;
+	this->m_iCurrentPts = DVD_NOPTS_VALUE;
 	return true;
 }
 
@@ -178,6 +185,8 @@ int OMXDanuReader::__danuRead(OMXPacket **pkt/* = NULL*/) noexcept
 	ssize_t rwSize;
 	auto __getPayload = [this, &head, &pkt, &rwSize]() -> bool
 	{
+		double theTS;
+		timeval theTV;
 		danu_peekMediaDemuxer_payload(this->__danuDemuxer, this->__danuContext.contextID, &head, NULL, 0);
 		if(head.payloadSize == 0 || pkt == NULL)
 		{
@@ -187,6 +196,14 @@ int OMXDanuReader::__danuRead(OMXPacket **pkt/* = NULL*/) noexcept
 		}
 		OMXPacket &out = *(*pkt = motherClass::AllocPacket((int)head.payloadSize));
 		danu_getMediaDemuxer_payload(this->__danuDemuxer, this->__danuContext.contextID, NULL, out.data, out.size);
+		if(::gettimeofday(&theTV, NULL) >= 0)
+		{
+			theTS = (double)theTV.tv_usec + ((double)theTV.tv_sec * 1000000.0);
+			if(this->__baseTS < 0.0)
+				this->__baseTS = theTS;
+			out.dts = out.pts = theTS - this->__baseTS;
+			std::cerr << out.dts << std::endl;
+		}
 
 		switch(head.type)
 		{
@@ -214,7 +231,11 @@ int OMXDanuReader::__danuRead(OMXPacket **pkt/* = NULL*/) noexcept
 	{
 		retSize += rwSize = ::read(this->__danuFD, this->__danuBuf.data(), this->__danuBuf.size());
 		if(rwSize <= 0)
+		{
+			this->m_open = false;
+			this->Close();
 			break;
+		}
 
 		feedRet = danu_feedMediaDemuxerInput(this->__danuInput, this->__danuBuf.data(), rwSize);
 		if(feedRet & DANU_MEDIAMEMUXER_PENDING_CONTEXT)
@@ -294,6 +315,7 @@ void OMXDanuReader::____close() noexcept
 		this->__danuInput = NULL;
 	}
 	this->m_open = false;
+	this->__baseTS = -1.0;
 }
 
 } /* namespace danu */

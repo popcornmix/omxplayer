@@ -21,6 +21,7 @@ public:
 protected:
 	Danu_MediaDemuxer_t __danuDemuxer = NULL;
 	Danu_MediaDemuxerInput_t __danuInput = NULL;
+	double __baseTS = -1.0;
 	int __danuFD = -1;
 
 	Danu_MediaStreamContext __danuContext;
