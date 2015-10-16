@@ -15,6 +15,7 @@
 #include <chrono>
 #include <string>
 #include <iostream>
+#include <vector>
 
 #define __ISOPENED (this->__danuDemuxer || this->__danuInput)
 
@@ -27,7 +28,7 @@ OMXDanuReader::OMXDanuReader() noexcept
 
 OMXDanuReader::~OMXDanuReader() noexcept
 {
-	this->____close();
+	this->__close();
 }
 
 bool OMXDanuReader::Open(std::string filename, bool dump_format, bool live, float timeout, std::string cookie, std::string user_agent)
@@ -38,6 +39,8 @@ bool OMXDanuReader::Open(std::string filename, bool dump_format, bool live, floa
 	std::regex_iterator<std::string::iterator> it(filename.begin(), filename.end(), __EXP__), itEnd;
 	if(it == itEnd)
 		return motherClass::Open(filename, dump_format, live, timeout, cookie, user_agent);
+	else if(__ISOPENED)
+		this->__close();
 
 	auto __throw__ = [](std::string x)
 	{
@@ -92,13 +95,13 @@ bool OMXDanuReader::Open(std::string filename, bool dump_format, bool live, floa
 	catch(std::regex_error &e)
 	{
 		std::cerr << __FILE__ << ':' << __LINE__ << " exception caught: " << e.what() << std::endl;
-		this->____close();
+		this->__close();
 		return false;
 	}
 	catch(...)
 	{
 		std::cerr << __FILE__ << ':' << __LINE__ << " exception caught." << std::endl;
-		this->____close();
+		this->__close();
 		return false;
 	}
 
@@ -107,12 +110,17 @@ bool OMXDanuReader::Open(std::string filename, bool dump_format, bool live, floa
 	this->m_bMatroska = false;
 	this->m_speed = DVD_PLAYSPEED_NORMAL;
 	this->m_iCurrentPts = DVD_NOPTS_VALUE;
+	// TODO: Spawn the poll thread
+	this->__pollThread = std::thread([this](){
+		this->__pollThreadRun();
+	});
+
 	return true;
 }
 
 bool OMXDanuReader::Close()
 {
-	this->____close();
+	this->__close();
 	return motherClass::Close();
 }
 
@@ -232,7 +240,6 @@ int OMXDanuReader::__danuRead(OMXPacket **pkt/* = NULL*/) noexcept
 		retSize += rwSize = ::read(this->__danuFD, this->__danuBuf.data(), this->__danuBuf.size());
 		if(rwSize <= 0)
 		{
-			this->m_open = false;
 			this->Close();
 			break;
 		}
@@ -241,6 +248,7 @@ int OMXDanuReader::__danuRead(OMXPacket **pkt/* = NULL*/) noexcept
 		if(feedRet & DANU_MEDIAMEMUXER_PENDING_CONTEXT)
 		{
 			OMXStream *stream;
+			this->__hasContext = true;
 			if(danu_getMediaDemuxer_contextIDs(this->__danuDemuxer, DANU_MEDIAMEMUXER_PENDING_CONTEXT, &this->__danuContext.contextID, 1) >= 0)
 			{
 				danu_getMediaDemuxer_context(this->__danuDemuxer, this->__danuContext.contextID, &this->__danuContext);
@@ -307,15 +315,55 @@ int OMXDanuReader::__danuRead(OMXPacket **pkt/* = NULL*/) noexcept
 	return retSize;
 }
 
-void OMXDanuReader::____close() noexcept
+void OMXDanuReader::__close() noexcept
 {
 	if(this->__danuDemuxer)
 	{
 		danu_closeMediaDemuxer_safely(&this->__danuDemuxer);
 		this->__danuInput = NULL;
 	}
+	if(this->__danuFD >= 0)
+	{
+		::close(this->__danuFD);
+		this->__danuFD = -1;
+	}
 	this->m_open = false;
+	if(this->__pollThread.joinable())
+	{
+		{
+			std::unique_lock<std::mutex> ul(this->__pollThreadCVMtx);
+			this->__pollThreadCV.notify_all();
+		}
+		this->__pollThread.join();
+	}
+	this->__hasContext = false;
 	this->__baseTS = -1.0;
+}
+
+void OMXDanuReader::__pollThreadRun() noexcept
+{
+	Danu_MediaProtocolProcessorType myProc, srcProc;
+	uint16_t srcID, myID;
+	std::vector<uint8_t> pollMsg(DANU_MEDIADEMUXER_POLLMESSAGE_LENGTH__);
+
+	myProc = DANU_MPPT_DECODER_VIEW;
+	myID = 0;
+
+	while(this->m_open)
+	{
+		if(this->__hasContext)
+		{
+			srcProc = this->__danuContext.sourceProcessor;
+			srcID = this->__danuContext.sourceProcessorID;
+			danu_mediaDemuxer_pollMessage__(myProc, myID, srcProc, srcID, pollMsg.data());
+			::write(this->__danuFD, pollMsg.data(), pollMsg.size()) != pollMsg.size();
+		}
+
+		{
+			std::unique_lock<std::mutex> ul(this->__pollThreadCVMtx);
+			this->__pollThreadCV.wait_for(ul, std::chrono::seconds(5));
+		}
+	}
 }
 
 } /* namespace danu */

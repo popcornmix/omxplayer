@@ -9,6 +9,9 @@
 #include <set>
 #include <array>
 
+#include <thread>
+#include <condition_variable>
+
 namespace danu
 {
 
@@ -25,13 +28,18 @@ protected:
 	int __danuFD = -1;
 
 	Danu_MediaStreamContext __danuContext;
+	bool __hasContext = false;
 	std::array<uint8_t, 4096> __danuBuf;
 	std::string __port, __name;
 
+	std::thread __pollThread;
+	std::mutex __pollThreadCVMtx;
+	std::condition_variable __pollThreadCV;
+
 	int __danuRead(OMXPacket **pkt = NULL) noexcept;
 
-private:
-	void ____close() noexcept;
+	void __close() noexcept;
+	void __pollThreadRun() noexcept;
 
 public:
 	OMXDanuReader() noexcept;
