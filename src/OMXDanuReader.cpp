@@ -210,7 +210,6 @@ int OMXDanuReader::__danuRead(OMXPacket **pkt/* = NULL*/) noexcept
 			if(this->__baseTS < 0.0)
 				this->__baseTS = theTS;
 			out.dts = out.pts = theTS - this->__baseTS;
-			std::cerr << out.dts << std::endl;
 		}
 
 		switch(head.type)
