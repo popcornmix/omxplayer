@@ -168,6 +168,7 @@ public:
   int GetAudioIndex() { return (m_audio_index >= 0) ? m_streams[m_audio_index].index : -1; };
   int GetSubtitleIndex() { return (m_subtitle_index >= 0) ? m_streams[m_subtitle_index].index : -1; };
   int GetVideoIndex() { return (m_video_index >= 0) ? m_streams[m_video_index].index : -1; };
+  std::string getFilename() const { return m_filename; }
 
   int GetRelativeIndex(size_t index)
   {
