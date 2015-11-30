@@ -844,8 +844,9 @@ int main(int argc, char *argv[])
           }
         if (i == sizeof layouts/sizeof *layouts)
         {
+          printf("Wrong layout specified: %s\n", optarg);
           print_usage();
-          return 0;
+          return EXIT_FAILURE;
         }
         break;
       }
@@ -882,21 +883,21 @@ int main(int argc, char *argv[])
         break;
       case 'h':
         print_usage();
-        return 0;
+        return EXIT_SUCCESS;
         break;
       case 'v':
         print_version();
-        return 0;
+        return EXIT_SUCCESS;
         break;
       case 'k':
         print_keybindings();
-        return 0;
+        return EXIT_SUCCESS;
         break;
       case ':':
-        return 0;
+        return EXIT_FAILURE;
         break;
       default:
-        return 0;
+        return EXIT_FAILURE;
         break;
     }
   }
@@ -918,25 +919,25 @@ int main(int argc, char *argv[])
   if(!filename_is_URL && !IsPipe(m_filename) && !Exists(m_filename))
   {
     PrintFileNotFound(m_filename);
-    return 0;
+    return EXIT_FAILURE;
   }
 
   if(m_asked_for_font && !Exists(m_font_path))
   {
     PrintFileNotFound(m_font_path);
-    return 0;
+    return EXIT_FAILURE;
   }
 
   if(m_asked_for_italic_font && !Exists(m_italic_font_path))
   {
     PrintFileNotFound(m_italic_font_path);
-    return 0;
+    return EXIT_FAILURE;
   }
 
   if(m_has_external_subtitles && !Exists(m_external_subtitles_path))
   {
     PrintFileNotFound(m_external_subtitles_path);
-    return 0;
+    return EXIT_FAILURE;
   }
 
   if(!m_has_external_subtitles && !filename_is_URL)
