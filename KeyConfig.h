@@ -40,7 +40,9 @@ class KeyConfig
         ACTION_SHOW_SUBTITLES = 31,
         ACTION_SET_ALPHA = 32,
         ACTION_SET_ASPECT_MODE = 33,
-        ACTION_CROP_VIDEO = 34
+        ACTION_CROP_VIDEO = 34,
+        ACTION_PREVIOUS_FILE = 35,
+        ACTION_NEXT_FILE = 36,
     };
 
     #define KEY_LEFT 0x5b44

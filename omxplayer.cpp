@@ -524,6 +524,7 @@ int main(int argc, char *argv[])
   TV_DISPLAY_STATE_T   tv_state;
   double last_seek_pos = 0;
   bool idle = false;
+  bool m_continue = true;
   std::string            m_cookie              = "";
   std::string            m_user_agent          = "";
 
@@ -906,6 +907,9 @@ int main(int argc, char *argv[])
     return 0;
   }
 
+  int firstFileIndex = optind;
+  while(optind < argc) {
+	m_continue = false;
   m_filename = argv[optind];
 
   auto PrintFileNotFound = [](const std::string& path)
@@ -1378,6 +1382,16 @@ int main(int argc, char *argv[])
         m_stop = true;
         goto do_exit;
         break;
+      case KeyConfig::ACTION_NEXT_FILE:
+        goto do_continue;
+        break;
+      case KeyConfig::ACTION_PREVIOUS_FILE:
+    	  if(optind > firstFileIndex){
+    		  // will be increased by one at the end of the loop
+    		  optind-=2;
+    	  }
+        goto do_continue;
+        break;
       case KeyConfig::ACTION_SEEK_BACK_SMALL:
         if(m_omx_reader.CanSeek()) m_incr = -30.0;
         break;
@@ -1516,7 +1530,7 @@ int main(int argc, char *argv[])
       sentStarted = false;
 
       if (m_omx_reader.IsEof())
-        goto do_exit;
+        goto do_continue;
 
       // Quick reset to reduce delay during loop & seek.
       if (m_has_video && !m_player_video.Reset())
@@ -1773,6 +1787,8 @@ int main(int argc, char *argv[])
     }
   }
 
+do_continue:
+	m_continue = true;
 do_exit:
   if (m_stats)
     printf("\n");
@@ -1821,6 +1837,11 @@ do_exit:
   g_OMX.Deinitialize();
   g_RBP.Deinitialize();
 
+  	  if(!m_continue){
+  		  break;
+  	  }
+  	  optind++;
+  }
   printf("have a nice day ;)\n");
 
   // normal exit status on user quit or playback end
