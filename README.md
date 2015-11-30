@@ -49,7 +49,7 @@ Copy over `omxplayer-dist/*` to the Pi `/`.
 
 ## SYNOPSIS
 
-Usage: omxplayer [OPTIONS] [FILE]
+Usage: omxplayer [OPTIONS] [FILE] ...
 
     -h  --help                  Print this help
     -v  --version               Print version info
@@ -113,7 +113,7 @@ Usage: omxplayer [OPTIONS] [FILE]
 
 For example:
 
-    ./omxplayer -p -o hdmi test.mkv
+    ./omxplayer -p -o hdmi test.mkv test2.mpeg
 
 ## KEY BINDINGS
 
@@ -128,6 +128,8 @@ Key bindings to control omxplayer while playing:
     k           next audio stream
     i           previous chapter
     o           next chapter
+    b           previous file
+    a           next file
     n           previous subtitle stream
     m           next subtitle stream
     s           toggle subtitles
@@ -159,6 +161,8 @@ The list of valid [action]s roughly corresponds to the list of default key bindi
     NEXT_AUDIO
     PREVIOUS_CHAPTER
     NEXT_CHAPTER
+    PREVIOUS_FILE
+    NEXT_FILE
     PREVIOUS_SUBTITLE
     NEXT_SUBTITLE
     TOGGLE_SUBTITLE
@@ -421,6 +425,22 @@ Skip to the next chapter.
 #### Previous
 
 Skip to the previous chapter.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null` 
+
+#### NextFile
+
+Skip to the next file.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null` 
+
+#### PreviousFile
+
+Skip to the previous file.
 
    Params       |   Type
 :-------------: | -------
