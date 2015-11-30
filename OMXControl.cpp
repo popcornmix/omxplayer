@@ -342,6 +342,11 @@ OMXControlResult OMXControl::getEvent()
     dbus_respond_string(m, status);
     return KeyConfig::ACTION_BLANK;
   }
+  else if (dbus_message_is_method_call(m, DBUS_INTERFACE_PROPERTIES, "GetSource"))
+  {
+    dbus_respond_string(m, reader->getFilename().c_str());
+    return KeyConfig::ACTION_BLANK;
+  }
   else if (dbus_message_is_method_call(m, DBUS_INTERFACE_PROPERTIES, "Volume"))
   {
     DBusError error;
