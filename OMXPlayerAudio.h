@@ -83,7 +83,7 @@ protected:
   void UnLockDecoder();
 private:
 public:
-  OMXPlayerAudio();
+   OMXPlayerAudio();
   ~OMXPlayerAudio();
   bool Open(OMXClock *av_clock, const OMXAudioConfig &config, OMXReader *omx_reader);
   bool Close();

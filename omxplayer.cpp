@@ -1414,7 +1414,21 @@ int main(int argc, char *argv[])
       case KeyConfig::ACTION_SET_ALPHA:
           m_player_video.SetAlpha(result.getArg());
           break;
+      case KeyConfig::ACTION_PLAY:
+        m_Pause=false;
+        if(m_has_subtitle)
+        {
+          m_player_subtitles.Resume();
+        }
+        break;
       case KeyConfig::ACTION_PAUSE:
+        m_Pause=true;
+        if(m_has_subtitle)
+        {
+          m_player_subtitles.Pause();
+        }
+        break;
+      case KeyConfig::ACTION_PLAYPAUSE:
         m_Pause = !m_Pause;
         if (m_av_clock->OMXPlaySpeed() != DVD_PLAYSPEED_NORMAL && m_av_clock->OMXPlaySpeed() != DVD_PLAYSPEED_PAUSE)
         {
