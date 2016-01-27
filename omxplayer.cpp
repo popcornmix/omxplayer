@@ -643,7 +643,7 @@ int main(int argc, char *argv[])
   //Build default keymap just in case the --key-config option isn't used
   map<int,int> keymap = KeyConfig::buildDefaultKeymap();
 
-  while ((c = getopt_long(argc, argv, "wiIhvkn:l:o:cslbpd3:Myzt:rg", longopts, NULL)) != -1)
+  while ((c = getopt_long(argc, argv, "wiIhvkn:l:o:cslbpd3:Myzt:rgV", longopts, NULL)) != -1)
   {
     switch (c) 
     {
