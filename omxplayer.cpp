@@ -96,6 +96,7 @@ bool              m_Pause               = false;
 OMXReader         m_omx_reader;
 int               m_audio_index_use     = 0;
 OMXClock          *m_av_clock           = NULL;
+int               m_fpp_speed           = 1000;
 OMXControl        m_omxcontrol;
 Keyboard          *m_keyboard           = NULL;
 OMXAudioConfig    m_config_audio;
@@ -526,6 +527,7 @@ int main(int argc, char *argv[])
   bool idle = false;
   std::string            m_cookie              = "";
   std::string            m_user_agent          = "";
+  bool                  m_verbose = false;
 
   const int font_opt        = 0x100;
   const int italic_font_opt = 0x201;
@@ -625,6 +627,7 @@ int main(int argc, char *argv[])
     { "display",      required_argument,  NULL,          display_opt },
     { "cookie",       required_argument,  NULL,          http_cookie_opt },
     { "user-agent",   required_argument,  NULL,          http_user_agent_opt },
+    { "verbose",      no_argument,        NULL,          'V' },
     { 0, 0, 0, 0 }
   };
 
@@ -895,6 +898,9 @@ int main(int argc, char *argv[])
         break;
       case ':':
         return EXIT_FAILURE;
+        break;
+      case 'V':
+        m_verbose = true;
         break;
       default:
         return EXIT_FAILURE;
@@ -1172,6 +1178,26 @@ int main(int argc, char *argv[])
       case KeyConfig::ACTION_SHOW_INFO:
         m_tv_show_info = !m_tv_show_info;
         vc_tv_show_info(m_tv_show_info);
+        break;
+      case KeyConfig::ACTION_DECREASE_SPEED_MICRO:
+        if (m_fpp_speed >= 33)
+          m_fpp_speed -= 33;
+        SetSpeed(m_fpp_speed);
+        m_Pause = false;
+        break;
+      case KeyConfig::ACTION_NORMAL_SPEED:
+        if (m_fpp_speed != 1000)
+        {
+          m_fpp_speed = 1000;
+          SetSpeed(m_fpp_speed);
+          m_Pause = false;
+        }
+        break;
+      case KeyConfig::ACTION_INCREASE_SPEED_MICRO:
+        if (m_fpp_speed <= 1467)
+          m_fpp_speed += 33;
+        SetSpeed(m_fpp_speed);
+        m_Pause = false;
         break;
       case KeyConfig::ACTION_DECREASE_SPEED:
         if (playspeed_current < playspeed_slow_min || playspeed_current > playspeed_slow_max)
@@ -1590,7 +1616,7 @@ int main(int argc, char *argv[])
       if(m_stats)
       {
         static int count;
-        if ((count++ & 7) == 0)
+        if ((count++ & 7) == 0 or m_verbose)
            printf("M:%8.0f V:%6.2fs %6dk/%6dk A:%6.2f %6.02fs/%6.02fs Cv:%6dk Ca:%6dk                            \r", stamp,
                video_fifo, (m_player_video.GetDecoderBufferSize()-m_player_video.GetDecoderFreeSpace())>>10, m_player_video.GetDecoderBufferSize()>>10,
                audio_fifo, m_player_audio.GetDelay(), m_player_audio.GetCacheTotal(),
@@ -1600,7 +1626,7 @@ int main(int argc, char *argv[])
       if(m_tv_show_info)
       {
         static unsigned count;
-        if ((count++ & 7) == 0)
+        if ((count++ & 7) == 0 or m_verbose)
         {
           char response[80];
           if (m_player_video.GetDecoderBufferSize() && m_player_audio.GetCacheTotal())

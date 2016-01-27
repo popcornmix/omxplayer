@@ -100,6 +100,9 @@ map<int, int> KeyConfig::buildDefaultKeymap()
 
     keymap['1'] = ACTION_DECREASE_SPEED;
     keymap['2'] = ACTION_INCREASE_SPEED;
+    keymap['8'] = ACTION_DECREASE_SPEED_MICRO;
+    keymap['9'] = ACTION_NORMAL_SPEED;
+    keymap['0'] = ACTION_INCREASE_SPEED_MICRO;
     keymap['<'] = ACTION_REWIND;
     keymap[','] = ACTION_REWIND;
     keymap['>'] = ACTION_FAST_FORWARD;
