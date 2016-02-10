@@ -20,10 +20,10 @@ compile:
 configure: 
 	cd ffmpeg; \
 	CFLAGS="$(CFLAGS) ${INCLUDES}" \
-	LDFLAGS="" \
-  ./configure \
+	./configure \
 			--extra-cflags="-mfpu=vfp -mfloat-abi=$(FLOAT) -mno-apcs-stack-check -mstructure-size-boundary=32 -mno-sched-prolog" \
 			--enable-cross-compile \
+			--extra-ldflags="--sysroot=$(SYSROOT) $(LDFLAGS)" \
 			--enable-shared \
 			--disable-static \
 			--arch=arm \
@@ -42,8 +42,8 @@ configure:
 			--enable-gpl \
 			--enable-version3 \
 			--enable-protocols \
-			--enable-libsmbclient \
-			--enable-libssh \
+			--disable-libsmbclient \
+			--disable-libssh \
 			--enable-nonfree \
 			--enable-openssl \
 			--enable-pthreads \

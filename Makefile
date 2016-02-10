@@ -4,6 +4,10 @@ CFLAGS+=-std=c++0x -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX
 
 LDFLAGS+=-L./ -Lffmpeg_compiled/usr/local/lib/ -lc -lWFC -lGLESv2 -lEGL -lbcm_host -lopenmaxil -lfreetype -lz
 
+# Solve issue with link error linking to _dl_hwcap. This symbol is in libc.a
+# but not in libc.so for some bizarre reason.
+LDFLAGS+=$(SYSROOT)/usr/lib/arm-linux-gnueabihf/libc.a
+
 INCLUDES+=-I./ -Ilinux -Iffmpeg_compiled/usr/local/include/ -I /usr/include/dbus-1.0 -I /usr/lib/arm-linux-gnueabihf/dbus-1.0/include
 
 DIST ?= omxplayer-dist
