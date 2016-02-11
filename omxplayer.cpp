@@ -451,19 +451,55 @@ static int get_mem_gpu(void)
    return gpu_mem;
 }
 
-static void blank_background(bool enable)
+typedef struct __attribute__((__packed__)) {
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
+} RGBA_T;
+
+RGBA_T parse_rgb(std::string hex_string)
+{
+    RGBA_T rgba = {0, 0, 0, 0}; // Return black on error
+    uint8_t* rgba_ptr = (uint8_t*) &rgba;
+    
+    // Allow for two different prefixes for ease of use
+    if (hex_string[0] == '#') {
+        hex_string = hex_string.substr(1);
+    }
+    if (hex_string.compare(0, 2, "0x") == 0) {
+        hex_string = hex_string.substr(2);
+    }
+    
+    uint32_t rgba_int = strtol(hex_string.c_str(), NULL, 16);
+    if (hex_string.length() == 6) {
+        int i;
+        for (i = 2; i >= 0; i--) {
+            rgba_ptr[2 - i] = (uint8_t) (rgba_int >> (i * 8));
+        }
+    } else if (hex_string.length() == 3) {
+        int i;
+        for (i = 2; i >= 0; i--) {
+            rgba_ptr[2 - i] = (uint8_t) (rgba_int >> (i * 4)) & 0xF;
+            rgba_ptr[2 - i] |= rgba_ptr[2 - i] << 4;
+        }
+    }
+    
+    return rgba;
+}
+
+static void background_color(bool enable, RGBA_T rgbx)
 {
   if (!enable)
     return;
-  // we create a 1x1 black pixel image that is added to display just behind video
+  // we create a 1x1 image that is added to display just behind video
   DISPMANX_DISPLAY_HANDLE_T   display;
   DISPMANX_UPDATE_HANDLE_T    update;
   DISPMANX_RESOURCE_HANDLE_T  resource;
   DISPMANX_ELEMENT_HANDLE_T   element;
-  int             ret;
+  int ret;
   uint32_t vc_image_ptr;
-  VC_IMAGE_TYPE_T type = VC_IMAGE_RGB565;
-  uint16_t image = 0x0000; // black
+  VC_IMAGE_TYPE_T type = VC_IMAGE_RGBX32; // RGBX: RGB, unused alpha.
   int             layer = m_config_video.layer - 1;
 
   VC_RECT_T dst_rect, src_rect;
@@ -476,7 +512,7 @@ static void blank_background(bool enable)
 
   vc_dispmanx_rect_set( &dst_rect, 0, 0, 1, 1);
 
-  ret = vc_dispmanx_resource_write_data( resource, type, sizeof(image), &image, &dst_rect );
+  ret = vc_dispmanx_resource_write_data( resource, type, sizeof(rgbx), &rgbx, &dst_rect );
   assert(ret == 0);
 
   vc_dispmanx_rect_set( &src_rect, 0, 0, 1<<16, 1<<16);
@@ -500,22 +536,23 @@ int main(int argc, char *argv[])
   signal(SIGFPE, sig_handler);
   signal(SIGINT, sig_handler);
 
-  bool                  m_send_eos            = false;
-  bool                  m_packet_after_seek   = false;
-  bool                  m_seek_flush          = false;
-  bool                  m_chapter_seek        = false;
+  bool                  m_send_eos          = false;
+  bool                  m_packet_after_seek = false;
+  bool                  m_seek_flush        = false;
+  bool                  m_chapter_seek      = false;
   std::string           m_filename;
-  double                m_incr                = 0;
-  double                m_loop_from           = 0;
+  double                m_incr              = 0;
+  double                m_loop_from         = 0;
   CRBP                  g_RBP;
   COMXCore              g_OMX;
-  bool                  m_stats               = false;
-  bool                  m_dump_format         = false;
-  bool                  m_dump_format_exit    = false;
-  FORMAT_3D_T           m_3d                  = CONF_FLAGS_FORMAT_NONE;
-  bool                  m_refresh             = false;
-  double                startpts              = 0;
-  bool                  m_blank_background    = false;
+  bool                  m_stats             = false;
+  bool                  m_dump_format       = false;
+  bool                  m_dump_format_exit  = false;
+  FORMAT_3D_T           m_3d                = CONF_FLAGS_FORMAT_NONE;
+  bool                  m_refresh           = false;
+  double                startpts            = 0;
+  bool                  m_background        = false;
+  RGBA_T                m_background_color;
   bool sentStarted = false;
   float m_threshold      = -1.0f; // amount of audio/video required to come out of buffering
   float m_timeout        = 10.0f; // amount of time file/network operation can stall for before timing out
@@ -563,6 +600,7 @@ int main(int argc, char *argv[])
   const int advanced_opt    = 0x211;
   const int aspect_mode_opt = 0x212;
   const int crop_opt        = 0x213;
+  const int bg_opt          = 0x214;
   const int http_cookie_opt = 0x300;
   const int http_user_agent_opt = 0x301;
 
@@ -593,6 +631,7 @@ int main(int argc, char *argv[])
     { "sid",          required_argument,  NULL,          't' },
     { "pos",          required_argument,  NULL,          'l' },    
     { "blank",        no_argument,        NULL,          'b' },
+    { "bg",           required_argument,  NULL,          bg_opt },
     { "font",         required_argument,  NULL,          font_opt },
     { "italic-font",  required_argument,  NULL,          italic_font_opt },
     { "font-size",    required_argument,  NULL,          font_size_opt },
@@ -859,7 +898,12 @@ int main(int argc, char *argv[])
         m_loop = true;
         break;
       case 'b':
-        m_blank_background = true;
+        m_background = true;
+        m_background_color = {0, 0, 0, 0};
+        break;
+      case bg_opt:
+        m_background = true;
+        m_background_color = parse_rgb(optarg);
         break;
       case key_config_opt:
         keymap = KeyConfig::parseConfigFile(optarg);
@@ -973,7 +1017,7 @@ int main(int argc, char *argv[])
   g_RBP.Initialize();
   g_OMX.Initialize();
 
-  blank_background(m_blank_background);
+  background_color(m_background, m_background_color);
 
   int gpu_mem = get_mem_gpu();
   int min_gpu_mem = 64;
