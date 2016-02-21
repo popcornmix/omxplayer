@@ -88,7 +88,7 @@ int OMXControl::init(OMXClock *m_av_clock, OMXPlayerAudio *m_player_audio, OMXPl
 void OMXControl::dispatch()
 {
   if (bus)
-    dbus_connection_read_write_dispatch(bus, 0);
+    dbus_connection_read_write(bus, 0);
 }
 
 int OMXControl::dbus_connect(std::string& dbus_name)

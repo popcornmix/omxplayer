@@ -110,6 +110,7 @@ Usage: omxplayer [OPTIONS] [FILE]
         --display n             Set display to output to
         --cookie 'cookie'       Send specified cookie as part of HTTP requests
         --user-agent 'ua'       Send specified User-Agent as part of HTTP requests
+        --lavfdopts 'opts'      Options passed to libavformat, e.g. 'probesize:250000,...'
 
 For example:
 

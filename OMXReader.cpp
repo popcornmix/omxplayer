@@ -134,7 +134,7 @@ static offset_t dvd_file_seek(void *h, offset_t pos, int whence)
     return pFile->Seek(pos, whence & ~AVSEEK_FORCE);
 }
 
-bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false */, float timeout /* = 0.0f */, std::string cookie /* = "" */, std::string user_agent /* = "" */)
+bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false */, float timeout /* = 0.0f */, std::string cookie /* = "" */, std::string user_agent /* = "" */, std::string lavfdopts /* = "" */)
 {
   if (!m_dllAvUtil.Load() || !m_dllAvCodec.Load() || !m_dllAvFormat.Load())
     return false;
@@ -159,6 +159,15 @@ bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false
   unsigned int  flags     = READ_TRUNCATED | READ_BITRATE | READ_CHUNKED;
 
   m_pFormatContext     = m_dllAvFormat.avformat_alloc_context();
+
+  result = m_dllAvFormat.av_set_options_string(m_pFormatContext, lavfdopts.c_str(), ":", ",");
+
+  if (result < 0)
+  {
+    CLog::Log(LOGERROR, "COMXPlayer::OpenFile - invalid lavfdopts %s ", lavfdopts.c_str());
+    Close();
+    return false;
+  }
 
   // set the interrupt callback, appeared in libavformat 53.15.0
   m_pFormatContext->interrupt_callback = int_cb;
@@ -919,7 +928,7 @@ bool OMXReader::GetHints(AVStream *stream, COMXStreamInfo *hints)
 
     hints->aspect = SelectAspect(stream, hints->forced_aspect) * stream->codec->width / stream->codec->height;
 
-    if (m_bAVI && stream->codec->codec_id == CODEC_ID_H264)
+    if (m_bAVI && stream->codec->codec_id == AV_CODEC_ID_H264)
       hints->ptsinvalid = true;
     AVDictionaryEntry *rtag = m_dllAvUtil.av_dict_get(stream->metadata, "rotate", NULL, 0);
     if (rtag)
@@ -1221,7 +1230,7 @@ std::string OMXReader::GetStreamCodecName(AVStream *stream)
 
 #ifdef FF_PROFILE_DTS_HD_MA
   /* use profile to determine the DTS type */
-  if (stream->codec->codec_id == CODEC_ID_DTS)
+  if (stream->codec->codec_id == AV_CODEC_ID_DTS)
   {
     if (stream->codec->profile == FF_PROFILE_DTS_HD_MA)
       strStreamName = "dtshd_ma";
@@ -1325,8 +1334,8 @@ std::string OMXReader::GetStreamType(OMXStreamType type, unsigned int index)
   {
     if(m_streams[i].type == type &&  m_streams[i].index == index)
     {
-      if (m_streams[i].hints.codec == CODEC_ID_AC3) strcpy(sInfo, "AC3 ");
-      else if (m_streams[i].hints.codec == CODEC_ID_DTS)
+      if (m_streams[i].hints.codec == AV_CODEC_ID_AC3) strcpy(sInfo, "AC3 ");
+      else if (m_streams[i].hints.codec == AV_CODEC_ID_DTS)
       {
 #ifdef FF_PROFILE_DTS_HD_MA
         if (m_streams[i].hints.profile == FF_PROFILE_DTS_HD_MA)
@@ -1337,7 +1346,7 @@ std::string OMXReader::GetStreamType(OMXStreamType type, unsigned int index)
 #endif
           strcpy(sInfo, "DTS ");
       }
-      else if (m_streams[i].hints.codec == CODEC_ID_MP2) strcpy(sInfo, "MP2 ");
+      else if (m_streams[i].hints.codec == AV_CODEC_ID_MP2) strcpy(sInfo, "MP2 ");
       else strcpy(sInfo, "");
 
       if (m_streams[i].hints.channels == 1) strcat(sInfo, "Mono");
