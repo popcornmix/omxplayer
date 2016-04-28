@@ -74,7 +74,9 @@ Usage: omxplayer [OPTIONS] [FILE]
     -r  --refresh               Adjust framerate/resolution to video
     -g  --genlog                Generate log file
     -l  --pos n                 Start position (hh:mm:ss)
-    -b  --blank                 Set background to black
+    -b  --blank                 Set background to black (synonym for '--bg 0,0,0')
+        --bg 'r g b'            Set background color (r,g,b), each between 0.0 and 1.0		
+        --bg r,g,b              Set background color (r,g,b), each between 0.0 and 1.0			
         --loop                  Loop file. Ignored if file not seekable
         --no-boost-on-downmix   Don't boost volume when downmixing
         --vol n                 set initial volume in millibels (default 0)
