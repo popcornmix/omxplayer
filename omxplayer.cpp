@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <termios.h>
 #include <sys/mman.h>
-#include <linux/fb.h>
 #include <sys/ioctl.h>
 #include <getopt.h>
 #include <string.h>
@@ -544,6 +543,8 @@ int main(int argc, char *argv[])
   bool idle = false;
   std::string            m_cookie              = "";
   std::string            m_user_agent          = "";
+  std::string            m_lavfdopts           = "";
+  std::string            m_avdict              = "";
 
   const int font_opt        = 0x100;
   const int italic_font_opt = 0x201;
@@ -580,8 +581,12 @@ int main(int argc, char *argv[])
   const int display_opt     = 0x20f;
   const int alpha_opt       = 0x210;
   const int advanced_opt    = 0x211;
+  const int aspect_mode_opt = 0x212;
+  const int crop_opt        = 0x213;
   const int http_cookie_opt = 0x300;
   const int http_user_agent_opt = 0x301;
+  const int lavfdopts_opt   = 0x400;
+  const int avdict_opt      = 0x401;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -619,6 +624,8 @@ int main(int argc, char *argv[])
     { "lines",        required_argument,  NULL,          lines_opt },
     { "bg",	      required_argument,  NULL,          bg_opt },
     { "win",          required_argument,  NULL,          pos_opt },
+    { "crop",         required_argument,  NULL,          crop_opt },
+    { "aspect-mode",  required_argument,  NULL,          aspect_mode_opt },
     { "audio_fifo",   required_argument,  NULL,          audio_fifo_opt },
     { "video_fifo",   required_argument,  NULL,          video_fifo_opt },
     { "audio_queue",  required_argument,  NULL,          audio_queue_opt },
@@ -641,6 +648,8 @@ int main(int argc, char *argv[])
     { "display",      required_argument,  NULL,          display_opt },
     { "cookie",       required_argument,  NULL,          http_cookie_opt },
     { "user-agent",   required_argument,  NULL,          http_user_agent_opt },
+    { "lavfdopts",    required_argument,  NULL,          lavfdopts_opt },
+    { "avdict",       required_argument,  NULL,          avdict_opt },
     { 0, 0, 0, 0 }
   };
 
@@ -719,8 +728,8 @@ int main(int argc, char *argv[])
         m_config_audio.device = optarg;
         if(m_config_audio.device != "local" && m_config_audio.device != "hdmi" && m_config_audio.device != "both")
         {
-          print_usage();
-          return 0;
+          printf("Bad argument for -%c: Output device must be `local', `hdmi' or `both'\n", c);
+          return EXIT_FAILURE;
         }
         m_config_audio.device = "omx:" + m_config_audio.device;
         break;
@@ -798,6 +807,22 @@ int main(int argc, char *argv[])
         sscanf(optarg, "%f %f %f %f", &m_config_video.dst_rect.x1, &m_config_video.dst_rect.y1, &m_config_video.dst_rect.x2, &m_config_video.dst_rect.y2) == 4 ||
         sscanf(optarg, "%f,%f,%f,%f", &m_config_video.dst_rect.x1, &m_config_video.dst_rect.y1, &m_config_video.dst_rect.x2, &m_config_video.dst_rect.y2);
         break;
+      case crop_opt:
+        sscanf(optarg, "%f %f %f %f", &m_config_video.src_rect.x1, &m_config_video.src_rect.y1, &m_config_video.src_rect.x2, &m_config_video.src_rect.y2) == 4 ||
+        sscanf(optarg, "%f,%f,%f,%f", &m_config_video.src_rect.x1, &m_config_video.src_rect.y1, &m_config_video.src_rect.x2, &m_config_video.src_rect.y2);
+        break;
+      case aspect_mode_opt:
+        if (optarg) {
+          if (!strcasecmp(optarg, "letterbox"))
+            m_config_video.aspectMode = 1;
+          else if (!strcasecmp(optarg, "fill"))
+            m_config_video.aspectMode = 2;
+          else if (!strcasecmp(optarg, "stretch"))
+            m_config_video.aspectMode = 3;
+          else
+            m_config_video.aspectMode = 0;
+        }
+        break;
       case vol_opt:
 	m_Volume = atoi(optarg);
         break;
@@ -849,8 +874,9 @@ int main(int argc, char *argv[])
           }
         if (i == sizeof layouts/sizeof *layouts)
         {
+          printf("Wrong layout specified: %s\n", optarg);
           print_usage();
-          return 0;
+          return EXIT_FAILURE;
         }
         break;
       }
@@ -883,25 +909,31 @@ int main(int argc, char *argv[])
       case http_user_agent_opt:
         m_user_agent = optarg;
         break;    
+      case lavfdopts_opt:
+        m_lavfdopts = optarg;
+        break;
+      case avdict_opt:
+        m_avdict = optarg;
+        break;
       case 0:
         break;
       case 'h':
         print_usage();
-        return 0;
+        return EXIT_SUCCESS;
         break;
       case 'v':
         print_version();
-        return 0;
+        return EXIT_SUCCESS;
         break;
       case 'k':
         print_keybindings();
-        return 0;
+        return EXIT_SUCCESS;
         break;
       case ':':
-        return 0;
+        return EXIT_FAILURE;
         break;
       default:
-        return 0;
+        return EXIT_FAILURE;
         break;
     }
   }
@@ -923,25 +955,25 @@ int main(int argc, char *argv[])
   if(!filename_is_URL && !IsPipe(m_filename) && !Exists(m_filename))
   {
     PrintFileNotFound(m_filename);
-    return 0;
+    return EXIT_FAILURE;
   }
 
   if(m_asked_for_font && !Exists(m_font_path))
   {
     PrintFileNotFound(m_font_path);
-    return 0;
+    return EXIT_FAILURE;
   }
 
   if(m_asked_for_italic_font && !Exists(m_italic_font_path))
   {
     PrintFileNotFound(m_italic_font_path);
-    return 0;
+    return EXIT_FAILURE;
   }
 
   if(m_has_external_subtitles && !Exists(m_external_subtitles_path))
   {
     PrintFileNotFound(m_external_subtitles_path);
-    return 0;
+    return EXIT_FAILURE;
   }
 
   if(!m_has_external_subtitles && !filename_is_URL)
@@ -1002,7 +1034,7 @@ int main(int argc, char *argv[])
     m_keyboard->setDbusName(m_dbus_name);
   }
 
-  if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_config_audio.is_live, m_timeout, m_cookie.c_str(), m_user_agent.c_str()))
+  if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_config_audio.is_live, m_timeout, m_cookie.c_str(), m_user_agent.c_str(), m_lavfdopts.c_str(), m_avdict.c_str()))
     goto do_exit;
 
   if (m_dump_format_exit)
@@ -1126,10 +1158,10 @@ int main(int argc, char *argv[])
       m_config_audio.device = "omx:local";
   }
 
-  if ((m_config_audio.hints.codec == CODEC_ID_AC3 || m_config_audio.hints.codec == CODEC_ID_EAC3) &&
+  if ((m_config_audio.hints.codec == AV_CODEC_ID_AC3 || m_config_audio.hints.codec == AV_CODEC_ID_EAC3) &&
       m_BcmHost.vc_tv_hdmi_audio_supported(EDID_AudioFormat_eAC3, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit ) != 0)
     m_config_audio.passthrough = false;
-  if (m_config_audio.hints.codec == CODEC_ID_DTS &&
+  if (m_config_audio.hints.codec == AV_CODEC_ID_DTS &&
       m_BcmHost.vc_tv_hdmi_audio_supported(EDID_AudioFormat_eDTS, 2, EDID_AudioSampleRate_e44KHz, EDID_AudioSampleSize_16bit ) != 0)
     m_config_audio.passthrough = false;
 
@@ -1438,7 +1470,11 @@ int main(int argc, char *argv[])
         break;
       case KeyConfig::ACTION_MOVE_VIDEO:
         sscanf(result.getWinArg(), "%f %f %f %f", &m_config_video.dst_rect.x1, &m_config_video.dst_rect.y1, &m_config_video.dst_rect.x2, &m_config_video.dst_rect.y2);
-        m_player_video.SetVideoRect(SrcRect,m_config_video.dst_rect);
+        m_player_video.SetVideoRect(m_config_video.src_rect, m_config_video.dst_rect);
+        break;
+      case KeyConfig::ACTION_CROP_VIDEO:
+        sscanf(result.getWinArg(), "%f %f %f %f", &m_config_video.src_rect.x1, &m_config_video.src_rect.y1, &m_config_video.src_rect.x2, &m_config_video.src_rect.y2);
+        m_player_video.SetVideoRect(m_config_video.src_rect, m_config_video.dst_rect);
         break;
       case KeyConfig::ACTION_HIDE_VIDEO:
         // set alpha to minimum
@@ -1447,6 +1483,19 @@ int main(int argc, char *argv[])
       case KeyConfig::ACTION_UNHIDE_VIDEO:
         // set alpha to maximum
         m_player_video.SetAlpha(255);
+        break;
+      case KeyConfig::ACTION_SET_ASPECT_MODE:
+        if (result.getWinArg()) {
+          if (!strcasecmp(result.getWinArg(), "letterbox"))
+            m_config_video.aspectMode = 1;
+          else if (!strcasecmp(result.getWinArg(), "fill"))
+            m_config_video.aspectMode = 2;
+          else if (!strcasecmp(result.getWinArg(), "stretch"))
+            m_config_video.aspectMode = 3;
+          else
+            m_config_video.aspectMode = 0;
+          m_player_video.SetVideoRect(m_config_video.aspectMode);
+        }
         break;
       case KeyConfig::ACTION_DECREASE_VOLUME:
         m_Volume -= 300;

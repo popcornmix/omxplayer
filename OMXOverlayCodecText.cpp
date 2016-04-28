@@ -41,8 +41,10 @@ COMXOverlayCodecText::~COMXOverlayCodecText()
 
 bool COMXOverlayCodecText::Open(COMXStreamInfo &hints)
 {
-  m_bIsSSA = (hints.codec == AV_CODEC_ID_SSA);
-  if(hints.codec == AV_CODEC_ID_SUBRIP || hints.codec == AV_CODEC_ID_SSA)
+  m_bIsSSA = hints.codec == AV_CODEC_ID_SSA || hints.codec == AV_CODEC_ID_ASS;
+  if(hints.codec == AV_CODEC_ID_SUBRIP ||
+     hints.codec == AV_CODEC_ID_SSA ||
+     hints.codec == AV_CODEC_ID_ASS)
     return true;
   return false;
 }
@@ -58,7 +60,6 @@ int COMXOverlayCodecText::Decode(BYTE* data, int size, double pts, double durati
 {
   if(m_pOverlay)
     delete m_pOverlay;
-  m_pOverlay = NULL;
 
   m_pOverlay = new COMXOverlayText();
   m_pOverlay->iPTSStartTime = 0;
@@ -72,8 +73,8 @@ int COMXOverlayCodecText::Decode(BYTE* data, int size, double pts, double durati
 
   if (m_bIsSSA)
   {
-    // currently just skip the prefixed ssa fields (8 (9?) fields)
-    int nFieldCount = 9;
+    // currently just skip the prefixed ssa fields (8 fields)
+    int nFieldCount = 8;
     while (nFieldCount > 0 && start < end)
     {
       if (*start == ',')

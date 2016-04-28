@@ -134,7 +134,7 @@ static offset_t dvd_file_seek(void *h, offset_t pos, int whence)
     return pFile->Seek(pos, whence & ~AVSEEK_FORCE);
 }
 
-bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false */, float timeout /* = 0.0f */, std::string cookie /* = "" */, std::string user_agent /* = "" */)
+bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false */, float timeout /* = 0.0f */, std::string cookie /* = "" */, std::string user_agent /* = "" */, std::string lavfdopts /* = "" */, std::string avdict /* = "" */)
 {
   if (!m_dllAvUtil.Load() || !m_dllAvCodec.Load() || !m_dllAvFormat.Load())
     return false;
@@ -160,11 +160,34 @@ bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false
 
   m_pFormatContext     = m_dllAvFormat.avformat_alloc_context();
 
+  result = m_dllAvFormat.av_set_options_string(m_pFormatContext, lavfdopts.c_str(), ":", ",");
+
+  if (result < 0)
+  {
+    CLog::Log(LOGERROR, "COMXPlayer::OpenFile - invalid lavfdopts %s ", lavfdopts.c_str());
+    Close();
+    return false;
+  }
+
+  AVDictionary *d = NULL;
+  result = m_dllAvUtil.av_dict_parse_string(&d, avdict.c_str(), ":", ",", 0);
+
+  if (result < 0)
+  {
+    CLog::Log(LOGERROR, "COMXPlayer::OpenFile - invalid avdict %s ", avdict.c_str());
+    Close();
+    return false;
+  }
+
   // set the interrupt callback, appeared in libavformat 53.15.0
   m_pFormatContext->interrupt_callback = int_cb;
 
   // if format can be nonblocking, let's use that
   m_pFormatContext->flags |= AVFMT_FLAG_NONBLOCK;
+
+  // strip off file://
+  if(m_filename.substr(0, 7) == "file://" )
+    m_filename.replace(0, 7, "");
 
   if(m_filename.substr(0, 8) == "shout://" )
     m_filename.replace(0, 8, "http://");
@@ -174,6 +197,7 @@ bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false
       m_filename.substr(0,7) == "rtmp://" || m_filename.substr(0,6) == "udp://" ||
       m_filename.substr(0,7) == "rtsp://" || m_filename.substr(0,6) == "rtp://" ||
       m_filename.substr(0,6) == "ftp://" || m_filename.substr(0,7) == "sftp://" ||
+      m_filename.substr(0,6) == "tcp://" || m_filename.substr(0,7) == "unix://" ||
       m_filename.substr(0,6) == "smb://")
   {
     // ffmpeg dislikes the useragent from AirPlay urls
@@ -182,7 +206,6 @@ bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false
     if(idx != string::npos)
       m_filename = m_filename.substr(0, idx);
 
-    AVDictionary *d = NULL;
     // Enable seeking if http, ftp
     if(!live && (m_filename.substr(0,7) == "http://" || m_filename.substr(0,6) == "ftp://" ||
        m_filename.substr(0,7) == "sftp://" || m_filename.substr(0,6) == "smb://"))
@@ -243,7 +266,8 @@ bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false
     }
 
     m_pFormatContext->pb = m_ioContext;
-    result = m_dllAvFormat.avformat_open_input(&m_pFormatContext, m_filename.c_str(), iformat, NULL);
+    result = m_dllAvFormat.avformat_open_input(&m_pFormatContext, m_filename.c_str(), iformat, &d);
+    av_dict_free(&d);
     if(result < 0)
     {
       Close();
@@ -846,6 +870,31 @@ bool OMXReader::IsActive(OMXStreamType type, int stream_index)
   return false;
 }
 
+double OMXReader::SelectAspect(AVStream* st, bool& forced)
+{
+  // trust matroshka container
+  if (m_bMatroska && st->sample_aspect_ratio.num != 0)
+  {
+    forced = true;
+    return av_q2d(st->sample_aspect_ratio);
+  }
+
+  forced = false;
+  /* if stream aspect is 1:1 or 0:0 use codec aspect */
+  if((st->sample_aspect_ratio.den == 1 || st->sample_aspect_ratio.den == 0) &&
+     (st->sample_aspect_ratio.num == 1 || st->sample_aspect_ratio.num == 0) &&
+      st->codec->sample_aspect_ratio.num != 0)
+  {
+    return av_q2d(st->codec->sample_aspect_ratio);
+  }
+
+  forced = true;
+  if(st->sample_aspect_ratio.num != 0)
+    return av_q2d(st->sample_aspect_ratio);
+
+  return 0.0;
+}
+
 bool OMXReader::GetHints(AVStream *stream, COMXStreamInfo *hints)
 {
   if(!hints || !stream)
@@ -888,13 +937,9 @@ bool OMXReader::GetHints(AVStream *stream, COMXStreamInfo *hints)
       hints->fpsrate      = 0;
     }
 
-    if (stream->sample_aspect_ratio.num != 0)
-      hints->aspect = av_q2d(stream->sample_aspect_ratio) * stream->codec->width / stream->codec->height;
-    else if (stream->codec->sample_aspect_ratio.num != 0)
-      hints->aspect = av_q2d(stream->codec->sample_aspect_ratio) * stream->codec->width / stream->codec->height;
-    else
-      hints->aspect = 0.0f;
-    if (m_bAVI && stream->codec->codec_id == CODEC_ID_H264)
+    hints->aspect = SelectAspect(stream, hints->forced_aspect) * stream->codec->width / stream->codec->height;
+
+    if (m_bAVI && stream->codec->codec_id == AV_CODEC_ID_H264)
       hints->ptsinvalid = true;
     AVDictionaryEntry *rtag = m_dllAvUtil.av_dict_get(stream->metadata, "rotate", NULL, 0);
     if (rtag)
@@ -1196,7 +1241,7 @@ std::string OMXReader::GetStreamCodecName(AVStream *stream)
 
 #ifdef FF_PROFILE_DTS_HD_MA
   /* use profile to determine the DTS type */
-  if (stream->codec->codec_id == CODEC_ID_DTS)
+  if (stream->codec->codec_id == AV_CODEC_ID_DTS)
   {
     if (stream->codec->profile == FF_PROFILE_DTS_HD_MA)
       strStreamName = "dtshd_ma";
@@ -1300,8 +1345,8 @@ std::string OMXReader::GetStreamType(OMXStreamType type, unsigned int index)
   {
     if(m_streams[i].type == type &&  m_streams[i].index == index)
     {
-      if (m_streams[i].hints.codec == CODEC_ID_AC3) strcpy(sInfo, "AC3 ");
-      else if (m_streams[i].hints.codec == CODEC_ID_DTS)
+      if (m_streams[i].hints.codec == AV_CODEC_ID_AC3) strcpy(sInfo, "AC3 ");
+      else if (m_streams[i].hints.codec == AV_CODEC_ID_DTS)
       {
 #ifdef FF_PROFILE_DTS_HD_MA
         if (m_streams[i].hints.profile == FF_PROFILE_DTS_HD_MA)
@@ -1312,7 +1357,7 @@ std::string OMXReader::GetStreamType(OMXStreamType type, unsigned int index)
 #endif
           strcpy(sInfo, "DTS ");
       }
-      else if (m_streams[i].hints.codec == CODEC_ID_MP2) strcpy(sInfo, "MP2 ");
+      else if (m_streams[i].hints.codec == AV_CODEC_ID_MP2) strcpy(sInfo, "MP2 ");
       else strcpy(sInfo, "");
 
       if (m_streams[i].hints.channels == 1) strcat(sInfo, "Mono");

@@ -105,7 +105,7 @@ public:
   void WaitCompletion();
   unsigned int GetCached() { return m_cached_size; };
   unsigned int GetMaxCached() { return m_config.queue_size * 1024 * 1024; };
-  unsigned int GetLevel() { return m_config.queue_size ? 100 * m_cached_size / (m_config.queue_size * 1024 * 1024) : 0; };
+  unsigned int GetLevel() { return m_config.queue_size ? 100.0f * m_cached_size / (m_config.queue_size * 1024.0f * 1024.0f) : 0; };
   void SetVolume(float fVolume)                          { m_CurrentVolume = fVolume; if(m_decoder) m_decoder->SetVolume(fVolume); }
   float GetVolume()                                      { return m_CurrentVolume; }
   void SetMute(bool bOnOff)                              { m_mute = bOnOff; if(m_decoder) m_decoder->SetMute(bOnOff); }

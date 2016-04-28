@@ -8,7 +8,7 @@ OMXPLAYER_BIN="$OMXPLAYER_DIR/omxplayer.bin"
 OMXPLAYER_LIBS="/opt/vc/lib"
 
 if [ -e "$OMXPLAYER_DIR/ffmpeg_compiled" ]; then
-    OMXPLAYER_LIBS="$OMXPLAYER_LIBS:$OMXPLAYER_DIR/ffmpeg_compiled"
+    OMXPLAYER_LIBS="$OMXPLAYER_LIBS:$OMXPLAYER_DIR/ffmpeg_compiled/usr/local/lib"
 else
     OMXPLAYER_LIBS="$OMXPLAYER_LIBS:/usr/lib/omxplayer"
 fi

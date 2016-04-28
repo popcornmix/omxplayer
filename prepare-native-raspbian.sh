@@ -10,6 +10,10 @@ check_dpkg_installed() {
 
 echo "Modifying for native build on Debian"
 
+if [ -z `which sudo` ] ; then
+    apt-get install -y sudo
+fi
+    
 echo "Checking dpkg database for missing packages"
 REQUIRED_PKGS="ca-certificates git-core subversion binutils libva1 libpcre3-dev libidn11-dev libboost1.50-dev libfreetype6-dev libusb-1.0-0-dev libdbus-1-dev libssl-dev libssh-dev libsmbclient-dev gcc-4.7 g++-4.7 sed pkg-config"
 MISSING_PKGS=""

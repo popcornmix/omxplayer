@@ -92,6 +92,9 @@ Usage: omxplayer [OPTIONS] [FILE]
         --lines n               Number of lines in the subtitle buffer (default: 3)
         --win 'x1 y1 x2 y2'     Set position of video window
         --win x1,y1,x2,y2       Set position of video window
+        --crop 'x1 y1 x2 y2'    Set crop area for input video
+        --crop x1,y1,x2,y2      Set crop area for input video
+        --aspect-mode type      Letterbox, fill, stretch. Default: stretch if win is specified, letterbox otherwise
         --audio_fifo  n         Size of audio output fifo in seconds
         --video_fifo  n         Size of video output fifo in MB
         --audio_queue n         Size of audio input queue in MB
@@ -109,6 +112,8 @@ Usage: omxplayer [OPTIONS] [FILE]
         --display n             Set display to output to
         --cookie 'cookie'       Send specified cookie as part of HTTP requests
         --user-agent 'ua'       Send specified User-Agent as part of HTTP requests
+        --lavfdopts 'opts'      Options passed to libavformat, e.g. 'probesize:250000,...'
+        --avdict 'opts'         Options passed to demuxer, e.g., 'rtsp_transport:tcp,...'
 
 For example:
 
@@ -331,6 +336,14 @@ Whether or not the player can pause.
 #### PlaybackStatus
 
 The current state of the player, either "Paused" or "Playing".
+
+   Params       |   Type
+:-------------: | ---------
+ Return         | `string` 
+
+#### GetSource
+
+The current file or stream that is being played.
 
    Params       |   Type
 :-------------: | ---------

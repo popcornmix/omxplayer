@@ -59,7 +59,6 @@ configure:
 			--disable-decoder=h264_vda \
 			--disable-decoder=h264_crystalhd \
 			--disable-decoder=h264_vdpau \
-			--disable-decoder=libstagefright_h264 \
 			--disable-decoder=vc1_crystalhd \
 			--disable-decoder=wmv3_crystalhd \
 			--disable-decoder=wmv3_vdpau \
@@ -165,7 +164,6 @@ configure:
 			--disable-decoder=tiff \
 			--disable-decoder=gif \
 			--disable-decoder=dxa \
-			--disable-decoder=dnxhd \
 			--disable-decoder=thp \
 			--disable-decoder=sgi \
 			--disable-decoder=c93 \
@@ -197,7 +195,6 @@ configure:
 			--disable-decoder=r210 \
 			--disable-decoder=anm \
 			--disable-decoder=iff_ilbm \
-			--disable-decoder=iff_byterun1 \
 			--disable-decoder=kgv1 \
 			--disable-decoder=yop \
 			--enable-decoder=vp8 \
@@ -253,7 +250,7 @@ clean:
 
 .PHONY : checkout
 checkout:
-	git clone git://source.ffmpeg.org/ffmpeg ffmpeg -b n2.6 --depth=1
+	git clone git://source.ffmpeg.org/ffmpeg ffmpeg -b release/3.0 --depth=1
 
 .PHONY : install
 install:

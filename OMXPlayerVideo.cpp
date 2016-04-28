@@ -184,6 +184,11 @@ void OMXPlayerVideo::SetVideoRect(const CRect& SrcRect, const CRect& DestRect)
   m_decoder->SetVideoRect(SrcRect, DestRect);
 }
 
+void OMXPlayerVideo::SetVideoRect(int aspectMode)
+{
+  m_decoder->SetVideoRect(aspectMode);
+}
+
 bool OMXPlayerVideo::Decode(OMXPacket *pkt)
 {
   if(!pkt)

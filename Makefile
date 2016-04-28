@@ -51,7 +51,7 @@ version:
 	bash gen_version.sh > version.h 
 
 omxplayer.bin: version $(OBJS)
-	$(CXX) $(LDFLAGS) -o omxplayer.bin $(OBJS) -lvchiq_arm -lvcos -ldbus-1 -lrt -lpthread -lavutil -lavcodec -lavformat -lswscale -lswresample -lpcre
+	$(CXX) $(LDFLAGS) -o omxplayer.bin $(OBJS) -lvchiq_arm -lvchostif -lvcos -ldbus-1 -lrt -lpthread -lavutil -lavcodec -lavformat -lswscale -lswresample -lpcre
 	$(STRIP) omxplayer.bin
 
 help.h: README.md Makefile
@@ -88,5 +88,5 @@ dist: omxplayer.bin omxplayer.1
 	cp COPYING $(DIST)/usr/share/doc/omxplayer
 	cp README.md $(DIST)/usr/share/doc/omxplayer/README
 	cp omxplayer.1 $(DIST)/usr/share/man/man1
-	cp -a ffmpeg_compiled/usr/local/lib/*.so* $(DIST)/usr/lib/omxplayer/
+	cp -P ffmpeg_compiled/usr/local/lib/*.so* $(DIST)/usr/lib/omxplayer/
 	cd $(DIST); tar -czf ../$(DIST).tgz *
