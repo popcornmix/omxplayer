@@ -453,7 +453,7 @@ static int get_mem_gpu(void)
 
 static void blank_background(uint32_t rgba)
 {
-  if (!rgba)
+  if (!(rgba & 0xff000000))
     return;
   // we create a 1x1 black pixel image that is added to display just behind video
   DISPMANX_DISPLAY_HANDLE_T   display;
@@ -463,7 +463,6 @@ static void blank_background(uint32_t rgba)
   int             ret;
   uint32_t vc_image_ptr;
   VC_IMAGE_TYPE_T type = VC_IMAGE_ARGB8888;
-  uint16_t image = 0x0000; // black
   int             layer = m_config_video.layer - 1;
 
   VC_RECT_T dst_rect, src_rect;
