@@ -1836,8 +1836,12 @@ do_exit:
 
   printf("have a nice day ;)\n");
 
-  // normal exit status on user quit or playback end
-  if (m_stop || m_send_eos)
-    return 0;
-  return 1;
+  // exit status success on playback end
+  if (m_send_eos)
+    return EXIT_SUCCESS;
+  // exit status OMXPlayer defined value on user quit
+  if (m_stop)
+    return 3;
+  // exit status failure on other cases
+  return EXIT_FAILURE;
 }
