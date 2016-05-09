@@ -281,7 +281,7 @@ void OMXPlayerAudio::Process()
   while(true)
   {
     Lock();
-    if(!(m_bStop || m_bAbort) && m_packets.empty())
+    if(!(m_bStop || m_bAbort) && !omx_pkt && m_packets.empty())
       pthread_cond_wait(&m_packet_cond, &m_lock);
 
     if (m_bStop || m_bAbort)
@@ -290,29 +290,28 @@ void OMXPlayerAudio::Process()
       break;
     }
 
-    if(m_flush && omx_pkt)
+    if(m_flush)
     {
-      OMXReader::FreePacket(omx_pkt);
-      omx_pkt = NULL;
+      if(omx_pkt)
+      {
+        OMXReader::FreePacket(omx_pkt);
+        omx_pkt = NULL;
+      }
       m_flush = false;
     }
-    else if(!omx_pkt && !m_packets.empty())
+
+    if(!omx_pkt && !m_packets.empty())
     {
       omx_pkt = m_packets.front();
-      m_cached_size -= omx_pkt->size;
       m_packets.pop_front();
     }
+
     UnLock();
     
     LockDecoder();
-    if(m_flush && omx_pkt)
+    if(omx_pkt && Decode(omx_pkt))
     {
-      OMXReader::FreePacket(omx_pkt);
-      omx_pkt = NULL;
-      m_flush = false;
-    }
-    else if(omx_pkt && Decode(omx_pkt))
-    {
+      m_cached_size -= omx_pkt->size;
       OMXReader::FreePacket(omx_pkt);
       omx_pkt = NULL;
     }
@@ -359,8 +358,10 @@ bool OMXPlayerAudio::AddPacket(OMXPacket *pkt)
   if((m_cached_size + pkt->size) < m_config.queue_size * 1024 * 1024)
   {
     Lock();
+    LockDecoder();
     m_cached_size += pkt->size;
     m_packets.push_back(pkt);
+    UnLockDecoder();
     UnLock();
     ret = true;
     pthread_cond_broadcast(&m_packet_cond);
@@ -492,36 +493,15 @@ double OMXPlayerAudio::GetCacheTotal()
 
 void OMXPlayerAudio::SubmitEOS()
 {
-  if(m_decoder)
-    m_decoder->SubmitEOS();
+  assert(m_decoder);
+  assert(m_packets.empty());
+  m_decoder->SubmitEOS();
 }
 
 bool OMXPlayerAudio::IsEOS()
 {
-  return m_packets.empty() && (!m_decoder || m_decoder->IsEOS());
+  assert(m_decoder);
+  assert(m_packets.empty());
+  return m_decoder->IsEOS();
 }
-
-void OMXPlayerAudio::WaitCompletion()
-{
-  if(!m_decoder)
-    return;
-
-  unsigned int nTimeOut = m_config.fifo_size * 1000;
-  while(nTimeOut)
-  {
-    if(IsEOS())
-    {
-      CLog::Log(LOGDEBUG, "%s::%s - got eos\n", "OMXPlayerAudio", __func__);
-      break;
-    }
-
-    if(nTimeOut == 0)
-    {
-      CLog::Log(LOGERROR, "%s::%s - wait for eos timed out\n", "OMXPlayerAudio", __func__);
-      break;
-    }
-    OMXClock::OMXSleep(50);
-    nTimeOut -= 50;
-  }
-} 
 
