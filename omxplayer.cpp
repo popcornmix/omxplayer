@@ -1175,7 +1175,7 @@ int main(int argc, char *argv[])
 
      if (update) {
        OMXControlResult result = control_err
-                               ? (OMXControlResult)m_keyboard->getEvent()
+                               ? (OMXControlResult)(m_keyboard ? m_keyboard->getEvent() : KeyConfig::ACTION_BLANK)
                                : m_omxcontrol.getEvent();
        double oldPos, newPos;
 
