@@ -11,15 +11,15 @@ export DBUS_SESSION_BUS_PID=`cat $OMXPLAYER_DBUS_PID`
 
 case $1 in
 status)
-	duration=`dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Duration`
+	duration=`dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get string:"org.mpris.MediaPlayer2.Player" string:"Duration"`
 	[ $? -ne 0 ] && exit 1
 	duration="$(awk '{print $2}' <<< "$duration")"
 
-	position=`dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Position`
+	position=`dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get string:"org.mpris.MediaPlayer2.Player" string:"Position"`
 	[ $? -ne 0 ] && exit 1
 	position="$(awk '{print $2}' <<< "$position")"
 
-	playstatus=`dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.PlaybackStatus`
+	playstatus=`dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get string:"org.mpris.MediaPlayer2.Player" string:"PlaybackStatus"`
 	[ $? -ne 0 ] && exit 1
 	playstatus="$(sed 's/^ *//;s/ *$//;' <<< "$playstatus")"
 
@@ -31,7 +31,7 @@ status)
 	;;
 
 volume)
-	volume=`dbus-send --print-reply=double --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Volume ${2:+double:}$2`
+	volume=`dbus-send --print-reply=double --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Set string:"org.mpris.MediaPlayer2.Player" string:"Volume" ${2:+double:}$2`
 	[ $? -ne 0 ] && exit 1
 	volume="$(awk '{print $2}' <<< "$volume")"
 	echo "Volume: $volume"
@@ -97,11 +97,11 @@ showsubtitles)
 	dbus-send --print-reply=literal --session --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Action int32:31 >/dev/null
 	;;
 getsource)
-	source=$(dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.GetSource)
+	source=$(dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.GetSource)
 	echo "$source" | sed 's/^ *//'
 	;;
 *)
-	echo "usage: $0 status|pause|stop|seek|volumeup|volumedown|setposition [position in microseconds]|hidevideo|unhidevideo|togglesubtitles|hidesubtitles|showsubtitles|setvideopos [x1 y1 x2 y2]|setvideocroppos [x1 y1 x2 y2]|setaspectmode [letterbox,fill,stretch,default]|setalpha [alpha (0..255)]" >&2
+	echo "usage: $0 status|pause|stop|seek|volumeup|volumedown|setposition [position in microseconds]|hidevideo|unhidevideo|togglesubtitles|hidesubtitles|showsubtitles|setvideopos [x1 y1 x2 y2]|setvideocroppos [x1 y1 x2 y2]|setaspectmode [letterbox,fill,stretch,default]|setalpha [alpha (0..255)]|getsource" >&2
 	exit 1
 	;;
 esac

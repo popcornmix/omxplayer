@@ -7,6 +7,11 @@
 #include "OMXPlayerAudio.h"
 #include "OMXPlayerSubtitles.h"
 
+
+#define MIN_RATE (1)
+#define MAX_RATE (4 * DVD_PLAYSPEED_NORMAL)
+
+
 class OMXControlResult {
   int key;
   int64_t arg;
