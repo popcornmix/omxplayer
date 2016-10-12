@@ -529,17 +529,78 @@ void SubtitleRenderer::destroy_vg() {
 
 void SubtitleRenderer::
 prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT {
-  const int n_lines = text_lines.size();
+  const int in_lines = text_lines.size();
   TagTracker tag_tracker;
+  std::vector<InternalChar> converted_line;
+  int stored_lines = 0;
 
-  internal_lines_.resize(n_lines);
-  line_widths_.resize(n_lines);
-  line_positions_.resize(n_lines);
-  for (int i = 0; i < n_lines; ++i) {
-    internal_lines_[i] = get_internal_chars(text_lines[i], tag_tracker);
-    prepare_glyphs(internal_lines_[i]);
-    line_widths_[i] = get_text_width(internal_lines_[i]);
-    line_positions_[i].second = margin_bottom_ + (n_lines-i-1)*line_height_;
+  internal_lines_.clear();
+  line_widths_.clear();
+  line_positions_.clear();
+
+  for (int i = 0; i < in_lines; ++i) {
+      int cuts;
+      int width = 0;
+      int target_width = 0;
+
+      converted_line = get_internal_chars(text_lines[i], tag_tracker);
+
+      for (auto c = converted_line.begin(); c != converted_line.end(); ++c) {
+          if (glyphs_.find(*c) == glyphs_.end())
+              load_glyph(*c);
+
+          width += glyphs_.at(*c).advance;
+      }
+
+      // This word wrap routine could use a little optimisation, but I have no
+      // idea how the vector class is implemented, so...
+      if (centered_)
+          cuts = (width * 5) / (buffer_width_ * 4);
+      else
+          cuts = width / (buffer_width_ - (margin_left_ * 2));
+
+      auto start = converted_line.begin();
+      auto end = converted_line.begin();
+
+      target_width = width / (cuts + 1);
+
+      for (int j = 0; j < cuts; j++)
+      {
+          int current_width = 0;
+
+          // The while clause is for paranoia only. If the maths is right it should never get hit.
+          while (end != converted_line.end()) {
+              int advance = glyphs_.at(*end).advance;
+
+              current_width += advance;
+
+              // Note that Unicode contains other whitespace characters not tested for here.
+              if ((current_width >= target_width) && ((*end).codepoint() <= 0x20))
+              {
+                  width -= current_width;
+                  current_width -= advance;
+                  internal_lines_.push_back(std::vector<InternalChar>(start, end));
+                  line_widths_.push_back(current_width);
+                  stored_lines++;
+
+                  end++;
+                  start = end;
+                  break;
+              }
+
+              end++;
+          }
+      }
+
+      internal_lines_.push_back(std::vector<InternalChar>(start, converted_line.end()));
+      line_widths_.push_back(width);
+      stored_lines++;
+  }
+
+  line_positions_.resize(stored_lines);
+
+  for (int i = 0; i < stored_lines; ++i) {
+    line_positions_[i].second = margin_bottom_ + (stored_lines-i-1)*line_height_;
     if (centered_)
       line_positions_[i].first = buffer_width_/2 - line_widths_[i]/2;
     else
