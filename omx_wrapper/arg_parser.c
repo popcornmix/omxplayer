@@ -4,6 +4,7 @@
 
 #include "debug.h"
 
+#include "omx_cmd.h"
 #include "arg_parser.h"
 
 #define USAGE 
@@ -12,12 +13,12 @@
  *
  */
 static struct option long_options[] = {
-    {"Play" , 		required_argument, 0, 0},
-    {"Pause" , 	    no_argument, 	   0, 0},
-    {"Stop" , 	    no_argument, 	   0, 0},
-    {"Playlist" , 	required_argument, 0, 0},
-    {"Volume_Up" , 	no_argument, 	   0, 0},
-    {"Volume_Down", no_argument,       0, 0},
+    {"play" , 		required_argument, 0, 0},
+    {"pause" , 	    no_argument, 	   0, 0},
+    {"stop" , 	    no_argument, 	   0, 0},
+    {"playlist" , 	required_argument, 0, 0},
+    {"volumeup" , 	no_argument, 	   0, 0},
+    {"volumedown", no_argument,       0, 0},
     {0,						0, 0, 0}
 };
 
@@ -37,13 +38,16 @@ void opt_parser(int argc, char* argv[])
             break;
         }
 
-        switch(opt) {
+        //FIXME: switch should be more robust for '?'
+        switch(opt) {//if the argument is not belong to above, getopt() will not extract it
             case 0:/// long option will jump here
                 dlog("option %s", long_options[option_index].name);
 
                 if(optarg)
                     dlog(" with arg %s", optarg);
                 dlog("\n");
+
+                omx_cmd(long_options[option_index].name, optarg);//TODO: implement
                 break;
         }
     }

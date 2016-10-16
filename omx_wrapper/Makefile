@@ -5,12 +5,12 @@ ifeq ($(strip $(DEBUG)),1)
 CFLAGS += -DDEBUG -g
 endif
 
-OBJS = arg_parser.o
+OBJS = arg_parser.o omx_cmd.o
 EXEC = omx_api
 
 all: $(OBJS) $(EXEC)
 
-SRCS = main.c arg_parser.c
+SRCS = main.c arg_parser.c omx_cmd.c
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $^
