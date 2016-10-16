@@ -45,7 +45,7 @@ void opt_parser(int argc, char* argv[])
 
                 if(optarg)
                     dlog(" with arg %s", optarg);
-                dlog("\n");
+                printf("\n");
 
                 omx_cmd(long_options[option_index].name, optarg);//TODO: implement
                 break;

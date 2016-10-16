@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <assert.h>
 
@@ -46,11 +47,21 @@ void omx_ctl(const char *act, char* arg)
     char cmd[MAX_CMD_LEN];
     memset(cmd, '\0', MAX_CMD_LEN);
 
-    if(arg)
-        assert(sprintf(cmd, "%s %s %s", dbus_path, act, arg) < MAX_CMD_LEN);
+    if(arg)//FIXME: we have only play option now, maybe more(robust)
+        assert(sprintf(cmd, "%s %s > /dev/null", omx_path, arg) < MAX_CMD_LEN);
     else
-        assert(sprintf(cmd, "%s %s", dbus_path, act) < MAX_CMD_LEN);
-    system(cmd);
+        assert(sprintf(cmd, "%s %s", omx_path, act) < MAX_CMD_LEN);
+
+
+
+    pid_t pid = fork();
+    if(pid > 0)//parent
+        return;
+    else if(pid == 0)
+        system(cmd);
+    else {
+        syserr((pid == 0),"fork");
+    }
 }
 
 void dbus_ctl(const char *act, char *arg)
@@ -61,16 +72,16 @@ void dbus_ctl(const char *act, char *arg)
     memset(cmd, '\0', MAX_CMD_LEN);
 
     if(arg)
-        assert(sprintf(cmd, "%s %s %s", omx_path, act, arg) < MAX_CMD_LEN);
+        assert(sprintf(cmd, "%s %s %s", dbus_path, act, arg) < MAX_CMD_LEN);
     else
-        assert(sprintf(cmd, "%s %s", omx_path, act) < MAX_CMD_LEN);
+        assert(sprintf(cmd, "%s %s", dbus_path, act) < MAX_CMD_LEN);
     system(cmd);
 }
 
 size_t strlen_checker(const char* str, int limit)
 {
-    if(str) {
-        dlog("str = NULL");
+    if(!str) {
+        dlog("str = NULL\n");
         return 0;
     }
 
