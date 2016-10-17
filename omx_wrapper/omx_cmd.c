@@ -12,8 +12,8 @@
 
 #define strsame(str1, str2) (strcmp(str1, str2) == 0)
 
-static const char omx_path[] = "../omxplayer";
-static const char dbus_path[] = "../dbuscontrol.sh";
+static const char omx_path[] = "/home/pi/Ken/omxplayer/omxplayer";
+static const char dbus_path[] = "/home/pi/Ken/omxplayer/dbuscontrol.sh";
 
 void omx_cmd(const char* cmd, char* arg)
 {
