@@ -721,9 +721,9 @@ int main(int argc, char *argv[])
           }
         }
         if(m_config_audio.device != "local" && m_config_audio.device != "hdmi" && m_config_audio.device != "both" &&
-           m_config_audio.device != "alsa")
+           m_config_audio.device != "alsa" && m_config_audio.device != "alsa+hdmi")
         {
-          printf("Bad argument for -%c: Output device must be `local', `hdmi', `both' or `alsa'\n", c);
+          printf("Bad argument for -%c: Output device must be `local', `hdmi', `both', `alsa' or `alsa+hdmi'\n", c);
           return EXIT_FAILURE;
         }
         m_config_audio.device = "omx:" + m_config_audio.device;
@@ -1148,7 +1148,8 @@ int main(int argc, char *argv[])
       m_config_audio.device = "omx:local";
   }
 
-  if(m_config_audio.device == "omx:alsa" && m_config_audio.subdevice.empty())
+  if ((m_config_audio.device == "omx:alsa" ||
+       m_config_audio.device == "omx:alsa+hdmi") && m_config_audio.subdevice.empty())
     m_config_audio.subdevice = "default";
 
   if ((m_config_audio.hints.codec == AV_CODEC_ID_AC3 || m_config_audio.hints.codec == AV_CODEC_ID_EAC3) &&
