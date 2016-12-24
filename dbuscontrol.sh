@@ -98,6 +98,7 @@ showsubtitles)
 	;;
 getsource)
 	source=$(dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.GetSource)
+	[ $? -ne 0 ] && exit 1
 	echo "$source" | sed 's/^ *//'
 	;;
 *)
