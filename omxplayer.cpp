@@ -1120,6 +1120,7 @@ int main(int argc, char *argv[])
                                 m_config_video.display, m_config_video.layer + 1,
                                 m_av_clock))
       goto do_exit;
+      m_player_subtitles.SetSubtitleRect(m_config_video.dst_rect.x1, m_config_video.dst_rect.y1, m_config_video.dst_rect.x2, m_config_video.dst_rect.y2);
   }
 
   if(m_has_subtitle)
