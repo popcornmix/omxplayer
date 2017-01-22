@@ -91,6 +91,8 @@ public:
 
   bool AddPacket(OMXPacket *pkt, size_t stream_index) BOOST_NOEXCEPT;
 
+  void SetSubtitleRect(int width, int height, int x, int y) BOOST_NOEXCEPT;
+
 private:
   struct Message {
     struct Stop {};
@@ -115,6 +117,13 @@ private:
     {
       std::vector<std::string> text_lines;
       int duration;
+    };
+    struct SetRect
+    {
+        int x1;
+        int y1;
+        int x2;
+        int y2;
     };
   };
 
@@ -149,7 +158,8 @@ private:
           Message::Touch,
           Message::SetPaused,
           Message::SetDelay,
-          Message::DisplayText>                 m_mailbox;
+          Message::DisplayText,
+          Message::SetRect>                     m_mailbox;
   bool                                          m_visible;
   bool                                          m_use_external_subtitles;
   size_t                                        m_active_index;
