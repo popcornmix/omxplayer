@@ -499,7 +499,5 @@ void OMXPlayerSubtitles::DisplayText(const std::string& text, int duration) BOOS
 
 void OMXPlayerSubtitles::SetSubtitleRect(int x1, int y1, int x2, int y2) BOOST_NOEXCEPT
 {
-  assert(m_open);
-
   SendToRenderer(Message::SetRect{x1, y1, x2, y2});
 }

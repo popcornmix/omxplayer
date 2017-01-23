@@ -538,7 +538,7 @@ prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT {
 }
 
 void SubtitleRenderer::clear() BOOST_NOEXCEPT {
-  vgClear(0, 0, config_.buffer_width, config_.buffer_height);
+  vgClear(0, 0, screen_width_, screen_height_);
   assert(!vgGetError());
 }
 
@@ -589,16 +589,15 @@ void SubtitleRenderer::set_rect(int x1, int y1, int x2, int y2) BOOST_NOEXCEPT
     uint32_t height = y2-y1;
     float height_mod = (float) height / screen_height_;
     float width_mod = (float) width / screen_width_;
-
     config_.buffer_x = x1;
-    config_.buffer_y = y2 - (screen_height_ - config_fullscreen_.buffer_y) * height_mod;
+    config_.buffer_y = y2 - (screen_height_ - config_fullscreen_.buffer_y) * height_mod + 0.5f;
     config_.buffer_width = width;
-    config_.buffer_height = config_fullscreen_.buffer_height * height_mod;
-    config_.line_height = config_fullscreen_.line_height * height_mod;
-    config_.box_offset = config_fullscreen_.box_offset * height_mod;
-    config_.box_h_padding = config_fullscreen_.box_h_padding * height_mod;
-    config_.margin_left = config_fullscreen_.margin_left * width_mod;
-    config_.margin_bottom = config_fullscreen_.margin_bottom * height_mod;
+    config_.buffer_height = config_fullscreen_.buffer_height * height_mod + 0.5f;
+    config_.line_height = config_fullscreen_.line_height * height_mod + 0.5f;
+    config_.box_offset = config_fullscreen_.box_offset * height_mod + 0.5f;
+    config_.box_h_padding = config_fullscreen_.box_h_padding * height_mod + 0.5f;
+    config_.margin_left = config_fullscreen_.margin_left * width_mod + 0.5f;
+    config_.margin_bottom = config_fullscreen_.margin_bottom * height_mod + 0.5f;
 
     // resize dispmanx element
     ENFORCE(dispman_element_);
