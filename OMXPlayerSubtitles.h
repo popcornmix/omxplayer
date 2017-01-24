@@ -91,7 +91,7 @@ public:
 
   bool AddPacket(OMXPacket *pkt, size_t stream_index) BOOST_NOEXCEPT;
 
-  void SetSubtitleRect(int width, int height, int x, int y) BOOST_NOEXCEPT;
+  void SetSubtitleRect(int x1, int y1, int x2, int y2) BOOST_NOEXCEPT;
 
 private:
   struct Message {
