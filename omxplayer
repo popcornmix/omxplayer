@@ -43,6 +43,11 @@ if [ -z $NOREFRESH ] || [ "$NOREFRESH" == "0" ]; then
     fi
 fi
 
+if [ ! -z $xset_bin ]; then
+$xset_bin -dpms
+$xset_bin s off
+fi
+
 DBUS_CMD="dbus-daemon --fork --print-address 5 --print-pid 6 --session"
 OMXPLAYER_DBUS_ADDR="/tmp/omxplayerdbus.${USER:-root}"
 OMXPLAYER_DBUS_PID="/tmp/omxplayerdbus.${USER:-root}.pid"
@@ -66,6 +71,11 @@ export DBUS_SESSION_BUS_PID
 
 LD_LIBRARY_PATH="$OMXPLAYER_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" $OMXPLAYER_BIN "$@"
 RESULT=$?
+
+if [ ! -z $xset_bin ]; then
+$xset_bin +dpms
+$xset_bin s on
+fi
 
 if [ ! -z $NOREFRESH ] && [ "$NOREFRESH" == "1" ]; then
     exit $RESULT
