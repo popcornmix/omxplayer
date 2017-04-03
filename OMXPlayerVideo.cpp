@@ -212,7 +212,7 @@ bool OMXPlayerVideo::Decode(OMXPacket *pkt)
     if(m_flush_requested) return true;
   }
 
-  CLog::Log(LOGINFO, "CDVDPlayerVideo::Decode dts:%.0f pts:%.0f cur:%.0f, size:%d", pkt->dts, pkt->pts, m_iCurrentPts, pkt->size);
+  CLog::Log(LOGINFO, "OMXPlayerVideo::Decode dts:%.0f pts:%.0f cur:%.0f, size:%d", pkt->dts, pkt->pts, m_iCurrentPts, pkt->size);
   m_decoder->Decode(pkt->data, pkt->size, dts, pts);
   return true;
 }
@@ -233,29 +233,27 @@ void OMXPlayerVideo::Process()
       break;
     }
 
-    if(m_flush && omx_pkt)
+    if(m_flush)
     {
-      OMXReader::FreePacket(omx_pkt);
-      omx_pkt = NULL;
+      if(omx_pkt)
+      {
+        OMXReader::FreePacket(omx_pkt);
+        omx_pkt = NULL;
+      }
       m_flush = false;
     }
-    else if(!omx_pkt && !m_packets.empty())
+
+    if(!omx_pkt && !m_packets.empty())
     {
       omx_pkt = m_packets.front();
-      m_cached_size -= omx_pkt->size;
       m_packets.pop_front();
     }
-    UnLock();
 
+    UnLock();
     LockDecoder();
-    if(m_flush && omx_pkt)
+    if(omx_pkt && Decode(omx_pkt))
     {
-      OMXReader::FreePacket(omx_pkt);
-      omx_pkt = NULL;
-      m_flush = false;
-    }
-    else if(omx_pkt && Decode(omx_pkt))
-    {
+      m_cached_size -= omx_pkt->size;
       OMXReader::FreePacket(omx_pkt);
       omx_pkt = NULL;
     }
@@ -300,8 +298,10 @@ bool OMXPlayerVideo::AddPacket(OMXPacket *pkt)
   if((m_cached_size + pkt->size) < m_config.queue_size * 1024 * 1024)
   {
     Lock();
+    LockDecoder();
     m_cached_size += pkt->size;
     m_packets.push_back(pkt);
+    UnLockDecoder();
     UnLock();
     ret = true;
     pthread_cond_broadcast(&m_packet_cond);
@@ -367,14 +367,15 @@ int  OMXPlayerVideo::GetDecoderFreeSpace()
 
 void OMXPlayerVideo::SubmitEOS()
 {
-  if(m_decoder)
-    m_decoder->SubmitEOS();
+  assert(m_decoder);
+  assert(m_packets.empty());
+  m_decoder->SubmitEOS();
 }
 
 bool OMXPlayerVideo::IsEOS()
 {
-  if(!m_decoder)
-    return false;
-  return m_packets.empty() && (!m_decoder || m_decoder->IsEOS());
+  assert(m_decoder);
+  assert(m_packets.empty());
+  return m_decoder->IsEOS();
 }
 
