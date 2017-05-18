@@ -62,6 +62,7 @@ OMXReader::OMXReader()
   m_filename    = "";
   m_bMatroska   = false;
   m_bAVI        = false;
+  m_bMP3        = false;
   g_abort       = false;
   m_pFile       = NULL;
   m_ioContext   = NULL;
@@ -280,6 +281,7 @@ bool OMXReader::Open(std::string filename, bool dump_format, bool live /* =false
 
   m_bMatroska = strncmp(m_pFormatContext->iformat->name, "matroska", 8) == 0; // for "matroska.webm"
   m_bAVI = strcmp(m_pFormatContext->iformat->name, "avi") == 0;
+  m_bMP3 = strcmp(m_pFormatContext->iformat->name, "mp3") == 0;
 
   // analyse very short to speed up mjpeg playback start
   if (iformat && (strcmp(iformat->name, "mjpeg") == 0) && m_ioContext->seekable == 0)
@@ -723,6 +725,10 @@ void OMXReader::AddStream(int id)
   // discard if it's a picture attachment (e.g. album art embedded in MP3 or AAC)
   if(pStream->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
     (pStream->disposition & AV_DISPOSITION_ATTACHED_PIC))
+    return;
+
+  // discard any video stream in a mp3 file
+  if ( m_bMP3 && pStream->codec->codec_type == AVMEDIA_TYPE_VIDEO )
     return;
 
   switch (pStream->codec->codec_type)
