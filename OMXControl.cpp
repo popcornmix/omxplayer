@@ -1017,7 +1017,7 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
   }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "ListVideo"))
   {
-    int count = reader->AudioStreamCount();
+    int count = reader->VideoStreamCount();
     char** values = new char*[count];
 
     for (int i=0; i < count; i++)
