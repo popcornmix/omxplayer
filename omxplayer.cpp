@@ -968,13 +968,28 @@ int main(int argc, char *argv[])
 
   if(!m_has_external_subtitles && !filename_is_URL)
   {
-    auto subtitles_path = m_filename.substr(0, m_filename.find_last_of(".")) +
-                          ".srt";
+    auto postfixes = {"", "_en", "_en_US", "_es", "_pt", "_pt_BR", "_pb", "_ru", "_ru_RU", "_de", "_fi", "_fr", "_it", "_ja", "_nl", "_no", "_sv", "_zh", "_zh_CN",
+                      "_zh_TW", "_aa", "_ab", "_ae", "_af", "_ak", "_am", "_an", "_ar", "_ar_SY", "_as", "_av", "_ay", "_az", "_ba", "_be", "_bg", "_bh", "_bi",
+                      "_bm", "_bn", "_bo", "_br", "_bs", "_ca", "_ce", "_co", "_cr", "_cs", "_cu", "_cv", "_cy", "_da", "_dv", "_dz", "_ee", "_el", "_el_GR", "_eo",
+                      "_et", "_eu", "_fa", "_ff", "_fj", "_fo", "_fy", "_ga", "_gd", "_gl", "_gn", "_gu", "_gv", "_ha", "_he", "_hi", "_ho", "_hr", "_ht", "_hu",
+                      "_hy", "_hz", "_ch", "_ia", "_id", "_ie", "_ig", "_ii", "_ik", "_io", "_is", "_iu", "_jv", "_ka", "_kg", "_ki", "_kj", "_kk", "_kl", "_km",
+                      "_kn", "_ko", "_kr", "_ks", "_ku", "_kv", "_kw", "_ky", "_la", "_lb", "_lg", "_li", "_ln", "_lo", "_lt", "_lu", "_lv", "_mg", "_mh", "_mi",
+                      "_mk", "_ml", "_mn", "_mo", "_mr", "_ms", "_mt", "_my", "_na", "_nb", "_nd", "_ne", "_ng", "_nn", "_nr", "_nv", "_ny", "_oc", "_oj", "_om",
+                      "_or", "_os", "_pa", "_pi", "_pl", "_ps", "_qu", "_rm", "_rn", "_ro", "_ro_RO", "_rw", "_sa", "_sc", "_sd", "_se", "_sg", "_si", "_sk", "_sl",
+                      "_sl_SI", "_sm", "_sn", "_so", "_sq", "_sr", "_ss", "_st", "_su", "_sw", "_ta", "_te", "_tg", "_th", "_ti", "_tk", "_tl", "_tn", "_to", "_tr",
+                      "_ts", "_tt", "_tw", "_ty", "_ug", "_uk", "_uk_UA", "_ur", "_uz", "_ve", "_vi", "_vi_VN", "_vo", "_wa", "_wo", "_xh", "_yi", "_yo", "_za", "_zu"};
 
-    if(Exists(subtitles_path))
+    for (size_t i = 0;i < sizeof postfixes/sizeof postfixes[0];i++)
     {
-      m_external_subtitles_path = subtitles_path;
-      m_has_external_subtitles = true;
+      auto subtitles_path = m_filename.substr(0, m_filename.find_last_of(".")) +
+                          postfixes[i] + ".srt";
+
+      if(Exists(subtitles_path))
+      {
+        m_external_subtitles_path = subtitles_path;
+        m_has_external_subtitles = true;
+        break;
+      }
     }
   }
     
