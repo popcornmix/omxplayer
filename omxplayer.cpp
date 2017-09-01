@@ -968,7 +968,7 @@ int main(int argc, char *argv[])
 
   if(!m_has_external_subtitles && !filename_is_URL)
   {
-    auto postfixes = {"", "_en", "_en_US", "_es", "_pt", "_pt_BR", "_pb", "_ru", "_ru_RU", "_de", "_fi", "_fr", "_it", "_ja", "_nl", "_no", "_sv", "_zh", "_zh_CN",
+      std::string postfixes[198] = {"", "_en", "_en_US", "_es", "_pt", "_pt_BR", "_pb", "_ru", "_ru_RU", "_de", "_fi", "_fr", "_it", "_ja", "_nl", "_no", "_sv", "_zh", "_zh_CN",
                       "_zh_TW", "_aa", "_ab", "_ae", "_af", "_ak", "_am", "_an", "_ar", "_ar_SY", "_as", "_av", "_ay", "_az", "_ba", "_be", "_bg", "_bh", "_bi",
                       "_bm", "_bn", "_bo", "_br", "_bs", "_ca", "_ce", "_co", "_cr", "_cs", "_cu", "_cv", "_cy", "_da", "_dv", "_dz", "_ee", "_el", "_el_GR", "_eo",
                       "_et", "_eu", "_fa", "_ff", "_fj", "_fo", "_fy", "_ga", "_gd", "_gl", "_gn", "_gu", "_gv", "_ha", "_he", "_hi", "_ho", "_hr", "_ht", "_hu",
@@ -981,7 +981,7 @@ int main(int argc, char *argv[])
 
     for (size_t i = 0;i < sizeof postfixes/sizeof postfixes[0];i++)
     {
-      auto subtitles_path = m_filename.substr(0, m_filename.find_last_of(".")) +
+        auto subtitles_path = m_filename.substr(0, m_filename.find_last_of(".")) +
                           postfixes[i] + ".srt";
 
       if(Exists(subtitles_path))
