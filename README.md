@@ -327,8 +327,7 @@ Skip to the previous chapter.
 ##### Play
 
 Play the video. If the video is playing, it has no effect, if it is
-paused it will play from current position and if it is stopped it will
-play from the beginning.
+paused it will play from current position.
 
    Params       |   Type
 :-------------: | -------
@@ -354,7 +353,7 @@ paused it will start playing.
 
 ##### Stop
 
-Stops the video.
+Stops the video. This has the same effect as Quit (terminates the omxplayer instance).
 
    Params       |   Type
 :-------------: | -------
