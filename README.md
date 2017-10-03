@@ -18,14 +18,14 @@ if you modify the structure of README.md!
 ## COMPILING
 
 Run this script which will install build dependency packages,
-including g++ 4.7, and update firmware
+including g++, and update firmware
 
     ./prepare-native-raspbian.sh
 
 Build with
 
-    make ffmpeg
-    make
+    make -j 4 ffmpeg
+    make -j 4
 
 Install with
     
