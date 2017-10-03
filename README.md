@@ -24,7 +24,7 @@ including g++, and update firmware
 
 Build with
 
-    make -j$(nproc) ffmpeg
+    make ffmpeg
     make -j$(nproc)
 
 Install with
