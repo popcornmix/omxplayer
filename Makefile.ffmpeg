@@ -14,7 +14,7 @@ copy:
 
 .PHONY : compile
 compile: 
-	+$(MAKE) -C ffmpeg
+	+$(MAKE) -j$(shell nproc) -C ffmpeg
 
 .PHONY : configure
 configure: 
