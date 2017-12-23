@@ -226,6 +226,17 @@ No effect.
    Params       |   Type
 :-------------: | -------
  Return         | `null`
+ 
+##### DisplayText
+
+Display a message for the specified amount of time. If omxplayer is run with
+--no-osd, no message is displayed
+
+   Params       |   Type    | Description
+:-------------: | ----------| ------------------
+ 1              | `string`  | Message to display
+ 2              | `int64`   | Microseconds to display
+ Return         | `null`    | 
 
 #### Properties
 

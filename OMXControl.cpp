@@ -219,6 +219,31 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
     //Does nothing
     return KeyConfig::ACTION_BLANK;
   }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_ROOT, "DisplayText"))
+  {
+    DBusError error;
+    dbus_error_init(&error);
+    
+    const char *msg;
+    int64_t duration;
+    
+    dbus_message_get_args(m, &error, DBUS_TYPE_STRING, &msg, DBUS_TYPE_INT64, &duration, DBUS_TYPE_INVALID);
+    
+    // Make sure values are sent for setting DisplayText
+    if (dbus_error_is_set(&error))
+    {
+      CLog::Log(LOGWARNING, "DisplayText D-Bus Error: %s", error.message );
+      dbus_error_free(&error);
+      dbus_respond_ok(m);
+      return KeyConfig::ACTION_BLANK;
+    }
+    else
+    {
+      subtitles->DisplayText(msg, duration);
+      dbus_respond_ok(m);
+      return KeyConfig::ACTION_BLANK;
+    }
+  }
   //Properties Get method:
   //TODO: implement GetAll
   else if (dbus_message_is_method_call(m, DBUS_INTERFACE_PROPERTIES, "Get"))
