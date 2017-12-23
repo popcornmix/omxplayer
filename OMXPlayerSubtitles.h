@@ -46,7 +46,6 @@ public:
             float font_size,
             bool centered,
             bool ghost_box,
-            bool osd,
             unsigned int lines,
             int display, int layer,
             OMXClock* clock) BOOST_NOEXCEPT;
@@ -171,13 +170,9 @@ private:
   float                                         m_font_size;
   bool                                          m_centered;
   bool                                          m_ghost_box;
-  bool                                          m_osd;
   unsigned int                                  m_lines;
   OMXClock*                                     m_av_clock;
   int                                           m_display;
   int                                           m_layer;
-
-#ifndef NDEBUG
-  bool m_open;
-#endif
+  bool                                          m_open;
 };

@@ -67,7 +67,7 @@ extern "C" {
 // when we repeatedly seek, rather than play continuously
 #define TRICKPLAY(speed) (speed < 0 || speed > 4 * DVD_PLAYSPEED_NORMAL)
 
-#define DISPLAY_TEXT(text, ms) m_player_subtitles.DisplayText(text, ms)
+#define DISPLAY_TEXT(text, ms) if(m_osd) m_player_subtitles.DisplayText(text, ms) 
 
 #define DISPLAY_TEXT_SHORT(text) DISPLAY_TEXT(text, 1000)
 #define DISPLAY_TEXT_LONG(text) DISPLAY_TEXT(text, 2000)
@@ -1116,7 +1116,6 @@ int main(int argc, char *argv[])
                                 m_font_size,
                                 m_centered,
                                 m_ghost_box,
-                                m_osd,
                                 m_subtitle_lines,
                                 m_config_video.display, m_config_video.layer + 1,
                                 m_av_clock))
