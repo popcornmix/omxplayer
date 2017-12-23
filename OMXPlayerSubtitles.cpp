@@ -492,8 +492,8 @@ bool OMXPlayerSubtitles::AddPacket(OMXPacket *pkt, size_t stream_index) BOOST_NO
 
 void OMXPlayerSubtitles::DisplayText(const std::string& text, int duration) BOOST_NOEXCEPT
 {
-  assert(m_open);
   if(m_osd){
+    assert(m_open);
     vector<string> text_lines;
     split(text_lines, text, is_any_of("\n"));
     SendToRenderer(Message::DisplayText{std::move(text_lines), duration});
