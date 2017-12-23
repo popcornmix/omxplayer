@@ -61,6 +61,7 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
                               float font_size,
                               bool centered,
                               bool ghost_box,
+                              bool osd,
                               unsigned int lines,
                               int display, int layer,
                               OMXClock* clock) BOOST_NOEXCEPT
@@ -81,6 +82,7 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
   m_font_size = font_size;
   m_centered = centered;
   m_ghost_box = ghost_box;
+  m_osd = osd;
   m_lines = lines;
   m_av_clock = clock;
   m_display = display;
@@ -491,10 +493,11 @@ bool OMXPlayerSubtitles::AddPacket(OMXPacket *pkt, size_t stream_index) BOOST_NO
 void OMXPlayerSubtitles::DisplayText(const std::string& text, int duration) BOOST_NOEXCEPT
 {
   assert(m_open);
-
-  vector<string> text_lines;
-  split(text_lines, text, is_any_of("\n"));
-  SendToRenderer(Message::DisplayText{std::move(text_lines), duration});
+  if(m_osd){
+    vector<string> text_lines;
+    split(text_lines, text, is_any_of("\n"));
+    SendToRenderer(Message::DisplayText{std::move(text_lines), duration});
+  }
 }
 
 void OMXPlayerSubtitles::SetSubtitleRect(int x1, int y1, int x2, int y2) BOOST_NOEXCEPT
