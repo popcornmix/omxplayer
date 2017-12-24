@@ -405,7 +405,9 @@ void OMXPlayerSubtitles::SetVisible(bool visible) BOOST_NOEXCEPT
 
 void OMXPlayerSubtitles::SetActiveStream(size_t index) BOOST_NOEXCEPT
 {
-  assert(m_open);
+  if (!m_open)
+    return;
+  
   assert(index < m_subtitle_buffers.size());
 
   m_active_index = index;

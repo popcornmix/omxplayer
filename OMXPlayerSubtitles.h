@@ -66,7 +66,9 @@ public:
 
   size_t GetActiveStream() BOOST_NOEXCEPT
   {
-    assert(m_open);
+    if (!m_open)
+      return;
+    
     assert(!m_subtitle_buffers.empty());
     return m_active_index;
   }
