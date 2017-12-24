@@ -383,7 +383,7 @@ void OMXPlayerSubtitles::SetDelay(int value) BOOST_NOEXCEPT
 void OMXPlayerSubtitles::SetVisible(bool visible) BOOST_NOEXCEPT
 {
   if (!m_open)
-    return
+    return;
   
   if(visible)
   {
@@ -486,7 +486,7 @@ bool OMXPlayerSubtitles::AddPacket(OMXPacket *pkt, size_t stream_index) BOOST_NO
 void OMXPlayerSubtitles::DisplayText(const std::string& text, int duration) BOOST_NOEXCEPT
 {
   if (!m_open)
-    return
+    return;
   
   vector<string> text_lines;
   split(text_lines, text, is_any_of("\n"));
