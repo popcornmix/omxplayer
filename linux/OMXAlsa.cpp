@@ -1033,6 +1033,7 @@ static void *omxalsasink_worker(void *ptr)
 	int32_t timescale;
 	uint64_t layout;
 	size_t resample_bufsz;
+	unsigned int in_sample_rate;
 	unsigned int rate;
 	struct timespec ts;
 	int err;
@@ -1042,6 +1043,7 @@ static void *omxalsasink_worker(void *ptr)
 	err = snd_pcm_open(&dev, sink->device_name, SND_PCM_STREAM_PLAYBACK, 0);
 	if (err < 0) goto alsa_error;
 
+	in_sample_rate = sink->pcm.nSamplingRate;
 	rate = sink->pcm.nSamplingRate;
 	buffer_size = rate / 5;
 	period_size = buffer_size / 4;
@@ -1072,8 +1074,8 @@ static void *omxalsasink_worker(void *ptr)
 
 	layout = av_get_default_channel_layout(sink->pcm.nChannels);
 	resampler = swr_alloc_set_opts(NULL,
-		layout, AV_SAMPLE_FMT_S16, rate,
-		layout, AV_SAMPLE_FMT_S16, rate,
+		/*out*/ layout, AV_SAMPLE_FMT_S16, rate,
+		/*in*/ layout, AV_SAMPLE_FMT_S16, in_sample_rate,
 		0, NULL);
 	if (!resampler) goto err;
 
