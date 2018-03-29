@@ -2,6 +2,9 @@
 #define OMXPLAYER_DBUS_INTERFACE_ROOT "org.mpris.MediaPlayer2"
 #define OMXPLAYER_DBUS_INTERFACE_PLAYER "org.mpris.MediaPlayer2.Player"
 
+#define OMXPLAYER_DBUS_ADDRESS_FRMT           "/tmp/omxplayerdbus.%s"
+#define OMXPLAYER_DBUS_PID_FRMT               "/tmp/omxplayerdbus.%s.pid"
+
 #include <dbus/dbus.h>
 #include "OMXClock.h"
 #include "OMXPlayerAudio.h"

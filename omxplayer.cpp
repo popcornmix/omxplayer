@@ -26,6 +26,8 @@
 #include <sys/ioctl.h>
 #include <getopt.h>
 #include <string.h>
+#include <pwd.h>
+#include <unistd.h>
 
 #define AV_NOWARN_DEPRECATED
 
@@ -1828,6 +1830,24 @@ do_exit:
   {
     unsigned t = (unsigned)(m_av_clock->OMXMediaTime()*1e-6);
     printf("Stopped at: %02d:%02d:%02d\n", (t/3600), (t/60)%60, t%60);
+	register struct passwd *pw;
+	register uid_t uid;
+	int c;
+	char sDBusAddr[STD_BUF_SIZE];
+	char sDBusPid[STD_BUF_SIZE];
+	uid = geteuid ();
+	pw = getpwuid (uid);
+	if (pw)
+	{
+	  snprintf(sDBusAddr, STD_BUF_SIZE-1, OMXPLAYER_DBUS_ADDRESS_FRMT, pw->pw_name);
+	  snprintf(sDBusPid, STD_BUF_SIZE-1, OMXPLAYER_DBUS_PID_FRMT, pw->pw_name);
+	}else
+	{
+	  snprintf(sDBusAddr, STD_BUF_SIZE-1, OMXPLAYER_DBUS_ADDRESS_FRMT, "root");
+	  snprintf(sDBusPid, STD_BUF_SIZE-1, OMXPLAYER_DBUS_PID_FRMT, "root");
+	}
+	unlink(sDBusAddr);
+	unlink(sDBusPid);
   }
 
   if (m_NativeDeinterlace)
@@ -1879,3 +1899,4 @@ do_exit:
   // exit status failure on other cases
   return EXIT_FAILURE;
 }
+

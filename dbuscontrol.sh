@@ -43,6 +43,8 @@ pause)
 
 stop)
 	dbus-send --print-reply=literal --session --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.Action int32:15 >/dev/null
+	rm -fr $OMXPLAYER_DBUS_ADDR
+	rm -fr $OMXPLAYER_DBUS_PID
 	;;
 
 seek)
