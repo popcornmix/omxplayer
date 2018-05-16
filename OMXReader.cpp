@@ -1025,7 +1025,7 @@ OMXPacket *OMXReader::AllocPacket(int size)
   {
     memset(pkt, 0, sizeof(OMXPacket));
 
-    pkt->data = (uint8_t*) malloc(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    pkt->data = (uint8_t*) malloc(size + AV_INPUT_BUFFER_PADDING_SIZE);
     if(!pkt->data)
     {
       free(pkt);
@@ -1033,7 +1033,7 @@ OMXPacket *OMXReader::AllocPacket(int size)
     }
     else
     {
-      memset(pkt->data + size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+      memset(pkt->data + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
       pkt->size = size;
       pkt->dts  = DVD_NOPTS_VALUE;
       pkt->pts  = DVD_NOPTS_VALUE;

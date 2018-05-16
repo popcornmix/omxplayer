@@ -114,7 +114,7 @@ public:
   } 
   virtual void av_register_all_dont_call() { *(volatile int* )0x0 = 0; } 
   virtual AVInputFormat *av_find_input_format(const char *short_name) { return ::av_find_input_format(short_name); }
-  virtual int url_feof(AVIOContext *s) { return ::url_feof(s); }
+  virtual int url_feof(AVIOContext *s) { return ::avio_feof(s); }
   virtual void avformat_close_input(AVFormatContext **s) { ::avformat_close_input(s); }
   virtual int av_read_frame(AVFormatContext *s, AVPacket *pkt) { return ::av_read_frame(s, pkt); }
   virtual int av_read_play(AVFormatContext *s) { return ::av_read_play(s); }
