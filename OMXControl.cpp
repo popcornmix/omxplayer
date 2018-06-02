@@ -695,17 +695,15 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
   }
   else if (dbus_message_is_method_call(m, DBUS_INTERFACE_PROPERTIES, "Mute"))
   {
-    audio->SetMute(true);
     dbus_respond_ok(m);
     deprecatedMessage();
-    return KeyConfig::ACTION_BLANK;
+    return KeyConfig::ACTION_MUTE;
   }
   else if (dbus_message_is_method_call(m, DBUS_INTERFACE_PROPERTIES, "Unmute"))
   {
-    audio->SetMute(false);
     dbus_respond_ok(m);
     deprecatedMessage();
-    return KeyConfig::ACTION_BLANK;
+    return KeyConfig::ACTION_UNMUTE;
   }
   else if (dbus_message_is_method_call(m, DBUS_INTERFACE_PROPERTIES, "Position"))
   {
@@ -901,15 +899,13 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
   }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "Mute"))
   {
-    audio->SetMute(true);
     dbus_respond_ok(m);
-    return KeyConfig::ACTION_BLANK;
+    return KeyConfig::ACTION_MUTE;
   }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "Unmute"))
   {
-    audio->SetMute(false);
     dbus_respond_ok(m);
-    return KeyConfig::ACTION_BLANK;
+    return KeyConfig::ACTION_UNMUTE;
   }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "ListSubtitles"))
   {

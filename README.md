@@ -123,6 +123,8 @@ Key bindings to control omxplayer while playing:
 
     1           decrease speed
     2           increase speed
+    9           unmute
+    0           mute
     <           rewind
     >           fast forward
     z           show info
@@ -175,6 +177,8 @@ The list of valid [action]s roughly corresponds to the list of default key bindi
     SEEK_BACK_LARGE
     SEEK_FORWARD_LARGE
     STEP
+    MUTE
+    UNMUTE
 
 Valid [key]s include all alpha-numeric characters and most symbols, as well as:
 

@@ -62,6 +62,10 @@ int convertStringToAction(string str_action)
         return KeyConfig::ACTION_SHOW_SUBTITLES;
     if(str_action == "HIDE_SUBTITLES")
         return KeyConfig::ACTION_HIDE_SUBTITLES;
+    if(str_action == "MUTE")
+        return KeyConfig::ACTION_MUTE;
+    if(str_action == "UNMUTE")
+        return KeyConfig::ACTION_UNMUTE;
             
     return -1;
 }
@@ -128,6 +132,8 @@ map<int, int> KeyConfig::buildDefaultKeymap()
     keymap['v'] = ACTION_STEP;
     keymap['w'] = ACTION_SHOW_SUBTITLES;
     keymap['x'] = ACTION_HIDE_SUBTITLES;
+    keymap['0'] = ACTION_MUTE;
+    keymap['9'] = ACTION_UNMUTE;
 
     return keymap;
 }

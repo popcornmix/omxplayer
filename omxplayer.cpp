@@ -1521,6 +1521,16 @@ int main(int argc, char *argv[])
           m_Volume / 100.0f));
         printf("Current Volume: %.2fdB\n", m_Volume / 100.0f);
         break;
+      case KeyConfig::ACTION_MUTE:
+        m_player_audio.SetMute(true);
+        DISPLAY_TEXT_SHORT("Sound OFF");
+        printf("Sound OFF\n");
+        break;
+      case KeyConfig::ACTION_UNMUTE:
+        m_player_audio.SetMute(false);
+        DISPLAY_TEXT_SHORT("Sound ON");
+        printf("Sound ON\n");
+        break;
       default:
         break;
     }
