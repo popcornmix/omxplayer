@@ -179,6 +179,11 @@ void OMXPlayerVideo::SetAlpha(int alpha)
   m_decoder->SetAlpha(alpha);
 }
 
+void OMXPlayerVideo::SetLayer(int layer)
+{
+  m_decoder->SetLayer(layer);
+}
+
 void OMXPlayerVideo::SetVideoRect(const CRect& SrcRect, const CRect& DestRect)
 {
   m_decoder->SetVideoRect(SrcRect, DestRect);

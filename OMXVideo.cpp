@@ -876,6 +876,28 @@ void COMXVideo::SetVideoRect()
   }
 }
 
+void COMXVideo::SetLayer(int layer)
+{
+  CSingleLock lock (m_critSection);
+  if(!m_is_open)
+    return;
+
+  OMX_ERRORTYPE omx_err;
+  OMX_CONFIG_DISPLAYREGIONTYPE configDisplay;
+  OMX_INIT_STRUCTURE(configDisplay);
+
+  configDisplay.nPortIndex = m_omx_render.GetInputPort();
+  configDisplay.set = OMX_DISPLAY_SET_LAYER;
+  configDisplay.layer = layer;
+
+  omx_err = m_omx_render.SetConfig(OMX_IndexConfigDisplayRegion, &configDisplay);
+  if(omx_err != OMX_ErrorNone)
+  {
+    CLog::Log(LOGERROR, "COMXVideo::LAYER::Open error OMX_IndexConfigDisplayRegion omx_err(0x%08x)\n", omx_err);
+  }
+
+}
+
 void COMXVideo::SetAlpha(int alpha)
 {
   CSingleLock lock (m_critSection);
@@ -897,10 +919,6 @@ void COMXVideo::SetAlpha(int alpha)
   }
 
 }
-
-
-
-
 
 int COMXVideo::GetInputBufferSize()
 {

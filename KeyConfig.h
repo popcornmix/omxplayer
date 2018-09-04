@@ -43,7 +43,8 @@ class KeyConfig
         ACTION_CROP_VIDEO = 34,
         ACTION_PAUSE = 35,
         ACTION_PLAY = 36,
-	ACTION_CHANGE_FILE = 37,
+        ACTION_CHANGE_FILE = 37,
+        ACTION_SET_LAYER = 38,
     };
 
     #define KEY_LEFT 0x5b44

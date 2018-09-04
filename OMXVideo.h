@@ -109,6 +109,7 @@ public:
   void SetVideoRect(int aspectMode);
   void SetVideoRect();
   void SetAlpha(int alpha);
+  void SetLayer(int layer);
   int GetInputBufferSize();
   void SubmitEOS();
   bool IsEOS();

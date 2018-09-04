@@ -1444,6 +1444,9 @@ int main(int argc, char *argv[])
       case KeyConfig::ACTION_SET_ALPHA:
           m_player_video.SetAlpha(result.getArg());
           break;
+      case KeyConfig::ACTION_SET_LAYER:
+          m_player_video.SetLayer(result.getArg());
+          break;
       case KeyConfig::ACTION_PLAY:
         m_Pause=false;
         if(m_has_subtitle)

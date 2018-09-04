@@ -379,6 +379,23 @@ Seeks to a specific location in the file.  This is an *absolute* seek.
  2              | `int64`           | Position to seek to, in microseconds
  Return         | `null` or `int64` | If the supplied position is invalid, `null` is returned, otherwise the position (in microseconds) is returned
 
+##### SetAlpha
+
+Set the alpha transparency of the player [0-255].
+
+   Params       |   Type            | Description
+:-------------: | ----------------- | ------------------------------------
+ 1              | `string`          | Path (not currently used)
+ 2              | `int64`           | Alpha value, 0-255
+
+##### SetLayer
+
+Seeks the video playback layer.
+
+   Params       |   Type            | Description
+:-------------: | ----------------- | ------------------------------------
+ 1              | `int64`           | Layer to switch to
+
 ##### Mute
 
 Mute the audio stream.  If the volume is already muted, this does nothing.

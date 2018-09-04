@@ -876,6 +876,28 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
       return OMXControlResult(KeyConfig::ACTION_SET_ALPHA, alpha);
     }
   }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "SetLayer"))
+  {
+    DBusError error;
+    dbus_error_init(&error);
+
+    int64_t layer;
+    dbus_message_get_args(m, &error, DBUS_TYPE_INT64, &layer, DBUS_TYPE_INVALID);
+
+    // Make sure a value is sent for setting layer
+    if (dbus_error_is_set(&error))
+    {
+      CLog::Log(LOGWARNING, "SetLayer D-Bus Error: %s", error.message );
+      dbus_error_free(&error);
+      dbus_respond_ok(m);
+      return KeyConfig::ACTION_BLANK;
+    }
+    else
+    {
+      dbus_respond_int64(m, layer);
+      return OMXControlResult(KeyConfig::ACTION_SET_LAYER, layer);
+    }
+  }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "SetAspectMode"))
   {
     DBusError error;
