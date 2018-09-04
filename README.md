@@ -582,6 +582,14 @@ Millibels can be converted to/from acceptable values using the following:
 
 [MPRIS_volume]: http://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html#Simple-Type:Volume
 
+##### OpenUri (w)
+
+Restart and open another URI for playing.
+
+   Params       |   Type    | Description
+:-------------: | --------- | --------------------------------
+1               | `string`  | URI to play
+
 ##### Position (ro)
 
 Returns the current position of the playing media.

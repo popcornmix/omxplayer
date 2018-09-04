@@ -1103,6 +1103,27 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
     dbus_respond_ok(m);
     return KeyConfig::ACTION_HIDE_SUBTITLES;
   }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "OpenUri"))
+  {
+    DBusError error;
+    dbus_error_init(&error);
+
+    const char *file;
+    dbus_message_get_args(m, &error, DBUS_TYPE_STRING, &file, DBUS_TYPE_INVALID);
+
+    if (dbus_error_is_set(&error))
+    {
+      CLog::Log(LOGWARNING, "Change file D-Bus Error: %s", error.message );
+      dbus_error_free(&error);
+      dbus_respond_ok(m);
+      return KeyConfig::ACTION_BLANK;
+    }
+    else
+    {
+      dbus_respond_string(m, file);
+      return OMXControlResult(KeyConfig::ACTION_CHANGE_FILE, file);
+    }
+  }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "Action"))
   {
     DBusError error;

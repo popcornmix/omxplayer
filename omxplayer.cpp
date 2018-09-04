@@ -1024,6 +1024,8 @@ int main(int argc, char *argv[])
     m_keyboard->setDbusName(m_dbus_name);
   }
 
+  change_file:
+
   if(!m_omx_reader.Open(m_filename.c_str(), m_dump_format, m_config_audio.is_live, m_timeout, m_cookie.c_str(), m_user_agent.c_str(), m_lavfdopts.c_str(), m_avdict.c_str()))
     goto do_exit;
 
@@ -1200,6 +1202,15 @@ int main(int argc, char *argv[])
 
     switch(result.getKey())
     {
+     case KeyConfig::ACTION_CHANGE_FILE:
+        FlushStreams(DVD_NOPTS_VALUE);
+        m_omx_reader.Close();
+        m_player_subtitles.Close();
+        m_player_video.Close();
+        m_player_audio.Close();
+        m_filename = result.getWinArg();
+        goto change_file;
+        break;
       case KeyConfig::ACTION_SHOW_INFO:
         m_tv_show_info = !m_tv_show_info;
         vc_tv_show_info(m_tv_show_info);
