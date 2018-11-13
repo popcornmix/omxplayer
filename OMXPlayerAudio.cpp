@@ -277,10 +277,18 @@ bool OMXPlayerAudio::Decode(OMXPacket *pkt)
 void OMXPlayerAudio::Process()
 {
   OMXPacket *omx_pkt = NULL;
+  unsigned int decoded_size = 0;
 
   while(true)
   {
     Lock();
+
+    if(decoded_size)
+    {
+      m_cached_size -= decoded_size;
+      decoded_size = 0;
+    }
+
     if(!(m_bStop || m_bAbort) && m_packets.empty())
       pthread_cond_wait(&m_packet_cond, &m_lock);
 
@@ -299,9 +307,9 @@ void OMXPlayerAudio::Process()
     else if(!omx_pkt && !m_packets.empty())
     {
       omx_pkt = m_packets.front();
-      m_cached_size -= omx_pkt->size;
       m_packets.pop_front();
-    }
+      decoded_size = 0;
+  }
     UnLock();
     
     LockDecoder();
@@ -313,6 +321,7 @@ void OMXPlayerAudio::Process()
     }
     else if(omx_pkt && Decode(omx_pkt))
     {
+      decoded_size = omx_pkt->size;
       OMXReader::FreePacket(omx_pkt);
       omx_pkt = NULL;
     }
@@ -492,12 +501,16 @@ double OMXPlayerAudio::GetCacheTotal()
 
 void OMXPlayerAudio::SubmitEOS()
 {
-  if(m_decoder)
-    m_decoder->SubmitEOS();
+  assert(m_cached_size == 0);
+  assert(m_decoder);
+  assert(m_packets.empty());
+  m_decoder->SubmitEOS();
 }
 
 bool OMXPlayerAudio::IsEOS()
 {
-  return m_packets.empty() && (!m_decoder || m_decoder->IsEOS());
+  assert(m_decoder);
+  assert(m_packets.empty());
+  return m_decoder->IsEOS();
 }
 
