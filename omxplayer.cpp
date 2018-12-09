@@ -115,6 +115,7 @@ bool              m_has_subtitle        = false;
 bool              m_gen_log             = false;
 bool              m_loop                = false;
 bool              m_start_paused        = false;
+bool              m_end_paused          = false;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -571,6 +572,7 @@ int main(int argc, char *argv[])
   const int lavfdopts_opt   = 0x400;
   const int avdict_opt      = 0x401;
   const int start_paused    = 0x214;
+  const int end_paused      = 0x215;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -621,6 +623,7 @@ int main(int argc, char *argv[])
     { "no-osd",       no_argument,        NULL,          no_osd_opt },
     { "no-keys",      no_argument,        NULL,          no_keys_opt },
     { "start-paused", no_argument,        NULL,          start_paused },
+    { "end-paused",   no_argument,        NULL,          end_paused },
     { "orientation",  required_argument,  NULL,          orientation_opt },
     { "fps",          required_argument,  NULL,          fps_opt },
     { "live",         no_argument,        NULL,          live_opt },
@@ -770,6 +773,9 @@ int main(int argc, char *argv[])
         break;
       case start_paused:
         m_start_paused = true;
+        break;
+      case end_paused:
+        m_end_paused = true;
         break;
       case font_opt:
         m_font_path = optarg;
@@ -1811,7 +1817,8 @@ int main(int argc, char *argv[])
         continue;
       }
 
-      break;
+      if (!m_end_paused)
+        break;
     }
 
     if(m_has_video && m_omx_pkt && m_omx_reader.IsActive(OMXSTREAM_VIDEO, m_omx_pkt->stream_index))
