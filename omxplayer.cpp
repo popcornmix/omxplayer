@@ -114,6 +114,7 @@ bool              m_has_audio           = false;
 bool              m_has_subtitle        = false;
 bool              m_gen_log             = false;
 bool              m_loop                = false;
+bool              m_start_paused        = false;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -569,6 +570,7 @@ int main(int argc, char *argv[])
   const int http_user_agent_opt = 0x301;
   const int lavfdopts_opt   = 0x400;
   const int avdict_opt      = 0x401;
+  const int start_paused    = 0x214;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -618,6 +620,7 @@ int main(int argc, char *argv[])
     { "key-config",   required_argument,  NULL,          key_config_opt },
     { "no-osd",       no_argument,        NULL,          no_osd_opt },
     { "no-keys",      no_argument,        NULL,          no_keys_opt },
+    { "start-paused", no_argument,        NULL,          start_paused },
     { "orientation",  required_argument,  NULL,          orientation_opt },
     { "fps",          required_argument,  NULL,          fps_opt },
     { "live",         no_argument,        NULL,          live_opt },
@@ -764,6 +767,9 @@ int main(int argc, char *argv[])
         break;
       case no_keys_opt:
         m_no_keys = true;
+        break;
+      case start_paused:
+        m_start_paused = true;
         break;
       case font_opt:
         m_font_path = optarg;
@@ -1449,6 +1455,7 @@ int main(int argc, char *argv[])
           break;
       case KeyConfig::ACTION_PLAY:
         m_Pause=false;
+        //m_start_paused=false;
         if(m_has_subtitle)
         {
           m_player_subtitles.Resume();
@@ -1456,6 +1463,7 @@ int main(int argc, char *argv[])
         break;
       case KeyConfig::ACTION_PAUSE:
         m_Pause=true;
+        //m_start_paused=false;
         if(m_has_subtitle)
         {
           m_player_subtitles.Pause();
@@ -1463,6 +1471,7 @@ int main(int argc, char *argv[])
         break;
       case KeyConfig::ACTION_PLAYPAUSE:
         m_Pause = !m_Pause;
+        //m_start_paused = false;
         if (m_av_clock->OMXPlaySpeed() != DVD_PLAYSPEED_NORMAL && m_av_clock->OMXPlaySpeed() != DVD_PLAYSPEED_PAUSE)
         {
           printf("resume\n");
@@ -1736,8 +1745,19 @@ int main(int argc, char *argv[])
       {
         if (m_av_clock->OMXIsPaused())
         {
-          CLog::Log(LOGDEBUG, "Resume %.2f,%.2f (%d,%d,%d,%d) EOF:%d PKT:%p\n", audio_fifo, video_fifo, audio_fifo_low, video_fifo_low, audio_fifo_high, video_fifo_high, m_omx_reader.IsEof(), m_omx_pkt);
-          m_av_clock->OMXResume();
+          if (!m_start_paused)
+          {
+            CLog::Log(LOGDEBUG, "Resume %.2f,%.2f (%d,%d,%d,%d) EOF:%d PKT:%p\n", audio_fifo, video_fifo, audio_fifo_low, video_fifo_low, audio_fifo_high, video_fifo_high, m_omx_reader.IsEof(), m_omx_pkt);
+            m_av_clock->OMXResume();
+          }
+          else
+          {
+            CLog::Log(LOGDEBUG, "start-paused(%d)\n", m_start_paused);
+            m_av_clock->OMXResume();
+            m_Pause=true;
+            m_start_paused=false;
+            m_av_clock->OMXPause();
+          }
         }
       }
       else if (m_Pause || audio_fifo_low || video_fifo_low)
