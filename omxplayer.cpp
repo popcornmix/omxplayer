@@ -1461,7 +1461,6 @@ int main(int argc, char *argv[])
           break;
       case KeyConfig::ACTION_PLAY:
         m_Pause=false;
-        //m_start_paused=false;
         if(m_has_subtitle)
         {
           m_player_subtitles.Resume();
@@ -1469,7 +1468,6 @@ int main(int argc, char *argv[])
         break;
       case KeyConfig::ACTION_PAUSE:
         m_Pause=true;
-        //m_start_paused=false;
         if(m_has_subtitle)
         {
           m_player_subtitles.Pause();
@@ -1477,7 +1475,6 @@ int main(int argc, char *argv[])
         break;
       case KeyConfig::ACTION_PLAYPAUSE:
         m_Pause = !m_Pause;
-        //m_start_paused = false;
         if (m_av_clock->OMXPlaySpeed() != DVD_PLAYSPEED_NORMAL && m_av_clock->OMXPlaySpeed() != DVD_PLAYSPEED_PAUSE)
         {
           printf("resume\n");
