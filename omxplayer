@@ -16,9 +16,9 @@ fi
 refresh_regex='(|.* )(-r|--refresh)( .*|$)'
 audio_regex='.*\.(mp3|wav|wma|cda|ogg|ogm|aac|ac3|flac)( .*|$)'
 
-fbset_bin=`type -p fbset`
-xset_bin=`type -p xset`
-xrefresh_bin=`type -p xrefresh`
+fbset_bin=`which fbset 2> /dev/null`
+xset_bin=`which xset 2> /dev/null`
+xrefresh_bin=`which xrefresh 2> /dev/null`
 
 if [ -z $NOREFRESH ] || [ "$NOREFRESH" == "0" ]; then
     if [[ $@ =~ $refresh_regex ]] && [[ ! $@ =~ $audio_regex ]]; then
