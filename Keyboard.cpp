@@ -23,9 +23,11 @@ Keyboard::Keyboard()
     new_termios = orig_termios;
     new_termios.c_lflag &= ~(ICANON | ECHO | ECHOCTL | ECHONL);
     new_termios.c_cflag |= HUPCL;
-    new_termios.c_cc[VMIN] = 0;
-
+    new_termios.c_cc[VMIN] = 1;
     tcsetattr(STDIN_FILENO, TCSANOW, &new_termios);
+
+    orig_fl = fcntl(STDIN_FILENO, F_GETFL);
+    fcntl(STDIN_FILENO, F_SETFL, FNDELAY);
   } 
   else 
   {    
@@ -67,6 +69,7 @@ void Keyboard::restore_term()
   if (isatty(STDIN_FILENO)) 
   {
     tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
+    fcntl(STDIN_FILENO, F_SETFL, orig_fl);
   } 
   else 
   {
