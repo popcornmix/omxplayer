@@ -118,7 +118,14 @@ static int dvd_file_read(void *h, uint8_t* buf, int size)
     return -1;
 
   XFILE::CFile *pFile = (XFILE::CFile *)h;
-  return pFile->Read(buf, size);
+  int ret = pFile->Read(buf, size);
+
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58,12,100)
+  if (ret == 0 && pFile->IsEOF())
+    ret = AVERROR_EOF;
+#endif
+
+  return ret;
 }
 
 static offset_t dvd_file_seek(void *h, offset_t pos, int whence)
