@@ -719,6 +719,7 @@ unsigned int COMXVideo::GetSize()
   return m_omx_decoder.GetInputBufferSize();
 }
 
+long fake_pts=0;
 int COMXVideo::Decode(uint8_t *pData, int iSize, double dts, double pts)
 {
   CSingleLock lock (m_critSection);
@@ -740,6 +741,13 @@ int COMXVideo::Decode(uint8_t *pData, int iSize, double dts, double pts)
       CLog::Log(LOGDEBUG, "OMXVideo::Decode VDec : setStartTime %f\n", (pts == DVD_NOPTS_VALUE ? 0.0 : pts) / DVD_TIME_BASE);
       m_setStartTime = false;
     }
+
+    if(m_config.force_fps>0) {
+	pts=fake_pts;
+        fake_pts += (1000000L / m_config.force_fps);
+        CLog::Log(LOGDEBUG, "OMXVideo::Decode VDec : force-pts fake_pts %ld\n", fake_pts);
+    }
+
     if (pts == DVD_NOPTS_VALUE && dts == DVD_NOPTS_VALUE)
       nFlags |= OMX_BUFFERFLAG_TIME_UNKNOWN;
     else if (pts == DVD_NOPTS_VALUE)

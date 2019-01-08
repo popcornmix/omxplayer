@@ -101,6 +101,7 @@ Usage: omxplayer [OPTIONS] [FILE]
         --timeout     n         Timeout for stalled file/network operations (default 10s)
         --orientation n         Set orientation of video (0, 90, 180 or 270)
         --fps n                 Set fps of video where timestamps are not present
+        --force-fps n           Force the given fps, even if timestamps are present
         --live                  Set for live tv or vod type stream
         --layout                Set output speaker layout (e.g. 5.1)
         --dbus_name name        default: org.mpris.MediaPlayer2.omxplayer
