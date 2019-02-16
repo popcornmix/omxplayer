@@ -1781,6 +1781,7 @@ int main(int argc, char *argv[])
       if (m_loop)
       {
         m_incr = m_loop_from - (m_av_clock->OMXMediaTime() ? m_av_clock->OMXMediaTime() / DVD_TIME_BASE : last_seek_pos);
+        printf("Looping\n");
         continue;
       }
 
