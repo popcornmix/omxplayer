@@ -333,6 +333,8 @@ RenderLoop(const string& font_path,
       [&](Message::DisplayText&& args)
       {
         renderer.prepare(args.text_lines);
+        if (show_time)
+          PrepareTime(); // Also regenerate displayed time.
         renderer.show_next();
         showing = true;
         osd = true;
