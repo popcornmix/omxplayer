@@ -289,8 +289,9 @@ SubtitleRenderer(int display, int layer,
                  unsigned int white_level,
                  unsigned int box_opacity,
                  unsigned int lines)
-: prepared_(),
+: show_subtitle_(),
   title_prepared_(),
+  time_prepared_(),
   dispman_element_(),
   dispman_display_(),
   display_(),
@@ -305,6 +306,8 @@ SubtitleRenderer(int display, int layer,
   ft_face_italic_(),
   ft_face_title_(),
   ft_stroker_(),
+  prepared_lines_(),
+  prepared_lines_active_(),
   centered_(centered),
   title_centered_(title_centered),
   white_level_(white_level),
@@ -563,10 +566,11 @@ void SubtitleRenderer::
 prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT {
   const int n_lines = text_lines.size();
   TagTracker tag_tracker;
+  PreparedSubtitleLines& lines = prepared_lines_[!prepared_lines_active_];
 
-  internal_lines_.resize(n_lines);
-  line_widths_.resize(n_lines);
-  line_positions_.resize(n_lines);
+  lines.internal_lines_.resize(n_lines);
+  lines.line_widths_.resize(n_lines);
+  lines.line_positions_.resize(n_lines);
 
   int title_line_height = config_.title_line_height;
   int title_line_padding = config_.title_line_padding;
@@ -577,19 +581,32 @@ prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT {
   }
 
   for (int i = 0; i < n_lines; ++i) {
-    internal_lines_[i] = get_internal_chars(text_lines[i], tag_tracker);
-    prepare_glyphs(internal_lines_[i], false);
-    line_widths_[i] = get_text_width(internal_lines_[i], false);
-    line_positions_[i].second = config_.margin_bottom +
+    lines.internal_lines_[i] = get_internal_chars(text_lines[i], tag_tracker);
+    prepare_glyphs(lines.internal_lines_[i], false);
+    lines.line_widths_[i] = get_text_width(lines.internal_lines_[i], false);
+    lines.line_positions_[i].second = config_.margin_bottom +
       title_line_height + title_line_padding +
       (n_lines-i-1)*config_.line_height;
     if (centered_)
-      line_positions_[i].first = config_.buffer_width/2 - line_widths_[i]/2;
+      lines.line_positions_[i].first = config_.buffer_width/2 - lines.line_widths_[i]/2;
     else
-      line_positions_[i].first = config_.margin_left;
+      lines.line_positions_[i].first = config_.margin_left;
   }
 
-  prepared_ = true;
+  lines.prepared_ = true;
+}
+
+void SubtitleRenderer::
+prepare_time(const std::string& line) BOOST_NOEXCEPT {
+  TagTracker tag_tracker;
+
+  internal_time_ = get_internal_chars(line, tag_tracker);
+  prepare_glyphs(internal_time_, true);
+  time_width_ = get_text_width(internal_time_, true);
+  time_position_.second = config_.margin_bottom;
+  time_position_.first = config_.buffer_width - time_width_ - config_.margin_left;
+
+  time_prepared_ = true;
 }
 
 void SubtitleRenderer::
@@ -611,6 +628,33 @@ prepare_title(const std::string& line) BOOST_NOEXCEPT {
 void SubtitleRenderer::clear() BOOST_NOEXCEPT {
   vgClear(0, 0, screen_width_, screen_height_);
   assert(!vgGetError());
+}
+
+void SubtitleRenderer::draw_time(bool clear_needed) BOOST_NOEXCEPT {
+  if (clear_needed)
+    clear();
+
+  // time graybox
+  {
+    BoxRenderer box_renderer(box_opacity_);
+    box_renderer.push(time_position_.first - config_.box_h_padding,
+                    time_position_.second + config_.title_box_offset,
+                    time_width_ + config_.title_box_h_padding*2,
+                    config_.title_line_height);
+    box_renderer.render();
+  }
+
+  // time background
+  draw_text(vg_font_title_border_,
+            internal_time_,
+            time_position_.first, time_position_.second,
+            0);
+
+  // time foreground
+  draw_text(vg_font_title_,
+            internal_time_,
+            time_position_.first, time_position_.second,
+            white_level_);
 }
 
 void SubtitleRenderer::draw_title(bool clear_needed) BOOST_NOEXCEPT {
@@ -641,18 +685,20 @@ void SubtitleRenderer::draw_title(bool clear_needed) BOOST_NOEXCEPT {
 }
 
 void SubtitleRenderer::draw(bool clear_needed) BOOST_NOEXCEPT {
+  PreparedSubtitleLines& lines = prepared_lines_[prepared_lines_active_];
+
   if (clear_needed)
     clear();
 
-  const auto n_lines = internal_lines_.size();
+  const auto n_lines = lines.internal_lines_.size();
 
   // font graybox
   {
     BoxRenderer box_renderer(box_opacity_);
     for (size_t i = 0; i < n_lines; ++i) {
-      box_renderer.push(line_positions_[i].first - config_.box_h_padding,
-                        line_positions_[i].second + config_.box_offset,
-                        line_widths_[i] + config_.box_h_padding*2,
+      box_renderer.push(lines.line_positions_[i].first - config_.box_h_padding,
+                        lines.line_positions_[i].second + config_.box_offset,
+						lines.line_widths_[i] + config_.box_h_padding*2,
                         config_.line_height);
     }
     box_renderer.render();
@@ -661,20 +707,18 @@ void SubtitleRenderer::draw(bool clear_needed) BOOST_NOEXCEPT {
   //font background
   for (size_t i = 0; i < n_lines; ++i) {
     draw_text(vg_font_border_,
-              internal_lines_[i],
-              line_positions_[i].first, line_positions_[i].second,
+              lines.internal_lines_[i],
+              lines.line_positions_[i].first, lines.line_positions_[i].second,
               0);
   }
 
   //font foreground
   for (size_t i = 0; i < n_lines; ++i) {
     draw_text(vg_font_,
-              internal_lines_[i],
-              line_positions_[i].first, line_positions_[i].second,
+              lines.internal_lines_[i],
+              lines.line_positions_[i].first, lines.line_positions_[i].second,
               white_level_);
   }
-
-  prepared_ = false;
 }
 
 void SubtitleRenderer::swap_buffers() BOOST_NOEXCEPT {

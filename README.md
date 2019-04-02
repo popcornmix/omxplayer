@@ -86,10 +86,11 @@ Usage: omxplayer [OPTIONS] [FILE]
         --italic-font path        Default: /usr/share/fonts/truetype/freefont/FreeSansOblique.ttf
         --title-font path         Default: /usr/share/fonts/truetype/freefont/FreeSans.ttf
         --font-size size          Font size in 1/1000 screen height (default: 55)
-        --title-font-size size    Title font size in 1/1000 screen height (default: 35)
+        --title-font-size size    Title font size in 1/1000 screen height (default: 25)
         --align left/center       Subtitle alignment (default: left)
         --title-align left/center Title alignment (default: left)
         --title string            Display static title string
+    -T  --show-time               Show elapsed and total time
         --no-ghost-box            No semitransparent boxes behind subtitles
         --lines n                 Number of lines in the subtitle buffer (default: 3)
         --win 'x1 y1 x2 y2'       Set position of video window

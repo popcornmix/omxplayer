@@ -117,34 +117,45 @@ public:
   ~SubtitleRenderer() BOOST_NOEXCEPT;
 
   void prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT;
+  void prepare_time(const std::string& line) BOOST_NOEXCEPT;
   void prepare_title(const std::string& line) BOOST_NOEXCEPT;
 
   void unprepare() BOOST_NOEXCEPT {
-    prepared_ = false;
+    prepared_lines_[prepared_lines_active_].prepared_ = false;
   }
 
-  void show_next() BOOST_NOEXCEPT {
-    if (title_prepared_)
-      draw_title(1);
-    if (prepared_) {
-      // puts("Expensive show_next!");
-      draw(!title_prepared_);
+  void redraw() BOOST_NOEXCEPT {
+    bool clear_needed = true;
+
+    if (title_prepared_) {
+      draw_title(clear_needed);
+      clear_needed = false;
     }
-    swap_buffers();
-  }
 
-  void hide() BOOST_NOEXCEPT {
-    if (title_prepared_)
-      draw_title(1);
-    else
+    if (time_prepared_) {
+      draw_time(clear_needed);
+      clear_needed = false;
+    }
+
+    if (show_subtitle_)
+      draw(clear_needed);
+    else if (clear_needed)
       clear();
 
     swap_buffers();
+  }
 
-    if (title_prepared_)
-      draw_title(1);
-    if (prepared_)
-      draw(!title_prepared_);
+  void show_next() BOOST_NOEXCEPT {
+    prepared_lines_active_ = !prepared_lines_active_;
+    if (prepared_lines_[prepared_lines_active_].prepared_)
+      show_subtitle_ = true;
+
+    redraw();
+  }
+
+  void hide() BOOST_NOEXCEPT {
+    show_subtitle_ = false;
+    redraw();
   }
 
   void set_rect(int width, int height, int x, int y) BOOST_NOEXCEPT;
@@ -155,7 +166,7 @@ private:
     InternalChar(char32_t codepoint, bool italic) {
       val = codepoint | (static_cast<char32_t>(italic) << 31);
     }
-    
+
     bool operator ==(const InternalChar& other) const {
       return val == other.val;
     }
@@ -176,6 +187,13 @@ private:
     int advance;
   };
 
+  struct PreparedSubtitleLines {
+    std::vector<std::vector<InternalChar>> internal_lines_;
+    std::vector<std::pair<int,int>> line_positions_;
+    std::vector<int> line_widths_;
+    bool prepared_;
+  };
+
   static void draw_text(VGFont font,
                         const std::vector<InternalChar>& text,
                         int x, int y,
@@ -191,6 +209,7 @@ private:
   void initialize_window(int display, int layer);
   void destroy_window();
   void clear() BOOST_NOEXCEPT;
+  void draw_time(bool clear_needed) BOOST_NOEXCEPT;
   void draw_title(bool clear_needed) BOOST_NOEXCEPT;
   void draw(bool clear_needed) BOOST_NOEXCEPT;
   void swap_buffers() BOOST_NOEXCEPT;
@@ -200,8 +219,9 @@ private:
   std::vector<InternalChar> get_internal_chars(const std::string& str,
                                                TagTracker& tag_tracker);
 
-  bool prepared_;
+  bool show_subtitle_;
   bool title_prepared_;
+  bool time_prepared_;
   DISPMANX_ELEMENT_HANDLE_T dispman_element_;
   DISPMANX_DISPLAY_HANDLE_T dispman_display_;
   EGLDisplay display_;
@@ -216,14 +236,16 @@ private:
   FT_Face ft_face_italic_;
   FT_Face ft_face_title_;
   FT_Stroker ft_stroker_;
+  PreparedSubtitleLines prepared_lines_[2];
+  int prepared_lines_active_;
   std::unordered_map<InternalChar,InternalGlyph, InternalCharHash> glyphs_;
   std::unordered_map<InternalChar,InternalGlyph, InternalCharHash> glyphs_title_;
-  std::vector<std::vector<InternalChar>> internal_lines_;
-  std::vector<std::pair<int,int>> line_positions_;
-  std::vector<int> line_widths_;
   std::vector<InternalChar> internal_title_line_;
   std::pair<int,int> title_line_position_;
   int title_line_width_;
+  std::vector<InternalChar> internal_time_;
+  std::pair<int,int> time_position_;
+  int time_width_;
   bool centered_;
   bool title_centered_;
   unsigned int white_level_;

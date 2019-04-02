@@ -52,7 +52,8 @@ public:
             unsigned int lines,
             int display, int layer,
             OMXClock* clock,
-            const string& title) BOOST_NOEXCEPT;
+            const string& title,
+            bool show_time) BOOST_NOEXCEPT;
   void Close() BOOST_NOEXCEPT;
   void Flush() BOOST_NOEXCEPT;
   void Resume() BOOST_NOEXCEPT;
@@ -104,6 +105,7 @@ private:
     {
       std::vector<Subtitle> subtitles;
       std::string title;
+      bool show_time;
     };
     struct Push
     {
@@ -186,6 +188,7 @@ private:
   int                                           m_display;
   int                                           m_layer;
   std::string                                   m_title;
+  bool                                          m_show_time;
 
 #ifndef NDEBUG
   bool m_open;

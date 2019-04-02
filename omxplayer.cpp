@@ -91,7 +91,7 @@ bool              m_asked_for_font      = false;
 bool              m_asked_for_italic_font = false;
 float             m_font_size           = 0.055f;
 bool              m_asked_for_title_font = false;
-float             m_title_font_size     = 0.035f;
+float             m_title_font_size     = 0.025f;
 bool              m_centered            = false;
 bool              m_title_centered      = false;
 bool              m_ghost_box           = true;
@@ -119,6 +119,7 @@ bool              m_has_subtitle        = false;
 bool              m_gen_log             = false;
 bool              m_loop                = false;
 std::string       m_title;
+bool              m_show_time           = false;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -613,6 +614,7 @@ int main(int argc, char *argv[])
     { "title-font",   required_argument,  NULL,          title_font_opt },
     { "title-font-size", required_argument, NULL,        title_font_size_opt },
     { "title-align",  required_argument,  NULL,          title_align_opt },
+    { "show-time",    no_argument,        NULL,          'T' },
     { "align",        required_argument,  NULL,          align_opt },
     { "no-ghost-box", no_argument,        NULL,          no_ghost_box_opt },
     { "subtitles",    required_argument,  NULL,          subtitles_opt },
@@ -659,7 +661,7 @@ int main(int argc, char *argv[])
   //Build default keymap just in case the --key-config option isn't used
   map<int,int> keymap = KeyConfig::buildDefaultKeymap();
 
-  while ((c = getopt_long(argc, argv, "wiIhvkn:l:o:cslb::pd3:Myzt:rg", longopts, NULL)) != -1)
+  while ((c = getopt_long(argc, argv, "wiIhvkn:l:o:cslb::pd3:Myzt:rgT", longopts, NULL)) != -1)
   {
     switch (c) 
     {
@@ -771,6 +773,9 @@ int main(int argc, char *argv[])
           if(m_loop)
             m_loop_from = m_incr;
         }
+        break;
+      case 'T':
+        m_show_time = true;
         break;
       case no_osd_opt:
         m_osd = false;
@@ -1160,7 +1165,8 @@ int main(int argc, char *argv[])
                                 m_subtitle_lines,
                                 m_config_video.display, m_config_video.layer + 1,
                                 m_av_clock,
-                                m_title))
+                                m_title,
+                                m_show_time))
       goto do_exit;
     if(m_config_video.dst_rect.x2 > 0 && m_config_video.dst_rect.y2 > 0)
         m_player_subtitles.SetSubtitleRect(m_config_video.dst_rect.x1, m_config_video.dst_rect.y1, m_config_video.dst_rect.x2, m_config_video.dst_rect.y2);
