@@ -91,6 +91,10 @@ typedef struct {
   int box_h_padding;
   int margin_left;
   int margin_bottom;
+  int title_line_height;
+  int title_line_padding;
+  int title_box_offset;
+  int title_box_h_padding;
 } SubtitleConfig;
 
 class SubtitleRenderer {
@@ -100,34 +104,47 @@ public:
   SubtitleRenderer(int display, int layer,
                    const std::string& font_path,
                    const std::string& italic_font_path,
+                   const std::string& title_font_path,
                    float font_size,
+                   float title_font_size,
                    float margin_left,
                    float margin_bottom,
                    bool centered,
+                   bool title_centered,
                    unsigned int white_level,
                    unsigned int box_opacity,
                    unsigned int lines);
   ~SubtitleRenderer() BOOST_NOEXCEPT;
 
   void prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT;
+  void prepare_title(const std::string& line) BOOST_NOEXCEPT;
 
   void unprepare() BOOST_NOEXCEPT {
     prepared_ = false;
   }
 
   void show_next() BOOST_NOEXCEPT {
+    if (title_prepared_)
+      draw_title(1);
     if (prepared_) {
       // puts("Expensive show_next!");
-      draw();
+      draw(!title_prepared_);
     }
     swap_buffers();
   }
 
   void hide() BOOST_NOEXCEPT {
-    clear();
+    if (title_prepared_)
+      draw_title(1);
+    else
+      clear();
+
     swap_buffers();
+
+    if (title_prepared_)
+      draw_title(1);
     if (prepared_)
-      draw();
+      draw(!title_prepared_);
   }
 
   void set_rect(int width, int height, int x, int y) BOOST_NOEXCEPT;
@@ -166,22 +183,25 @@ private:
 
   void destroy();
   void initialize_fonts(const std::string& font_name,
-                        const std::string& italic_font_path);
+                        const std::string& italic_font_path,
+                        const std::string& title_font_path);
   void destroy_fonts();
   void initialize_vg();
   void destroy_vg();
   void initialize_window(int display, int layer);
   void destroy_window();
   void clear() BOOST_NOEXCEPT;
-  void draw() BOOST_NOEXCEPT;
+  void draw_title(bool clear_needed) BOOST_NOEXCEPT;
+  void draw(bool clear_needed) BOOST_NOEXCEPT;
   void swap_buffers() BOOST_NOEXCEPT;
-  void prepare_glyphs(const std::vector<InternalChar>& text);
-  void load_glyph(InternalChar ch);
-  int get_text_width(const std::vector<InternalChar>& text);
+  void prepare_glyphs(const std::vector<InternalChar>& text, bool title);
+  void load_glyph(InternalChar ch, bool title);
+  int get_text_width(const std::vector<InternalChar>& text, bool title);
   std::vector<InternalChar> get_internal_chars(const std::string& str,
                                                TagTracker& tag_tracker);
 
   bool prepared_;
+  bool title_prepared_;
   DISPMANX_ELEMENT_HANDLE_T dispman_element_;
   DISPMANX_DISPLAY_HANDLE_T dispman_display_;
   EGLDisplay display_;
@@ -189,20 +209,29 @@ private:
   EGLSurface surface_;
   VGFont vg_font_;
   VGFont vg_font_border_;
+  VGFont vg_font_title_;
+  VGFont vg_font_title_border_;
   FT_Library ft_library_;
   FT_Face ft_face_;
   FT_Face ft_face_italic_;
+  FT_Face ft_face_title_;
   FT_Stroker ft_stroker_;
   std::unordered_map<InternalChar,InternalGlyph, InternalCharHash> glyphs_;
+  std::unordered_map<InternalChar,InternalGlyph, InternalCharHash> glyphs_title_;
   std::vector<std::vector<InternalChar>> internal_lines_;
   std::vector<std::pair<int,int>> line_positions_;
   std::vector<int> line_widths_;
+  std::vector<InternalChar> internal_info_line_;
+  std::pair<int,int> info_line_position_;
+  int info_line_width_;
   bool centered_;
+  bool title_centered_;
   unsigned int white_level_;
   unsigned int box_opacity_;
   uint32_t screen_width_;
   uint32_t screen_height_;
   float font_size_;
+  float title_font_size_;
   SubtitleConfig config_fullscreen_;
   SubtitleConfig config_;
 };

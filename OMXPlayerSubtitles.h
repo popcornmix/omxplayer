@@ -43,12 +43,16 @@ public:
             std::vector<Subtitle>&& external_subtitles,
             const std::string& font_path,
             const std::string& italic_font_path,
+            const std::string& title_font_path,
             float font_size,
+            float title_font_size,
             bool centered,
+            bool title_centered,
             bool ghost_box,
             unsigned int lines,
             int display, int layer,
-            OMXClock* clock) BOOST_NOEXCEPT;
+            OMXClock* clock,
+            const string& title) BOOST_NOEXCEPT;
   void Close() BOOST_NOEXCEPT;
   void Flush() BOOST_NOEXCEPT;
   void Resume() BOOST_NOEXCEPT;
@@ -99,6 +103,7 @@ private:
     struct Flush
     {
       std::vector<Subtitle> subtitles;
+      std::string title;
     };
     struct Push
     {
@@ -141,8 +146,11 @@ private:
   void Process();
   void RenderLoop(const std::string& font_path,
                   const std::string& italic_font_path,
+                  const std::string& title_font_path,
                   float font_size,
+                  float title_font_size,
                   bool centered,
+                  bool title_centered,
                   bool ghost_box,
                   unsigned int lines,
                   OMXClock* clock);
@@ -167,13 +175,17 @@ private:
   std::atomic<bool>                             m_thread_stopped;
   std::string                                   m_font_path;
   std::string                                   m_italic_font_path;
+  std::string                                   m_title_font_path;
   float                                         m_font_size;
+  float                                         m_title_font_size;
   bool                                          m_centered;
+  bool                                          m_title_centered;
   bool                                          m_ghost_box;
   unsigned int                                  m_lines;
   OMXClock*                                     m_av_clock;
   int                                           m_display;
   int                                           m_layer;
+  std::string                                   m_title;
 
 #ifndef NDEBUG
   bool m_open;

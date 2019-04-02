@@ -88,7 +88,7 @@ public:
   }
 };
 
-void SubtitleRenderer::load_glyph(InternalChar ch) {
+void SubtitleRenderer::load_glyph(InternalChar ch, bool title) {
   VGfloat escapement[2]{};
 
   auto load_glyph_internal =
@@ -180,6 +180,13 @@ void SubtitleRenderer::load_glyph(InternalChar ch) {
     }
   };
 
+  if (title) {
+    load_glyph_internal(ft_face_title_, vg_font_title_, false);
+    glyphs_title_[ch].advance = escapement[0];
+    load_glyph_internal(ft_face_title_, vg_font_title_border_, true);
+    return;
+  }
+
   if (!ch.italic()) {
     load_glyph_internal(ft_face_, vg_font_, false);
     glyphs_[ch].advance = escapement[0];
@@ -191,10 +198,13 @@ void SubtitleRenderer::load_glyph(InternalChar ch) {
   }
 }
 
-int SubtitleRenderer::get_text_width(const std::vector<InternalChar>& text) {
+int SubtitleRenderer::get_text_width(const std::vector<InternalChar>& text, bool title) {
   int width = 0;
   for (auto c = text.begin(); c != text.end(); ++c) {
-    width += glyphs_.at(*c).advance;
+    if (title)
+        width += glyphs_title_.at(*c).advance;
+    else
+      width += glyphs_.at(*c).advance;
   }
   return width;
 }
@@ -217,10 +227,15 @@ get_internal_chars(const std::string& str, TagTracker& tag_tracker) {
 }
 
 void SubtitleRenderer::
-prepare_glyphs(const std::vector<InternalChar>& text) {
+prepare_glyphs(const std::vector<InternalChar>& text, bool title) {
   for (auto c = text.begin(); c != text.end(); ++c) {
-    if (glyphs_.find(*c) == glyphs_.end())
-      load_glyph(*c);
+    if (title) {
+      if (glyphs_title_.find(*c) == glyphs_title_.end())
+        load_glyph(*c, title);
+    } else {
+      if (glyphs_.find(*c) == glyphs_.end())
+        load_glyph(*c, title);
+    }
   }
 }
 
@@ -264,14 +279,18 @@ SubtitleRenderer::
 SubtitleRenderer(int display, int layer,
                  const std::string& font_path,
                  const std::string& italic_font_path,
+                 const std::string& title_font_path,
                  float font_size,
+                 float title_font_size,
                  float margin_left,
                  float margin_bottom,
                  bool centered,
+                 bool title_centered,
                  unsigned int white_level,
                  unsigned int box_opacity,
                  unsigned int lines)
 : prepared_(),
+  title_prepared_(),
   dispman_element_(),
   dispman_display_(),
   display_(),
@@ -279,19 +298,24 @@ SubtitleRenderer(int display, int layer,
   surface_(),
   vg_font_(),
   vg_font_border_(),
+  vg_font_title_(),
+  vg_font_title_border_(),
   ft_library_(),
   ft_face_(),
   ft_face_italic_(),
+  ft_face_title_(),
   ft_stroker_(),
   centered_(centered),
+  title_centered_(title_centered),
   white_level_(white_level),
   box_opacity_(box_opacity),
-  font_size_(font_size)
+  font_size_(font_size),
+  title_font_size_(title_font_size)
 {
   try {
 
     ENFORCE(graphics_get_display_size(display, &screen_width_, &screen_height_) >= 0);
-    initialize_fonts(font_path, italic_font_path);
+    initialize_fonts(font_path, italic_font_path, title_font_path);
 
     int abs_margin_bottom =
       static_cast<int>(margin_bottom * screen_height_ + 0.5f) - config_.box_offset;
@@ -299,15 +323,16 @@ SubtitleRenderer(int display, int layer,
     int buffer_padding = (config_.line_height+2)/4;
     int buffer_bottom = clamp(abs_margin_bottom + config_.box_offset - buffer_padding,
                               0, (int) screen_height_-1);
-    int buffer_top = clamp(buffer_bottom + config_.line_height * (int) lines + buffer_padding*2,
+    int buffer_top = clamp(buffer_bottom + config_.title_line_height + config_.title_line_padding +
+                           config_.line_height * (int) lines + buffer_padding*2,
                            0, (int) screen_height_-1);
 
     config_.buffer_x = 0;
     config_.buffer_y = screen_height_ - buffer_top - 1;
     config_.buffer_width = screen_width_;
     config_.buffer_height = buffer_top - buffer_bottom + 1;
-    config_.margin_left = (screen_width_ - screen_height_) / 2 +
-                   static_cast<int>(margin_left * screen_height_ + 0.5f);
+    config_.margin_left = static_cast<int>(margin_left * screen_width_ + 0.5f);
+
     config_.margin_bottom = abs_margin_bottom - buffer_bottom;
     config_fullscreen_ = config_; // save full-screen config for scaling reference.
 
@@ -328,21 +353,27 @@ void SubtitleRenderer::destroy() {
 
 void SubtitleRenderer::
 initialize_fonts(const std::string& font_path,
-                 const std::string& italic_font_path) {
+                 const std::string& italic_font_path,
+                 const std::string& title_font_path) {
   ENFORCE(!FT_Init_FreeType(&ft_library_));
   ENFORCE2(!FT_New_Face(ft_library_, font_path.c_str(), 0, &ft_face_),
            "Unable to open font");
   ENFORCE2(!FT_New_Face(ft_library_, italic_font_path.c_str(), 0, &ft_face_italic_),
            "Unable to open italic font");
+  ENFORCE2(!FT_New_Face(ft_library_, title_font_path.c_str(), 0, &ft_face_title_),
+           "Unable to open title font");
+
   uint32_t font_size = font_size_*screen_height_;
+  uint32_t title_font_size = title_font_size_*screen_height_;
   ENFORCE(!FT_Set_Pixel_Sizes(ft_face_, 0, font_size));
   ENFORCE(!FT_Set_Pixel_Sizes(ft_face_italic_, 0, font_size));
+  ENFORCE(!FT_Set_Pixel_Sizes(ft_face_title_, 0, title_font_size));
 
-  auto get_bbox = [this](char32_t cp) {
-    auto glyph_index = FT_Get_Char_Index(ft_face_, cp);
-    ENFORCE(!FT_Load_Glyph(ft_face_, glyph_index, FT_LOAD_NO_HINTING));
+  auto get_bbox = [this](char32_t cp, FT_Face& font) {
+    auto glyph_index = FT_Get_Char_Index(font, cp);
+    ENFORCE(!FT_Load_Glyph(font, glyph_index, FT_LOAD_NO_HINTING));
     FT_Glyph glyph;
-    ENFORCE(!FT_Get_Glyph(ft_face_->glyph, &glyph));
+    ENFORCE(!FT_Get_Glyph(font->glyph, &glyph));
     SCOPE_EXIT {FT_Done_Glyph(glyph);};
     FT_BBox bbox;
     FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_PIXELS, &bbox);
@@ -350,15 +381,24 @@ initialize_fonts(const std::string& font_path,
   };
 
   constexpr float padding_factor = 0.05f;
-  int y_min = get_bbox('g').yMin;
-  int y_max = get_bbox('M').yMax;
+  int y_min = get_bbox('g', ft_face_).yMin;
+  int y_max = get_bbox('M', ft_face_).yMax;
   y_max += -y_min*0.7f;
   config_.line_height = y_max - y_min;
-  const int v_padding = config_.line_height*padding_factor + 0.5f;
+  int v_padding = config_.line_height*padding_factor + 0.5f;
   config_.line_height += v_padding*2;
   config_.box_offset = y_min-v_padding;
   config_.box_h_padding = config_.line_height/5.0f + 0.5f;
 
+  y_min = get_bbox('g', ft_face_title_).yMin;
+  y_max = get_bbox('M', ft_face_title_).yMax;
+  y_max += -y_min*0.7f;
+  config_.title_line_height = y_max - y_min;
+  v_padding = config_.title_line_height*padding_factor + 0.5f;
+  config_.title_line_height += v_padding*2;
+  config_.title_line_padding = config_.line_height * 0.5f + 0.5f;
+  config_.title_box_offset = y_min-v_padding;
+  config_.title_box_h_padding = config_.title_line_height/5.0f + 0.5f;
 
   constexpr float border_thickness = 0.044f;
   ENFORCE(!FT_Stroker_New(ft_library_, &ft_stroker_));
@@ -376,6 +416,7 @@ void SubtitleRenderer::destroy_fonts() {
     ft_library_ = {};
     ft_face_ = {};
     ft_face_italic_ = {};
+    ft_face_title_ = {};
     ft_stroker_ = {};
   }
 } 
@@ -496,6 +537,9 @@ void SubtitleRenderer::initialize_vg() {
   create_vg_font(vg_font_);
   create_vg_font(vg_font_border_);
 
+  create_vg_font(vg_font_title_);
+  create_vg_font(vg_font_title_border_);
+
   // VGfloat color[4] = { 1.0f, 0.0f, 0.0f, 1.0f };
   // vgSetfv(VG_CLEAR_COLOR, 4, color);
 }
@@ -523,11 +567,22 @@ prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT {
   internal_lines_.resize(n_lines);
   line_widths_.resize(n_lines);
   line_positions_.resize(n_lines);
+
+  int title_line_height = config_.title_line_height;
+  int title_line_padding = config_.title_line_padding;
+
+  if (!title_prepared_) {
+    title_line_height = 0;
+    title_line_padding = 0;
+  }
+
   for (int i = 0; i < n_lines; ++i) {
     internal_lines_[i] = get_internal_chars(text_lines[i], tag_tracker);
-    prepare_glyphs(internal_lines_[i]);
-    line_widths_[i] = get_text_width(internal_lines_[i]);
-    line_positions_[i].second = config_.margin_bottom + (n_lines-i-1)*config_.line_height;
+    prepare_glyphs(internal_lines_[i], false);
+    line_widths_[i] = get_text_width(internal_lines_[i], false);
+    line_positions_[i].second = config_.margin_bottom +
+      title_line_height + title_line_padding +
+      (n_lines-i-1)*config_.line_height;
     if (centered_)
       line_positions_[i].first = config_.buffer_width/2 - line_widths_[i]/2;
     else
@@ -537,13 +592,57 @@ prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT {
   prepared_ = true;
 }
 
+void SubtitleRenderer::
+prepare_title(const std::string& line) BOOST_NOEXCEPT {
+  TagTracker tag_tracker;
+
+  internal_info_line_ = get_internal_chars(line, tag_tracker);
+  prepare_glyphs(internal_info_line_, true);
+  info_line_width_ = get_text_width(internal_info_line_, true);
+  info_line_position_.second = config_.margin_bottom;
+  if (title_centered_)
+    info_line_position_.first = config_.buffer_width/2 - info_line_width_/2;
+  else
+    info_line_position_.first = config_.margin_left;
+
+  title_prepared_ = true;
+}
+
 void SubtitleRenderer::clear() BOOST_NOEXCEPT {
   vgClear(0, 0, screen_width_, screen_height_);
   assert(!vgGetError());
 }
 
-void SubtitleRenderer::draw() BOOST_NOEXCEPT {
-  clear();
+void SubtitleRenderer::draw_title(bool clear_needed) BOOST_NOEXCEPT {
+  if (clear_needed)
+    clear();
+
+  // info line graybox
+  {
+    BoxRenderer box_renderer(box_opacity_);
+    box_renderer.push(info_line_position_.first - config_.box_h_padding,
+                    info_line_position_.second + config_.title_box_offset,
+                    info_line_width_ + config_.title_box_h_padding*2,
+                    config_.title_line_height);
+    box_renderer.render();
+  }
+
+  //info line background
+  draw_text(vg_font_title_border_,
+            internal_info_line_,
+            info_line_position_.first, info_line_position_.second,
+            0);
+
+  //info line foreground
+  draw_text(vg_font_title_,
+            internal_info_line_,
+            info_line_position_.first, info_line_position_.second,
+            white_level_);
+}
+
+void SubtitleRenderer::draw(bool clear_needed) BOOST_NOEXCEPT {
+  if (clear_needed)
+    clear();
 
   const auto n_lines = internal_lines_.size();
 
@@ -598,6 +697,10 @@ void SubtitleRenderer::set_rect(int x1, int y1, int x2, int y2) BOOST_NOEXCEPT
     config_.box_h_padding = config_fullscreen_.box_h_padding * height_mod + 0.5f;
     config_.margin_left = config_fullscreen_.margin_left * width_mod + 0.5f;
     config_.margin_bottom = config_fullscreen_.margin_bottom * height_mod + 0.5f;
+    config_.title_line_height = config_fullscreen_.title_line_height * height_mod + 0.5f;
+    config_.title_line_padding = config_fullscreen_.title_line_padding * height_mod + 0.5f;
+    config_.title_box_offset = config_fullscreen_.title_box_offset * height_mod + 0.5f;
+    config_.title_box_h_padding = config_fullscreen_.title_box_h_padding * height_mod + 0.5f;
 
     // resize dispmanx element
     ENFORCE(dispman_element_);
@@ -615,7 +718,10 @@ void SubtitleRenderer::set_rect(int x1, int y1, int x2, int y2) BOOST_NOEXCEPT
 
     // resize font
     glyphs_.clear(); // clear cached glyphs
+    glyphs_title_.clear();
     float font_size = height*font_size_;
+    float title_font_size = height*title_font_size_;
     ENFORCE(!FT_Set_Pixel_Sizes(ft_face_, 0, font_size));
     ENFORCE(!FT_Set_Pixel_Sizes(ft_face_italic_, 0, font_size));
+    ENFORCE(!FT_Set_Pixel_Sizes(ft_face_title_, 0, title_font_size));
 }

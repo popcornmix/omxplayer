@@ -41,6 +41,7 @@ OMXPlayerSubtitles::OMXPlayerSubtitles() BOOST_NOEXCEPT
   m_thread_stopped(),
   m_font_size(),
   m_centered(),
+  m_title_centered(),
   m_ghost_box(),
   m_lines(),
   m_av_clock(),
@@ -58,12 +59,16 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
                               vector<Subtitle>&& external_subtitles,
                               const string& font_path,
                               const string& italic_font_path,
+                              const string& title_font_path,
                               float font_size,
+                              float title_font_size,
                               bool centered,
+                              bool title_centered,
                               bool ghost_box,
                               unsigned int lines,
                               int display, int layer,
-                              OMXClock* clock) BOOST_NOEXCEPT
+                              OMXClock* clock,
+                              const string& title) BOOST_NOEXCEPT
 {
   assert(!m_open);
 
@@ -78,18 +83,22 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
 
   m_font_path = font_path;
   m_italic_font_path = italic_font_path;
+  m_title_font_path = title_font_path;
   m_font_size = font_size;
+  m_title_font_size = title_font_size;
   m_centered = centered;
+  m_title_centered = title_centered;
   m_ghost_box = ghost_box;
   m_lines = lines;
   m_av_clock = clock;
   m_display = display;
   m_layer = layer;
+  m_title = title;
 
   if(!Create())
     return false;
 
-  SendToRenderer(Message::Flush{m_external_subtitles});
+  SendToRenderer(Message::Flush{m_external_subtitles, m_title});
 
 #ifndef NDEBUG
   m_open = true;
@@ -118,8 +127,8 @@ void OMXPlayerSubtitles::Process()
 {
   try
   {
-    RenderLoop(m_font_path, m_italic_font_path, m_font_size, m_centered,
-               m_ghost_box, m_lines, m_av_clock);
+    RenderLoop(m_font_path, m_italic_font_path, m_title_font_path, m_font_size, m_title_font_size,
+               m_centered, m_title_centered, m_ghost_box, m_lines, m_av_clock);
   }
   catch(Enforce_error& e)
   {
@@ -146,8 +155,11 @@ Iterator FindSubtitle(Iterator begin, Iterator end, int time)
 void OMXPlayerSubtitles::
 RenderLoop(const string& font_path,
            const string& italic_font_path,
+           const string& title_font_path,
            float font_size,
+           float title_font_size,
            bool centered,
+           bool title_centered,
            bool ghost_box,
            unsigned int lines,
            OMXClock* clock)
@@ -155,14 +167,18 @@ RenderLoop(const string& font_path,
   SubtitleRenderer renderer(m_display, m_layer,
                             font_path,
                             italic_font_path,
+                            title_font_path,
                             font_size,
-                            0.01f, 0.06f,
+                            title_font_size,
+                            0.06f, 0.06f,
                             centered,
+                            title_centered,
                             0xDD,
                             ghost_box ? 0x80 : 0,
                             lines);
 
   vector<Subtitle> subtitles;
+  std::string title;
 
   int prev_now{};
   size_t next_index{};
@@ -248,7 +264,13 @@ RenderLoop(const string& font_path,
       [&](Message::Flush&& args)
       {
         subtitles = std::move(args.subtitles);
+        title = std::move(args.title);
         prev_now = INT_MAX;
+
+        if (title != "") {
+          renderer.prepare_title(title);
+          renderer.show_next();
+        }
       },
       [&](Message::Touch&&)
       {
@@ -328,7 +350,7 @@ void OMXPlayerSubtitles::FlushRenderer()
 
   if(GetUseExternalSubtitles())
   {
-    SendToRenderer(Message::Flush{m_external_subtitles});
+    SendToRenderer(Message::Flush{m_external_subtitles, m_title});
   }
   else
   {
