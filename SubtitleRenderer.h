@@ -221,9 +221,9 @@ private:
   std::vector<std::vector<InternalChar>> internal_lines_;
   std::vector<std::pair<int,int>> line_positions_;
   std::vector<int> line_widths_;
-  std::vector<InternalChar> internal_info_line_;
-  std::pair<int,int> info_line_position_;
-  int info_line_width_;
+  std::vector<InternalChar> internal_title_line_;
+  std::pair<int,int> title_line_position_;
+  int title_line_width_;
   bool centered_;
   bool title_centered_;
   unsigned int white_level_;

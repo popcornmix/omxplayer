@@ -596,14 +596,14 @@ void SubtitleRenderer::
 prepare_title(const std::string& line) BOOST_NOEXCEPT {
   TagTracker tag_tracker;
 
-  internal_info_line_ = get_internal_chars(line, tag_tracker);
-  prepare_glyphs(internal_info_line_, true);
-  info_line_width_ = get_text_width(internal_info_line_, true);
-  info_line_position_.second = config_.margin_bottom;
+  internal_title_line_ = get_internal_chars(line, tag_tracker);
+  prepare_glyphs(internal_title_line_, true);
+  title_line_width_ = get_text_width(internal_title_line_, true);
+  title_line_position_.second = config_.margin_bottom;
   if (title_centered_)
-    info_line_position_.first = config_.buffer_width/2 - info_line_width_/2;
+    title_line_position_.first = config_.buffer_width/2 - title_line_width_/2;
   else
-    info_line_position_.first = config_.margin_left;
+    title_line_position_.first = config_.margin_left;
 
   title_prepared_ = true;
 }
@@ -617,26 +617,26 @@ void SubtitleRenderer::draw_title(bool clear_needed) BOOST_NOEXCEPT {
   if (clear_needed)
     clear();
 
-  // info line graybox
+  // title line graybox
   {
     BoxRenderer box_renderer(box_opacity_);
-    box_renderer.push(info_line_position_.first - config_.box_h_padding,
-                    info_line_position_.second + config_.title_box_offset,
-                    info_line_width_ + config_.title_box_h_padding*2,
+    box_renderer.push(title_line_position_.first - config_.box_h_padding,
+                    title_line_position_.second + config_.title_box_offset,
+                    title_line_width_ + config_.title_box_h_padding*2,
                     config_.title_line_height);
     box_renderer.render();
   }
 
-  //info line background
+  // title line background
   draw_text(vg_font_title_border_,
-            internal_info_line_,
-            info_line_position_.first, info_line_position_.second,
+            internal_title_line_,
+            title_line_position_.first, title_line_position_.second,
             0);
 
-  //info line foreground
+  // title line foreground
   draw_text(vg_font_title_,
-            internal_info_line_,
-            info_line_position_.first, info_line_position_.second,
+            internal_title_line_,
+            title_line_position_.first, title_line_position_.second,
             white_level_);
 }
 
