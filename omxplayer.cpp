@@ -1582,6 +1582,10 @@ int main(int argc, char *argv[])
           m_Volume / 100.0f));
         printf("Current Volume: %.2fdB\n", m_Volume / 100.0f);
         break;
+      case KeyConfig::ACTION_SET_TITLE:
+         m_title = result.getWinArg();
+         m_player_subtitles.SetTitle(m_title);
+         break;
       case KeyConfig::ACTION_TOGGLE_TITLE:
         if(m_title != "")
         {

@@ -74,7 +74,9 @@ int convertStringToAction(string str_action)
         return KeyConfig::ACTION_SHOW_TIME;
     if(str_action == "HIDE_TIME")
         return KeyConfig::ACTION_HIDE_TIME;
-            
+    if(str_action == "SET_TITLE")
+        return KeyConfig::ACTION_SET_TITLE;
+
     return -1;
 }
 /* Grabs the substring prior to the ':', this is the Action */

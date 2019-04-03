@@ -50,7 +50,8 @@ class KeyConfig
         ACTION_SHOW_TITLE = 41,
         ACTION_TOGGLE_TIME = 42,
         ACTION_HIDE_TIME = 43,
-        ACTION_SHOW_TIME = 44
+        ACTION_SHOW_TIME = 44,
+        ACTION_SET_TITLE = 45
     };
 
     #define KEY_LEFT 0x5b44

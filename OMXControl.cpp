@@ -1142,9 +1142,8 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
     }
     else
     {
-      subtitles->SetTitle(title);
       dbus_respond_string(m, title);
-      return KeyConfig::ACTION_BLANK;
+      return OMXControlResult(KeyConfig::ACTION_SET_TITLE, title);
     }
   }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "GetTitle"))
