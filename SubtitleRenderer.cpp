@@ -572,20 +572,11 @@ prepare(const std::vector<std::string>& text_lines) BOOST_NOEXCEPT {
   lines.line_widths_.resize(n_lines);
   lines.line_positions_.resize(n_lines);
 
-  int title_line_height = config_.title_line_height;
-  int title_line_padding = config_.title_line_padding;
-
-  if (!title_prepared_) {
-    title_line_height = 0;
-    title_line_padding = 0;
-  }
-
   for (int i = 0; i < n_lines; ++i) {
     lines.internal_lines_[i] = get_internal_chars(text_lines[i], tag_tracker);
     prepare_glyphs(lines.internal_lines_[i], false);
     lines.line_widths_[i] = get_text_width(lines.internal_lines_[i], false);
     lines.line_positions_[i].second = config_.margin_bottom +
-      title_line_height + title_line_padding +
       (n_lines-i-1)*config_.line_height;
     if (centered_)
       lines.line_positions_[i].first = config_.buffer_width/2 - lines.line_widths_[i]/2;
@@ -702,12 +693,21 @@ void SubtitleRenderer::draw(bool clear_needed) BOOST_NOEXCEPT {
 
   const auto n_lines = lines.internal_lines_.size();
 
+  int title_line_height = config_.title_line_height;
+  int title_line_padding = config_.title_line_padding;
+
+  if (!title_prepared_) {
+    title_line_height = 0;
+    title_line_padding = 0;
+  }
+
   // font graybox
   {
     BoxRenderer box_renderer(box_opacity_);
     for (size_t i = 0; i < n_lines; ++i) {
       box_renderer.push(lines.line_positions_[i].first - config_.box_h_padding,
-                        lines.line_positions_[i].second + config_.box_offset,
+                        lines.line_positions_[i].second + config_.box_offset +
+                        title_line_height + title_line_padding,
 						lines.line_widths_[i] + config_.box_h_padding*2,
                         config_.line_height);
     }
@@ -718,7 +718,8 @@ void SubtitleRenderer::draw(bool clear_needed) BOOST_NOEXCEPT {
   for (size_t i = 0; i < n_lines; ++i) {
     draw_text(vg_font_border_,
               lines.internal_lines_[i],
-              lines.line_positions_[i].first, lines.line_positions_[i].second,
+              lines.line_positions_[i].first, lines.line_positions_[i].second +
+              title_line_height + title_line_padding,
               0);
   }
 
@@ -726,7 +727,8 @@ void SubtitleRenderer::draw(bool clear_needed) BOOST_NOEXCEPT {
   for (size_t i = 0; i < n_lines; ++i) {
     draw_text(vg_font_,
               lines.internal_lines_[i],
-              lines.line_positions_[i].first, lines.line_positions_[i].second,
+              lines.line_positions_[i].first, lines.line_positions_[i].second +
+              title_line_height + title_line_padding,
               white_level_);
   }
 }
