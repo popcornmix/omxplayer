@@ -104,8 +104,6 @@ private:
     struct Flush
     {
       std::vector<Subtitle> subtitles;
-      std::string title;
-      bool show_time;
     };
     struct Push
     {
@@ -131,6 +129,14 @@ private:
         int y1;
         int x2;
         int y2;
+    };
+    struct SetTitle
+    {
+      std::string title;
+    };
+    struct SetShowTime
+    {
+      bool show;
     };
   };
 
@@ -169,7 +175,9 @@ private:
           Message::SetPaused,
           Message::SetDelay,
           Message::DisplayText,
-          Message::SetRect>                     m_mailbox;
+          Message::SetRect,
+          Message::SetTitle,
+          Message::SetShowTime>                 m_mailbox;
   bool                                          m_visible;
   bool                                          m_use_external_subtitles;
   size_t                                        m_active_index;
@@ -188,7 +196,6 @@ private:
   int                                           m_display;
   int                                           m_layer;
   std::string                                   m_title;
-  bool                                          m_show_time;
 
 #ifndef NDEBUG
   bool m_open;

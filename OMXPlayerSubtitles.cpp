@@ -96,12 +96,13 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
   m_display = display;
   m_layer = layer;
   m_title = title;
-  m_show_time = show_time;
 
   if(!Create())
     return false;
 
-  SendToRenderer(Message::Flush{m_external_subtitles, m_title, m_show_time});
+  SendToRenderer(Message::Flush{m_external_subtitles});
+  SendToRenderer(Message::SetTitle{m_title});
+  SendToRenderer(Message::SetShowTime{show_time});
 
 #ifndef NDEBUG
   m_open = true;
@@ -181,7 +182,6 @@ RenderLoop(const string& font_path,
                             lines);
 
   vector<Subtitle> subtitles;
-  std::string title;
 
   int prev_now{};
   size_t next_index{};
@@ -305,14 +305,7 @@ RenderLoop(const string& font_path,
       [&](Message::Flush&& args)
       {
         subtitles = std::move(args.subtitles);
-        title = std::move(args.title);
-        show_time = std::move(args.show_time);
         prev_now = INT_MAX;
-
-        if (title != "") {
-          renderer.prepare_title(title);
-          renderer.redraw();
-        }
       },
       [&](Message::Touch&&)
       {
@@ -345,6 +338,20 @@ RenderLoop(const string& font_path,
       [&](Message::SetRect&& args)
       {
         renderer.set_rect(args.x1, args.y1, args.x2, args.y2);
+      },
+      [&](Message::SetTitle&& args)
+      {
+        renderer.prepare_title(args.title);
+        renderer.redraw();
+      },
+      [&](Message::SetShowTime&& args)
+      {
+        show_time = args.show;
+        if (show_time)
+          PrepareTime();
+        else
+          renderer.prepare_time("");
+        renderer.redraw();
       });
 
     if(exit) break;
@@ -407,7 +414,7 @@ void OMXPlayerSubtitles::FlushRenderer()
 
   if(GetUseExternalSubtitles())
   {
-    SendToRenderer(Message::Flush{m_external_subtitles, m_title});
+    SendToRenderer(Message::Flush{m_external_subtitles});
   }
   else
   {
