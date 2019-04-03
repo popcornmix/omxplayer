@@ -515,6 +515,54 @@ Turns off subtitles.
 :-------------: | -------
  Return         | `null`
 
+##### SetTitle (w)
+
+Sets the current static title.
+
+   Params       |   Type    | Description
+:-------------: | --------- | --------------------------------
+1               | `string`  | Static title to display.
+
+##### GetTitle (ro)
+
+The current static title.
+
+   Params       |   Type
+:-------------: | ---------
+ Return         | `string`
+
+##### ShowTitle
+
+Turns on title display.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### HideTitle
+
+Turns off title display.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### ShowTime
+
+Turns on time display.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### HideTime
+
+Turns off time display.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
 ##### GetSource
 
 The current file or stream that is being played.

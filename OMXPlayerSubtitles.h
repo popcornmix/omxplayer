@@ -67,6 +67,14 @@ public:
     return m_visible;
   }
 
+  void SetTitle(std::string line) BOOST_NOEXCEPT;
+
+  std::string GetTitle() BOOST_NOEXCEPT
+  {
+    assert(m_open);
+    return m_title;
+  }
+
   void SetTitleVisible(bool visible) BOOST_NOEXCEPT;
 
   bool GetTitleVisible() BOOST_NOEXCEPT

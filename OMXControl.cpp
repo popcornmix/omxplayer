@@ -1125,6 +1125,57 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
     dbus_respond_ok(m);
     return KeyConfig::ACTION_HIDE_SUBTITLES;
   }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "SetTitle"))
+  {
+    DBusError error;
+    dbus_error_init(&error);
+
+    const char *title;
+    dbus_message_get_args(m, &error, DBUS_TYPE_STRING, &title, DBUS_TYPE_INVALID);
+
+    if (dbus_error_is_set(&error))
+    {
+      CLog::Log(LOGWARNING, "Set title D-Bus Error: %s", error.message );
+      dbus_error_free(&error);
+      dbus_respond_ok(m);
+      return KeyConfig::ACTION_BLANK;
+    }
+    else
+    {
+      subtitles->SetTitle(title);
+      dbus_respond_string(m, title);
+      return KeyConfig::ACTION_BLANK;
+    }
+  }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "GetTitle"))
+  {
+    dbus_respond_string(m, subtitles->GetTitle().c_str());
+    return KeyConfig::ACTION_BLANK;
+  }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "ShowTitle"))
+  {
+    subtitles->SetTitleVisible(true);
+    dbus_respond_ok(m);
+    return KeyConfig::ACTION_SHOW_TITLE;
+  }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "HideTitle"))
+  {
+    subtitles->SetTitleVisible(false);
+    dbus_respond_ok(m);
+    return KeyConfig::ACTION_HIDE_TITLE;
+  }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "ShowTime"))
+  {
+    subtitles->SetTimeVisible(true);
+    dbus_respond_ok(m);
+    return KeyConfig::ACTION_SHOW_TIME;
+  }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "HideTime"))
+  {
+    subtitles->SetTimeVisible(false);
+    dbus_respond_ok(m);
+    return KeyConfig::ACTION_HIDE_TIME;
+  }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "OpenUri"))
   {
     DBusError error;

@@ -510,6 +510,13 @@ void OMXPlayerSubtitles::SetVisible(bool visible) BOOST_NOEXCEPT
   }
 }
 
+void OMXPlayerSubtitles::SetTitle(std::string line) BOOST_NOEXCEPT
+{
+  assert(m_open);
+
+  SendToRenderer(Message::SetTitle{line});
+}
+
 void OMXPlayerSubtitles::SetTitleVisible(bool visible) BOOST_NOEXCEPT
 {
   assert(m_open);
