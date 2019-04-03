@@ -66,7 +66,23 @@ public:
     assert(m_open);
     return m_visible;
   }
-  
+
+  void SetTitleVisible(bool visible) BOOST_NOEXCEPT;
+
+  bool GetTitleVisible() BOOST_NOEXCEPT
+  {
+    assert(m_open);
+    return m_show_title;
+  }
+
+  void SetTimeVisible(bool visible) BOOST_NOEXCEPT;
+
+  bool GetTimeVisible() BOOST_NOEXCEPT
+  {
+    assert(m_open);
+    return m_show_time;
+  }
+
   void SetActiveStream(size_t index) BOOST_NOEXCEPT;
 
   size_t GetActiveStream() BOOST_NOEXCEPT
@@ -134,6 +150,10 @@ private:
     {
       std::string title;
     };
+    struct SetShowTitle
+    {
+      bool show;
+    };
     struct SetShowTime
     {
       bool show;
@@ -177,6 +197,7 @@ private:
           Message::DisplayText,
           Message::SetRect,
           Message::SetTitle,
+          Message::SetShowTitle,
           Message::SetShowTime>                 m_mailbox;
   bool                                          m_visible;
   bool                                          m_use_external_subtitles;
@@ -196,6 +217,8 @@ private:
   int                                           m_display;
   int                                           m_layer;
   std::string                                   m_title;
+  bool                                          m_show_title;
+  bool                                          m_show_time;
 
 #ifndef NDEBUG
   bool m_open;

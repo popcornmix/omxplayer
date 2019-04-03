@@ -119,6 +119,7 @@ bool              m_has_subtitle        = false;
 bool              m_gen_log             = false;
 bool              m_loop                = false;
 std::string       m_title;
+bool              m_show_title          = false;
 bool              m_show_time           = false;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
@@ -1580,6 +1581,36 @@ int main(int argc, char *argv[])
         DISPLAY_TEXT_SHORT(strprintf("Volume: %.2f dB",
           m_Volume / 100.0f));
         printf("Current Volume: %.2fdB\n", m_Volume / 100.0f);
+        break;
+      case KeyConfig::ACTION_TOGGLE_TITLE:
+        if(m_title != "")
+        {
+          m_player_subtitles.SetTitleVisible(!m_player_subtitles.GetTitleVisible());
+        }
+        break;
+      case KeyConfig::ACTION_HIDE_TITLE:
+        if(m_title != "")
+        {
+          m_player_subtitles.SetTitleVisible(false);
+        }
+        break;
+      case KeyConfig::ACTION_SHOW_TITLE:
+        if(m_title != "")
+        {
+          m_player_subtitles.SetTitleVisible(true);
+        }
+        break;
+      case KeyConfig::ACTION_TOGGLE_TIME:
+        m_show_time = !m_show_time;
+        m_player_subtitles.SetTimeVisible(m_show_time);
+        break;
+      case KeyConfig::ACTION_HIDE_TIME:
+        m_show_time = false;
+        m_player_subtitles.SetTimeVisible(m_show_time);
+        break;
+      case KeyConfig::ACTION_SHOW_TIME:
+        m_show_time = true;
+        m_player_subtitles.SetTimeVisible(m_show_time);
         break;
       default:
         break;

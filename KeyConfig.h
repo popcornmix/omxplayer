@@ -45,6 +45,12 @@ class KeyConfig
         ACTION_PLAY = 36,
         ACTION_CHANGE_FILE = 37,
         ACTION_SET_LAYER = 38,
+        ACTION_TOGGLE_TITLE = 39,
+        ACTION_HIDE_TITLE = 40,
+        ACTION_SHOW_TITLE = 41,
+        ACTION_TOGGLE_TIME = 42,
+        ACTION_HIDE_TIME = 43,
+        ACTION_SHOW_TIME = 44
     };
 
     #define KEY_LEFT 0x5b44

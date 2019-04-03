@@ -142,6 +142,12 @@ Key bindings to control omxplayer while playing:
     x           hide subtitles
     d           decrease subtitle delay (- 250 ms)
     f           increase subtitle delay (+ 250 ms)
+    t           toggle static title display
+    e           show static title
+    r           hide static title
+    y           toggle time display
+    g           show time
+    h           hide time
     q           exit omxplayer
     p / space   pause/resume
     -           decrease volume

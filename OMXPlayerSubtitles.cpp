@@ -96,13 +96,16 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
   m_display = display;
   m_layer = layer;
   m_title = title;
+  m_show_title = (title != "");
+  m_show_time = show_time;
 
   if(!Create())
     return false;
 
   SendToRenderer(Message::Flush{m_external_subtitles});
   SendToRenderer(Message::SetTitle{m_title});
-  SendToRenderer(Message::SetShowTime{show_time});
+  SendToRenderer(Message::SetShowTitle{m_show_title});
+  SendToRenderer(Message::SetShowTime{m_show_time});
 
 #ifndef NDEBUG
   m_open = true;
@@ -341,7 +344,20 @@ RenderLoop(const string& font_path,
       },
       [&](Message::SetTitle&& args)
       {
-        renderer.prepare_title(args.title);
+        m_title = args.title;
+        if (m_show_title)
+          renderer.prepare_title(m_title);
+        else
+          renderer.prepare_title("");
+        renderer.redraw();
+      },
+      [&](Message::SetShowTitle&& args)
+      {
+        m_show_title = args.show;
+        if (m_show_title)
+          renderer.prepare_title(m_title);
+        else
+          renderer.prepare_title("");
         renderer.redraw();
       },
       [&](Message::SetShowTime&& args)
@@ -492,6 +508,20 @@ void OMXPlayerSubtitles::SetVisible(bool visible) BOOST_NOEXCEPT
       SendToRenderer(Message::Flush{});
     }
   }
+}
+
+void OMXPlayerSubtitles::SetTitleVisible(bool visible) BOOST_NOEXCEPT
+{
+  assert(m_open);
+
+  SendToRenderer(Message::SetShowTitle{visible});
+}
+
+void OMXPlayerSubtitles::SetTimeVisible(bool visible) BOOST_NOEXCEPT
+{
+  assert(m_open);
+
+  SendToRenderer(Message::SetShowTime{visible});
 }
 
 void OMXPlayerSubtitles::SetActiveStream(size_t index) BOOST_NOEXCEPT
