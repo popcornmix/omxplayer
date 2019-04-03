@@ -175,6 +175,8 @@ The list of valid [action]s roughly corresponds to the list of default key bindi
     PREVIOUS_SUBTITLE
     NEXT_SUBTITLE
     TOGGLE_SUBTITLE
+    SHOW_SUBTITLES
+    HIDE_SUBTITLES
     DECREASE_SUBTITLE_DELAY
     INCREASE_SUBTITLE_DELAY
     EXIT
@@ -186,6 +188,12 @@ The list of valid [action]s roughly corresponds to the list of default key bindi
     SEEK_BACK_LARGE
     SEEK_FORWARD_LARGE
     STEP
+    TOGGLE_TITLE
+    SHOW_TITLE
+    HIDE_TITLE
+    TOGGLE_TIME
+    SHOW_TIME
+    HIDE_TIME
 
 Valid [key]s include all alpha-numeric characters and most symbols, as well as:
 
