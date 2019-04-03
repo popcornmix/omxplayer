@@ -600,6 +600,11 @@ void SubtitleRenderer::
 prepare_time(const std::string& line) BOOST_NOEXCEPT {
   TagTracker tag_tracker;
 
+  if (line == "") {
+    time_prepared_ = false;
+    return;
+  }
+
   internal_time_ = get_internal_chars(line, tag_tracker);
   prepare_glyphs(internal_time_, true);
   time_width_ = get_text_width(internal_time_, true);
@@ -612,6 +617,11 @@ prepare_time(const std::string& line) BOOST_NOEXCEPT {
 void SubtitleRenderer::
 prepare_title(const std::string& line) BOOST_NOEXCEPT {
   TagTracker tag_tracker;
+
+  if (line == "") {
+    title_prepared_ = false;
+    return;
+  }
 
   internal_title_line_ = get_internal_chars(line, tag_tracker);
   prepare_glyphs(internal_title_line_, true);
