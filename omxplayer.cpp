@@ -1035,8 +1035,8 @@ int main(int argc, char *argv[])
 
   m_has_video     = m_omx_reader.VideoStreamCount();
   m_has_audio     = m_audio_index_use < 0 ? false : m_omx_reader.AudioStreamCount();
-  m_has_subtitle  = m_has_external_subtitles ||
-                    m_omx_reader.SubtitleStreamCount();
+  m_has_subtitle  = !is_model_pi4() && !is_fkms_active() &&
+                     (m_has_external_subtitles || m_omx_reader.SubtitleStreamCount());
   m_loop          = m_loop && m_omx_reader.CanSeek();
 
   if (m_audio_extension)
