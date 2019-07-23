@@ -45,10 +45,21 @@ static int read_string_from_file(const char *filename, const char *format, unsig
 
    while (fgets(str, sizeof(str), fin) != NULL)
    {
-      if (sscanf(str, format, value) == 1)
+      if (value)
       {
-         found = 1;
-         break;
+         if (sscanf(str, format, value) == 1)
+         {
+            found = 1;
+            break;
+         }
+      }
+      else
+      {
+         if (!strcmp(str, format))
+         {
+            found = 1;
+            break;
+         }
       }
    }
 
@@ -139,7 +150,6 @@ int get_processor_id(void)
 
 int is_fkms_active()
 {
-   unsigned int dummy;
-   return (read_string_from_file("/proc/device-tree/soc/v3d@7ec00000/status", "okay", &dummy) ||
-      read_string_from_file("/proc/device-tree/soc/firmwarekms@7e600000/status", "okay", &dummy));
+   return (read_string_from_file("/proc/device-tree/soc/v3d@7ec00000/status", "okay", NULL) ||
+      read_string_from_file("/proc/device-tree/soc/firmwarekms@7e600000/status", "okay", NULL));
 }
