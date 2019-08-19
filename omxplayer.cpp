@@ -1796,8 +1796,10 @@ int main(int argc, char *argv[])
       }
       if(m_player_video.AddPacket(m_omx_pkt))
         m_omx_pkt = NULL;
-      else
-        OMXClock::OMXSleep(10);
+      else if (m_player_video.hasAborted()) {
+        goto do_exit;
+      } else
+          OMXClock::OMXSleep(10);
     }
     else if(m_has_audio && m_omx_pkt && !TRICKPLAY(m_av_clock->OMXPlaySpeed()) && m_omx_pkt->codec_type == AVMEDIA_TYPE_AUDIO)
     {
