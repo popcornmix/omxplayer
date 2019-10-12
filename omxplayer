@@ -64,7 +64,21 @@ DBUS_SESSION_BUS_PID=`cat $OMXPLAYER_DBUS_PID`
 export DBUS_SESSION_BUS_ADDRESS
 export DBUS_SESSION_BUS_PID
 
-LD_LIBRARY_PATH="$OMXPLAYER_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" $OMXPLAYER_BIN "$@"
+# Propagate SIGTERM and SIGINT to the player and while still allowing cleanup
+# Approach taken from http://veithen.io/2014/11/16/sigterm-propagation.html
+trap 'kill -TERM $OMXPLAYER_PID' TERM INT
+# Start omxplayer in the background, otherwise bash will ignore signals
+LD_LIBRARY_PATH="$OMXPLAYER_LIBS${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" $OMXPLAYER_BIN "$@"&
+OMXPLAYER_PID=$!
+# Wait for omxplayer to complete
+wait $OMXPLAYER_PID
+# When a signal arrives, the wait will be interrupted, but omxplayer
+# might not be terminated yet. Remove our signal handler and wait again
+# to make sure omxplayer is really terminated. When it was already
+# terminated, wait just returns the exit code.
+trap - TERM INT
+wait $OMXPLAYER_PID
+# Store the omxplayer exit code
 RESULT=$?
 
 if [ ! -z $NOREFRESH ] && [ "$NOREFRESH" == "1" ]; then
