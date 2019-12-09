@@ -107,7 +107,10 @@ bool COMXAudio::PortSettingsChanged()
     if(!m_omx_render_analog.Initialize("OMX.broadcom.audio_render", OMX_IndexParamAudioInit))
       return false;
   }
-  if (m_config.device == "omx:both" || m_config.device == "omx:hdmi")
+  if (m_config.device == "omx:both" ||
+      m_config.device == "omx:hdmi" ||
+      m_config.device == "omx:hdmi0" ||
+      m_config.device == "omx:hdmi1")
   {
     if(!m_omx_render_hdmi.Initialize("OMX.broadcom.audio_render", OMX_IndexParamAudioInit))
       return false;
@@ -263,7 +266,10 @@ bool COMXAudio::PortSettingsChanged()
 
     OMX_CONFIG_BRCMAUDIODESTINATIONTYPE audioDest;
     OMX_INIT_STRUCTURE(audioDest);
-    strncpy((char *)audioDest.sName, "hdmi", strlen("hdmi"));
+    if (m_config.device == "omx:both")
+      strncpy((char *)audioDest.sName, "hdmi", strlen("hdmi"));
+    else
+      strncpy((char *)audioDest.sName, &m_config.device[4], strlen(m_config.device) - 4);
     omx_err = m_omx_render_hdmi.SetConfig(OMX_IndexConfigBrcmAudioDestination, &audioDest);
     if (omx_err != OMX_ErrorNone)
     {

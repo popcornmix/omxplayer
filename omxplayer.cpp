@@ -721,10 +721,14 @@ int main(int argc, char *argv[])
             m_config_audio.subdevice = "";
           }
         }
-        if(m_config_audio.device != "local" && m_config_audio.device != "hdmi" && m_config_audio.device != "both" &&
+        if(m_config_audio.device != "local" &&
+           m_config_audio.device != "hdmi" &&
+           m_config_audio.device != "hdmi0" &&
+           m_config_audio.device != "hdmi1" &&
+           m_config_audio.device != "both" &&
            m_config_audio.device != "alsa")
         {
-          printf("Bad argument for -%c: Output device must be `local', `hdmi', `both' or `alsa'\n", c);
+          printf("Bad argument for -%c: Output device must be `local', `hdmi', `hdmi0', `hdmi1', `both' or `alsa'\n", c);
           return EXIT_FAILURE;
         }
         m_config_audio.device = "omx:" + m_config_audio.device;
