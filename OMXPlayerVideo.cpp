@@ -211,10 +211,19 @@ bool OMXPlayerVideo::Decode(OMXPacket *pkt)
   if(pts != DVD_NOPTS_VALUE)
     m_iCurrentPts = pts;
 
+  size_t i = 0;
   while((int) m_decoder->GetFreeSpace() < pkt->size)
   {
     OMXClock::OMXSleep(10);
     if(m_flush_requested) return true;
+    // Timeout after 1000 ms, and exit player to avoid freeze: https://github.com/popcornmix/omxplayer/issues/301
+    if (i >= 100) {
+      CLog::Log(LOGERROR, "OMXPlayerVideo::Decode timeout\n");
+      printf("OMXPlayerVideo::Decode timeout\n");
+      m_bAbort = true; //TODO: Test if exits program
+      return true;
+    }
+    i++;
   }
 
   CLog::Log(LOGINFO, "CDVDPlayerVideo::Decode dts:%.0f pts:%.0f cur:%.0f, size:%d", pkt->dts, pkt->pts, m_iCurrentPts, pkt->size);
@@ -397,5 +406,9 @@ bool OMXPlayerVideo::IsEOS()
   if(!m_decoder)
     return false;
   return m_packets.empty() && (!m_decoder || m_decoder->IsEOS());
+}
+
+bool OMXPlayerVideo::hasAborted() {
+  return m_bAbort;
 }
 
