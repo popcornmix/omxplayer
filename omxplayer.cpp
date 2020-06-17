@@ -570,6 +570,7 @@ int main(int argc, char *argv[])
   const int http_user_agent_opt = 0x301;
   const int lavfdopts_opt   = 0x400;
   const int avdict_opt      = 0x401;
+  const int force_fps_opt   = 0x402;
 
   struct option longopts[] = {
     { "info",         no_argument,        NULL,          'i' },
@@ -632,6 +633,7 @@ int main(int argc, char *argv[])
     { "user-agent",   required_argument,  NULL,          http_user_agent_opt },
     { "lavfdopts",    required_argument,  NULL,          lavfdopts_opt },
     { "avdict",       required_argument,  NULL,          avdict_opt },
+    { "force-fps",    required_argument,  NULL,          force_fps_opt },
     { 0, 0, 0, 0 }
   };
 
@@ -893,6 +895,9 @@ int main(int argc, char *argv[])
         break;
       case display_opt:
         m_config_video.display = atoi(optarg);
+        break;
+      case force_fps_opt:
+        m_config_video.force_fps = atoi(optarg);
         break;
       case http_cookie_opt:
         m_cookie = optarg;
