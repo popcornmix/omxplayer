@@ -15,7 +15,7 @@ if [ -z `which sudo` ] ; then
 fi
     
 echo "Checking dpkg database for missing packages"
-REQUIRED_PKGS="ca-certificates git-core binutils libasound2-dev libva1 libpcre3-dev libidn11-dev libboost-dev libfreetype6-dev libdbus-1-dev libssl1.0-dev libssh-dev libsmbclient-dev gcc g++ sed pkg-config"
+REQUIRED_PKGS="ca-certificates git-core binutils libasound2-dev libva2 libpcre3-dev libidn11-dev libboost-dev libfreetype6-dev libdbus-1-dev libssl1.0-dev libssh-dev libsmbclient-dev gcc g++ sed pkg-config"
 MISSING_PKGS=""
 for pkg in $REQUIRED_PKGS
 do
