@@ -86,11 +86,15 @@ std::string       m_external_subtitles_path;
 bool              m_has_external_subtitles = false;
 std::string       m_font_path           = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
 std::string       m_italic_font_path    = "/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf";
+std::string       m_title_font_path     = "/usr/share/fonts/truetype/freefont/FreeSans.ttf";
 std::string       m_dbus_name           = "org.mpris.MediaPlayer2.omxplayer";
 bool              m_asked_for_font      = false;
 bool              m_asked_for_italic_font = false;
 float             m_font_size           = 0.055f;
+bool              m_asked_for_title_font = false;
+float             m_title_font_size     = 0.025f;
 bool              m_centered            = false;
+bool              m_title_centered      = false;
 bool              m_ghost_box           = true;
 unsigned int      m_subtitle_lines      = 3;
 bool              m_Pause               = false;
@@ -115,6 +119,9 @@ bool              m_has_audio           = false;
 bool              m_has_subtitle        = false;
 bool              m_gen_log             = false;
 bool              m_loop                = false;
+std::string       m_title;
+bool              m_show_title          = false;
+bool              m_show_time           = false;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -533,6 +540,10 @@ int main(int argc, char *argv[])
   const int font_opt        = 0x100;
   const int italic_font_opt = 0x201;
   const int font_size_opt   = 0x101;
+  const int title_opt       = 0x214;
+  const int title_font_opt  = 0x215;
+  const int title_font_size_opt = 0x216;
+  const int title_align_opt = 0x217;
   const int align_opt       = 0x102;
   const int no_ghost_box_opt = 0x203;
   const int subtitles_opt   = 0x103;
@@ -601,6 +612,11 @@ int main(int argc, char *argv[])
     { "font",         required_argument,  NULL,          font_opt },
     { "italic-font",  required_argument,  NULL,          italic_font_opt },
     { "font-size",    required_argument,  NULL,          font_size_opt },
+    { "title",        required_argument,  NULL,          title_opt },
+    { "title-font",   required_argument,  NULL,          title_font_opt },
+    { "title-font-size", required_argument, NULL,        title_font_size_opt },
+    { "title-align",  required_argument,  NULL,          title_align_opt },
+    { "show-time",    no_argument,        NULL,          'T' },
     { "align",        required_argument,  NULL,          align_opt },
     { "no-ghost-box", no_argument,        NULL,          no_ghost_box_opt },
     { "subtitles",    required_argument,  NULL,          subtitles_opt },
@@ -647,7 +663,7 @@ int main(int argc, char *argv[])
   //Build default keymap just in case the --key-config option isn't used
   map<int,int> keymap = KeyConfig::buildDefaultKeymap();
 
-  while ((c = getopt_long(argc, argv, "wiIhvkn:l:o:cslb::pd3:Myzt:rg", longopts, NULL)) != -1)
+  while ((c = getopt_long(argc, argv, "wiIhvkn:l:o:cslb::pd3:Myzt:rgT", longopts, NULL)) != -1)
   {
     switch (c) 
     {
@@ -760,6 +776,9 @@ int main(int argc, char *argv[])
             m_loop_from = m_incr;
         }
         break;
+      case 'T':
+        m_show_time = true;
+        break;
       case no_osd_opt:
         m_osd = false;
         break;
@@ -780,6 +799,20 @@ int main(int argc, char *argv[])
           if (thousands > 0)
             m_font_size = thousands*0.001f;
         }
+        break;
+      case title_font_opt:
+        m_title_font_path = optarg;
+        m_asked_for_title_font = true;
+        break;
+      case title_font_size_opt:
+        {
+          const int thousands = atoi(optarg);
+          if (thousands > 0)
+            m_title_font_size = thousands*0.001f;
+        }
+        break;
+      case title_align_opt:
+        m_title_centered = !strcmp(optarg, "center");
         break;
       case align_opt:
         m_centered = !strcmp(optarg, "center");
@@ -813,6 +846,9 @@ int main(int argc, char *argv[])
           else
             m_config_video.aspectMode = 0;
         }
+        break;
+      case title_opt:
+        m_title = optarg;
         break;
       case vol_opt:
 	m_Volume = atoi(optarg);
@@ -958,6 +994,12 @@ int main(int argc, char *argv[])
   if(m_asked_for_italic_font && !Exists(m_italic_font_path))
   {
     PrintFileNotFound(m_italic_font_path);
+    return EXIT_FAILURE;
+  }
+
+  if(m_asked_for_title_font && !Exists(m_title_font_path))
+  {
+    PrintFileNotFound(m_title_font_path);
     return EXIT_FAILURE;
   }
 
@@ -1116,12 +1158,17 @@ int main(int argc, char *argv[])
                                 std::move(external_subtitles),
                                 m_font_path,
                                 m_italic_font_path,
+                                m_title_font_path,
                                 m_font_size,
+                                m_title_font_size,
                                 m_centered,
+                                m_title_centered,
                                 m_ghost_box,
                                 m_subtitle_lines,
                                 m_config_video.display, m_config_video.layer + 1,
-                                m_av_clock))
+                                m_av_clock,
+                                m_title,
+                                m_show_time))
       goto do_exit;
     if(m_config_video.dst_rect.x2 > 0 && m_config_video.dst_rect.y2 > 0)
         m_player_subtitles.SetSubtitleRect(m_config_video.dst_rect.x1, m_config_video.dst_rect.y1, m_config_video.dst_rect.x2, m_config_video.dst_rect.y2);
@@ -1535,6 +1582,40 @@ int main(int argc, char *argv[])
         DISPLAY_TEXT_SHORT(strprintf("Volume: %.2f dB",
           m_Volume / 100.0f));
         printf("Current Volume: %.2fdB\n", m_Volume / 100.0f);
+        break;
+      case KeyConfig::ACTION_SET_TITLE:
+         m_title = result.getWinArg();
+         m_player_subtitles.SetTitle(m_title);
+         break;
+      case KeyConfig::ACTION_TOGGLE_TITLE:
+        if(m_title != "")
+        {
+          m_player_subtitles.SetTitleVisible(!m_player_subtitles.GetTitleVisible());
+        }
+        break;
+      case KeyConfig::ACTION_HIDE_TITLE:
+        if(m_title != "")
+        {
+          m_player_subtitles.SetTitleVisible(false);
+        }
+        break;
+      case KeyConfig::ACTION_SHOW_TITLE:
+        if(m_title != "")
+        {
+          m_player_subtitles.SetTitleVisible(true);
+        }
+        break;
+      case KeyConfig::ACTION_TOGGLE_TIME:
+        m_show_time = !m_show_time;
+        m_player_subtitles.SetTimeVisible(m_show_time);
+        break;
+      case KeyConfig::ACTION_HIDE_TIME:
+        m_show_time = false;
+        m_player_subtitles.SetTimeVisible(m_show_time);
+        break;
+      case KeyConfig::ACTION_SHOW_TIME:
+        m_show_time = true;
+        m_player_subtitles.SetTimeVisible(m_show_time);
         break;
       default:
         break;

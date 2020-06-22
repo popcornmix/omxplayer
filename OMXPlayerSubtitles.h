@@ -43,12 +43,17 @@ public:
             std::vector<Subtitle>&& external_subtitles,
             const std::string& font_path,
             const std::string& italic_font_path,
+            const std::string& title_font_path,
             float font_size,
+            float title_font_size,
             bool centered,
+            bool title_centered,
             bool ghost_box,
             unsigned int lines,
             int display, int layer,
-            OMXClock* clock) BOOST_NOEXCEPT;
+            OMXClock* clock,
+            const string& title,
+            bool show_time) BOOST_NOEXCEPT;
   void Close() BOOST_NOEXCEPT;
   void Flush() BOOST_NOEXCEPT;
   void Resume() BOOST_NOEXCEPT;
@@ -61,7 +66,31 @@ public:
     assert(m_open);
     return m_visible;
   }
-  
+
+  void SetTitle(std::string line) BOOST_NOEXCEPT;
+
+  std::string GetTitle() BOOST_NOEXCEPT
+  {
+    assert(m_open);
+    return m_title;
+  }
+
+  void SetTitleVisible(bool visible) BOOST_NOEXCEPT;
+
+  bool GetTitleVisible() BOOST_NOEXCEPT
+  {
+    assert(m_open);
+    return m_show_title;
+  }
+
+  void SetTimeVisible(bool visible) BOOST_NOEXCEPT;
+
+  bool GetTimeVisible() BOOST_NOEXCEPT
+  {
+    assert(m_open);
+    return m_show_time;
+  }
+
   void SetActiveStream(size_t index) BOOST_NOEXCEPT;
 
   size_t GetActiveStream() BOOST_NOEXCEPT
@@ -125,6 +154,18 @@ private:
         int x2;
         int y2;
     };
+    struct SetTitle
+    {
+      std::string title;
+    };
+    struct SetShowTitle
+    {
+      bool show;
+    };
+    struct SetShowTime
+    {
+      bool show;
+    };
   };
 
   template <typename T>
@@ -141,8 +182,11 @@ private:
   void Process();
   void RenderLoop(const std::string& font_path,
                   const std::string& italic_font_path,
+                  const std::string& title_font_path,
                   float font_size,
+                  float title_font_size,
                   bool centered,
+                  bool title_centered,
                   bool ghost_box,
                   unsigned int lines,
                   OMXClock* clock);
@@ -159,7 +203,10 @@ private:
           Message::SetPaused,
           Message::SetDelay,
           Message::DisplayText,
-          Message::SetRect>                     m_mailbox;
+          Message::SetRect,
+          Message::SetTitle,
+          Message::SetShowTitle,
+          Message::SetShowTime>                 m_mailbox;
   bool                                          m_visible;
   bool                                          m_use_external_subtitles;
   size_t                                        m_active_index;
@@ -167,13 +214,19 @@ private:
   std::atomic<bool>                             m_thread_stopped;
   std::string                                   m_font_path;
   std::string                                   m_italic_font_path;
+  std::string                                   m_title_font_path;
   float                                         m_font_size;
+  float                                         m_title_font_size;
   bool                                          m_centered;
+  bool                                          m_title_centered;
   bool                                          m_ghost_box;
   unsigned int                                  m_lines;
   OMXClock*                                     m_av_clock;
   int                                           m_display;
   int                                           m_layer;
+  std::string                                   m_title;
+  bool                                          m_show_title;
+  bool                                          m_show_time;
 
 #ifndef NDEBUG
   bool m_open;

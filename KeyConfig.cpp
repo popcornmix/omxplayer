@@ -62,7 +62,21 @@ int convertStringToAction(string str_action)
         return KeyConfig::ACTION_SHOW_SUBTITLES;
     if(str_action == "HIDE_SUBTITLES")
         return KeyConfig::ACTION_HIDE_SUBTITLES;
-            
+    if(str_action == "TOGGLE_TITLE")
+        return KeyConfig::ACTION_TOGGLE_TITLE;
+    if(str_action == "SHOW_TITLE")
+        return KeyConfig::ACTION_SHOW_TITLE;
+    if(str_action == "HIDE_TITLE")
+        return KeyConfig::ACTION_HIDE_TITLE;
+    if(str_action == "TOGGLE_TIME")
+        return KeyConfig::ACTION_TOGGLE_TIME;
+    if(str_action == "SHOW_TIME")
+        return KeyConfig::ACTION_SHOW_TIME;
+    if(str_action == "HIDE_TIME")
+        return KeyConfig::ACTION_HIDE_TIME;
+    if(str_action == "SET_TITLE")
+        return KeyConfig::ACTION_SET_TITLE;
+
     return -1;
 }
 /* Grabs the substring prior to the ':', this is the Action */
@@ -128,6 +142,12 @@ map<int, int> KeyConfig::buildDefaultKeymap()
     keymap['v'] = ACTION_STEP;
     keymap['w'] = ACTION_SHOW_SUBTITLES;
     keymap['x'] = ACTION_HIDE_SUBTITLES;
+    keymap['t'] = ACTION_TOGGLE_TITLE;
+    keymap['e'] = ACTION_SHOW_TITLE;
+    keymap['r'] = ACTION_HIDE_TITLE;
+    keymap['y'] = ACTION_TOGGLE_TIME;
+    keymap['g'] = ACTION_SHOW_TIME;
+    keymap['h'] = ACTION_HIDE_TIME;
 
     return keymap;
 }
