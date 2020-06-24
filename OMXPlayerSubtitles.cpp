@@ -44,9 +44,7 @@ OMXPlayerSubtitles::OMXPlayerSubtitles() BOOST_NOEXCEPT
   m_ghost_box(),
   m_lines(),
   m_av_clock(),
-#ifndef NDEBUG
   m_open()
-#endif
 {}
 
 OMXPlayerSubtitles::~OMXPlayerSubtitles() BOOST_NOEXCEPT
@@ -91,9 +89,7 @@ bool OMXPlayerSubtitles::Open(size_t stream_count,
 
   SendToRenderer(Message::Flush{m_external_subtitles});
 
-#ifndef NDEBUG
   m_open = true;
-#endif
 
   return true;
 }
@@ -109,9 +105,7 @@ void OMXPlayerSubtitles::Close() BOOST_NOEXCEPT
   m_mailbox.clear();
   m_subtitle_buffers.clear();
 
-#ifndef NDEBUG
   m_open = false;
-#endif
 }
 
 void OMXPlayerSubtitles::Process()
@@ -388,8 +382,9 @@ void OMXPlayerSubtitles::SetDelay(int value) BOOST_NOEXCEPT
 
 void OMXPlayerSubtitles::SetVisible(bool visible) BOOST_NOEXCEPT
 {
-  assert(m_open);
-
+  if (!m_open)
+    return;
+  
   if(visible)
   {
     if (!m_visible)
@@ -410,7 +405,9 @@ void OMXPlayerSubtitles::SetVisible(bool visible) BOOST_NOEXCEPT
 
 void OMXPlayerSubtitles::SetActiveStream(size_t index) BOOST_NOEXCEPT
 {
-  assert(m_open);
+  if (!m_open)
+    return;
+  
   assert(index < m_subtitle_buffers.size());
 
   m_active_index = index;
@@ -490,8 +487,9 @@ bool OMXPlayerSubtitles::AddPacket(OMXPacket *pkt, size_t stream_index) BOOST_NO
 
 void OMXPlayerSubtitles::DisplayText(const std::string& text, int duration) BOOST_NOEXCEPT
 {
-  assert(m_open);
-
+  if (!m_open)
+    return;
+  
   vector<string> text_lines;
   split(text_lines, text, is_any_of("\n"));
   SendToRenderer(Message::DisplayText{std::move(text_lines), duration});

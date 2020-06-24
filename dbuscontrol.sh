@@ -10,6 +10,10 @@ export DBUS_SESSION_BUS_PID=`cat $OMXPLAYER_DBUS_PID`
 [ -z "$DBUS_SESSION_BUS_ADDRESS" ] && { echo "Must have DBUS_SESSION_BUS_ADDRESS" >&2; exit 1; }
 
 case $1 in
+displaytext)
+    dbus-send --print-reply=literal --session --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.DisplayText string:"$2" int64:$3 >/dev/null
+    ;;
+
 status)
 	duration=`dbus-send --print-reply=literal --session --reply-timeout=500 --dest=org.mpris.MediaPlayer2.omxplayer /org/mpris/MediaPlayer2 org.freedesktop.DBus.Properties.Get string:"org.mpris.MediaPlayer2.Player" string:"Duration"`
 	[ $? -ne 0 ] && exit 1

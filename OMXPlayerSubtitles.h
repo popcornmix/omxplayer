@@ -66,7 +66,9 @@ public:
 
   size_t GetActiveStream() BOOST_NOEXCEPT
   {
-    assert(m_open);
+    if (!m_open)
+      return;
+    
     assert(!m_subtitle_buffers.empty());
     return m_active_index;
   }
@@ -174,8 +176,5 @@ private:
   OMXClock*                                     m_av_clock;
   int                                           m_display;
   int                                           m_layer;
-
-#ifndef NDEBUG
-  bool m_open;
-#endif
+  bool                                          m_open;
 };
