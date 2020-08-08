@@ -76,7 +76,7 @@ Usage: omxplayer [OPTIONS] [FILE]
     -v  --version               Print version info
     -k  --keys                  Print key bindings
     -n  --aidx  index           Audio stream index    : e.g. 1
-    -o  --adev  device          Audio out device      : e.g. hdmi/local/both/alsa[:device]
+    -o  --adev  device          Audio out device      : e.g. hdmi/local/both/alsa[:device]/alsa+hdmi[:device]
     -i  --info                  Dump stream format and exit
     -I  --with-info             dump stream format before playback
     -s  --stats                 Pts and buffer stats

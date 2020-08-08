@@ -97,7 +97,7 @@ bool COMXAudio::PortSettingsChanged()
     if(!m_omx_mixer.Initialize("OMX.broadcom.audio_mixer", OMX_IndexParamAudioInit))
       return false;
   }
-  if(m_config.device == "omx:both")
+  if(m_config.device == "omx:both" || m_config.device == "omx:alsa+hdmi")
   {
     if(!m_omx_splitter.Initialize("OMX.broadcom.audio_splitter", OMX_IndexParamAudioInit))
       return false;
@@ -107,12 +107,12 @@ bool COMXAudio::PortSettingsChanged()
     if(!m_omx_render_analog.Initialize("OMX.broadcom.audio_render", OMX_IndexParamAudioInit))
       return false;
   }
-  if (m_config.device == "omx:both" || m_config.device == "omx:hdmi")
+  if (m_config.device == "omx:both" || m_config.device == "omx:hdmi" || m_config.device == "omx:alsa+hdmi")
   {
     if(!m_omx_render_hdmi.Initialize("OMX.broadcom.audio_render", OMX_IndexParamAudioInit))
       return false;
   }
-  if (m_config.device == "omx:alsa")
+  if (m_config.device == "omx:alsa" || m_config.device == "omx:alsa+hdmi")
   {
     if(!m_omx_render_analog.Initialize("OMX.alsa.audio_render", OMX_IndexParamAudioInit))
       return false;
@@ -232,7 +232,7 @@ bool COMXAudio::PortSettingsChanged()
     // when in dual audio mode, make analogue the slave
     OMX_CONFIG_BOOLEANTYPE configBool;
     OMX_INIT_STRUCTURE(configBool);
-    configBool.bEnabled = m_config.is_live || m_config.device == "omx:both" ? OMX_FALSE:OMX_TRUE;
+    configBool.bEnabled = m_config.is_live || (m_config.device == "omx:both" || m_config.device == "omx:alsa+hdmi") ? OMX_FALSE:OMX_TRUE;
 
     omx_err = m_omx_render_analog.SetConfig(OMX_IndexConfigBrcmClockReferenceSource, &configBool);
     if (omx_err != OMX_ErrorNone)
@@ -240,7 +240,7 @@ bool COMXAudio::PortSettingsChanged()
 
     OMX_CONFIG_BRCMAUDIODESTINATIONTYPE audioDest;
     OMX_INIT_STRUCTURE(audioDest);
-    strncpy((char *)audioDest.sName, m_config.device == "omx:alsa" ? m_config.subdevice.c_str() : "local", sizeof(audioDest.sName));
+    strncpy((char *)audioDest.sName, (m_config.device == "omx:alsa" || m_config.device == "omx:alsa+hdmi") ? m_config.subdevice.c_str() : "local", sizeof(audioDest.sName));
     omx_err = m_omx_render_analog.SetConfig(OMX_IndexConfigBrcmAudioDestination, &audioDest);
     if (omx_err != OMX_ErrorNone)
     {
