@@ -128,6 +128,8 @@ map<int, int> KeyConfig::buildDefaultKeymap()
     keymap['v'] = ACTION_STEP;
     keymap['w'] = ACTION_SHOW_SUBTITLES;
     keymap['x'] = ACTION_HIDE_SUBTITLES;
+    keymap['b'] = ACTION_PREVIOUS_FILE;
+    keymap['a'] = ACTION_NEXT_FILE;
 
     return keymap;
 }

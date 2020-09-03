@@ -788,6 +788,16 @@ OMXControlResult OMXControl::handle_event(DBusMessage *m)
     dbus_respond_ok(m);
     return KeyConfig::ACTION_PREVIOUS_CHAPTER;
   }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "NextFile"))
+  {
+    dbus_respond_ok(m);
+    return KeyConfig::ACTION_NEXT_FILE;
+  }
+  else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "PreviousFile"))
+  {
+    dbus_respond_ok(m);
+    return KeyConfig::ACTION_PREVIOUS_FILE;
+  }
   else if (dbus_message_is_method_call(m, OMXPLAYER_DBUS_INTERFACE_PLAYER, "Pause"))
   {
     dbus_respond_ok(m);
