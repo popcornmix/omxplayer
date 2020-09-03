@@ -43,7 +43,7 @@ int convertStringToAction(string str_action)
     if(str_action == "EXIT")
         return KeyConfig::ACTION_EXIT;
     if(str_action == "PAUSE")
-        return KeyConfig::ACTION_PAUSE;
+        return KeyConfig::ACTION_PLAYPAUSE;
     if(str_action == "DECREASE_VOLUME")
         return KeyConfig::ACTION_DECREASE_VOLUME;
     if(str_action == "INCREASE_VOLUME")
@@ -116,8 +116,8 @@ map<int, int> KeyConfig::buildDefaultKeymap()
     keymap['f'] = ACTION_INCREASE_SUBTITLE_DELAY;
     keymap['q'] = ACTION_EXIT;
     keymap[KEY_ESC] = ACTION_EXIT;
-    keymap['p'] = ACTION_PAUSE;
-    keymap[' '] = ACTION_PAUSE;
+    keymap['p'] = ACTION_PLAYPAUSE;
+    keymap[' '] = ACTION_PLAYPAUSE;
     keymap['-'] = ACTION_DECREASE_VOLUME;
     keymap['+'] = ACTION_INCREASE_VOLUME;
     keymap['='] = ACTION_INCREASE_VOLUME;

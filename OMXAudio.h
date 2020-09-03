@@ -46,6 +46,7 @@ public:
   COMXStreamInfo hints;
   bool use_thread;
   CStdString device;
+  CStdString subdevice;
   enum PCMLayout layout;
   bool boostOnDownmix;
   bool passthrough;

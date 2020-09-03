@@ -82,8 +82,8 @@ bool COMXAudioCodecOMX::Open(COMXStreamInfo &hints, enum PCMLayout layout)
   m_pCodecContext->debug = 0;
   m_pCodecContext->workaround_bugs = 1;
 
-  if (pCodec->capabilities & CODEC_CAP_TRUNCATED)
-    m_pCodecContext->flags |= CODEC_FLAG_TRUNCATED;
+  if (pCodec->capabilities & AV_CODEC_CAP_TRUNCATED)
+    m_pCodecContext->flags |= AV_CODEC_FLAG_TRUNCATED;
 
   m_channels = 0;
   m_pCodecContext->channels = hints.channels;
@@ -109,17 +109,13 @@ bool COMXAudioCodecOMX::Open(COMXStreamInfo &hints, enum PCMLayout layout)
   if (m_pCodecContext->request_channel_layout)
     CLog::Log(LOGNOTICE,"COMXAudioCodecOMX::Open() Requesting channel layout of %x", (unsigned)m_pCodecContext->request_channel_layout);
 
-  // vorbis has variable sized planar output, so skip concatenation
-  if (hints.codec == AV_CODEC_ID_VORBIS)
-    m_bNoConcatenate = true;
-
   if(m_pCodecContext->bits_per_coded_sample == 0)
     m_pCodecContext->bits_per_coded_sample = 16;
 
   if( hints.extradata && hints.extrasize > 0 )
   {
     m_pCodecContext->extradata_size = hints.extrasize;
-    m_pCodecContext->extradata = (uint8_t*)m_dllAvUtil.av_mallocz(hints.extrasize + FF_INPUT_BUFFER_PADDING_SIZE);
+    m_pCodecContext->extradata = (uint8_t*)m_dllAvUtil.av_mallocz(hints.extrasize + AV_INPUT_BUFFER_PADDING_SIZE);
     memcpy(m_pCodecContext->extradata, hints.extradata, hints.extrasize);
   }
 
@@ -130,7 +126,7 @@ bool COMXAudioCodecOMX::Open(COMXStreamInfo &hints, enum PCMLayout layout)
     return false;
   }
 
-  m_pFrame1 = m_dllAvCodec.avcodec_alloc_frame();
+  m_pFrame1 = m_dllAvCodec.av_frame_alloc();
   m_bOpenedCodec = true;
   m_iSampleFormat = AV_SAMPLE_FMT_NONE;
   m_desiredSampleFormat = m_pCodecContext->sample_fmt == AV_SAMPLE_FMT_S16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_FLTP;
@@ -168,7 +164,14 @@ int COMXAudioCodecOMX::Decode(BYTE* pData, int iSize, double dts, double pts)
   if (!m_pCodecContext) return -1;
 
   AVPacket avpkt;
-  m_bGotFrame = false;
+  if (!m_iBufferOutputUsed)
+  {
+    m_dts = dts;
+    m_pts = pts;
+  }
+  if (m_bGotFrame)
+    return 0;
+
   m_dllAvCodec.av_init_packet(&avpkt);
   avpkt.data = pData;
   avpkt.size = iSize;
@@ -186,6 +189,7 @@ int COMXAudioCodecOMX::Decode(BYTE* pData, int iSize, double dts, double pts)
     CLog::Log(LOGWARNING, "COMXAudioCodecOMX::Decode - decoder attempted to consume more data than given");
     iBytesUsed = iSize;
   }
+  m_bGotFrame = true;
 
   if (m_bFirstFrame)
   {
@@ -194,13 +198,6 @@ int COMXAudioCodecOMX::Decode(BYTE* pData, int iSize, double dts, double pts)
              m_pFrame1->linesize[0],
              m_pFrame1->data[0], m_pFrame1->data[1], m_pFrame1->data[2], m_pFrame1->data[3], m_pFrame1->data[4], m_pFrame1->data[5], m_pFrame1->data[6], m_pFrame1->data[7]
              );
-  }
-
-  m_bGotFrame = true;
-  if (!m_iBufferOutputUsed)
-  {
-    m_dts = dts;
-    m_pts = pts;
   }
   return iBytesUsed;
 }
@@ -215,12 +212,31 @@ int COMXAudioCodecOMX::GetData(BYTE** dst, double &dts, double &pts)
   /* output audio will be packed */
   int outputSize = m_dllAvUtil.av_samples_get_buffer_size(&outLineSize, m_pCodecContext->channels, m_pFrame1->nb_samples, m_desiredSampleFormat, 1);
 
+  if (!m_bNoConcatenate && m_iBufferOutputUsed && (int)m_frameSize != outputSize)
+  {
+    CLog::Log(LOGERROR, "COMXAudioCodecOMX::GetData Unexpected change of size (%d->%d)", m_frameSize, outputSize);
+    m_bNoConcatenate = true;
+  }
+
+  // if this buffer won't fit then flush out what we have
+  int desired_size = AUDIO_DECODE_OUTPUT_BUFFER * (m_pCodecContext->channels * GetBitsPerSample()) >> (rounded_up_channels_shift[m_pCodecContext->channels] + 4);
+  if (m_iBufferOutputUsed && (m_iBufferOutputUsed + outputSize > desired_size || m_bNoConcatenate))
+  {
+     int ret = m_iBufferOutputUsed;
+     m_iBufferOutputUsed = 0;
+     m_bNoConcatenate = false;
+     dts = m_dts;
+     pts = m_pts;
+     *dst = m_pBufferOutput;
+     return ret;
+  }
+  m_frameSize = outputSize;
+
   if (m_iBufferOutputAlloced < m_iBufferOutputUsed + outputSize)
   {
-     m_pBufferOutput = (BYTE*)m_dllAvUtil.av_realloc(m_pBufferOutput, m_iBufferOutputUsed + outputSize + FF_INPUT_BUFFER_PADDING_SIZE);
+     m_pBufferOutput = (BYTE*)m_dllAvUtil.av_realloc(m_pBufferOutput, m_iBufferOutputUsed + outputSize + AV_INPUT_BUFFER_PADDING_SIZE);
      m_iBufferOutputAlloced = m_iBufferOutputUsed + outputSize;
   }
-  *dst = m_pBufferOutput;
 
   /* need to convert format */
   if(m_pCodecContext->sample_fmt != m_desiredSampleFormat)
@@ -267,29 +283,14 @@ int COMXAudioCodecOMX::GetData(BYTE** dst, double &dts, double &pts)
       outputSize = 0;
     }
   }
-  int desired_size = AUDIO_DECODE_OUTPUT_BUFFER * (m_pCodecContext->channels * GetBitsPerSample()) >> (rounded_up_channels_shift[m_pCodecContext->channels] + 4);
+  m_bGotFrame = false;
 
   if (m_bFirstFrame)
   {
-    CLog::Log(LOGDEBUG, "COMXAudioCodecOMX::GetData size=%d/%d line=%d/%d buf=%p, desired=%d", inputSize, outputSize, inLineSize, outLineSize, *dst, desired_size);
+    CLog::Log(LOGDEBUG, "COMXAudioCodecOMX::GetData size=%d/%d line=%d/%d buf=%p, desired=%d", inputSize, outputSize, inLineSize, outLineSize, m_pBufferOutput, desired_size);
     m_bFirstFrame = false;
   }
   m_iBufferOutputUsed += outputSize;
-
-  if (!m_bNoConcatenate && m_pCodecContext->sample_fmt == AV_SAMPLE_FMT_FLTP && m_frameSize && (int)m_frameSize != outputSize)
-    CLog::Log(LOGERROR, "COMXAudioCodecOMX::GetData Unexpected change of size (%d->%d)", m_frameSize, outputSize);
-  m_frameSize = outputSize;
-
-  // if next buffer submitted won't fit then flush it out
-  if (m_iBufferOutputUsed + outputSize > desired_size || m_bNoConcatenate)
-  {
-     int ret = m_iBufferOutputUsed;
-     m_bGotFrame = false;
-     m_iBufferOutputUsed = 0;
-     dts = m_dts;
-     pts = m_pts;
-     return ret;
-  }
   return 0;
 }
 

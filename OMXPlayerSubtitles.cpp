@@ -275,6 +275,10 @@ RenderLoop(const string& font_path,
         osd_stop = chrono::steady_clock::now() +
                    chrono::milliseconds(args.duration);
         prev_now = INT_MAX;
+      },
+      [&](Message::SetRect&& args)
+      {
+        renderer.set_rect(args.x1, args.y1, args.x2, args.y2);
       });
 
     if(exit) break;
@@ -454,7 +458,8 @@ bool OMXPlayerSubtitles::AddPacket(OMXPacket *pkt, size_t stream_index) BOOST_NO
   };
 
   if(pkt->hints.codec != AV_CODEC_ID_SUBRIP && 
-     pkt->hints.codec != AV_CODEC_ID_SSA)
+     pkt->hints.codec != AV_CODEC_ID_SSA &&
+     pkt->hints.codec != AV_CODEC_ID_ASS)
   {
     return true;
   }
@@ -490,4 +495,9 @@ void OMXPlayerSubtitles::DisplayText(const std::string& text, int duration) BOOS
   vector<string> text_lines;
   split(text_lines, text, is_any_of("\n"));
   SendToRenderer(Message::DisplayText{std::move(text_lines), duration});
+}
+
+void OMXPlayerSubtitles::SetSubtitleRect(int x1, int y1, int x2, int y2) BOOST_NOEXCEPT
+{
+  SendToRenderer(Message::SetRect{x1, y1, x2, y2});
 }

@@ -22,7 +22,7 @@ class KeyConfig
         ACTION_DECREASE_SUBTITLE_DELAY = 13,
         ACTION_INCREASE_SUBTITLE_DELAY = 14,
         ACTION_EXIT = 15,
-        ACTION_PAUSE = 16,
+        ACTION_PLAYPAUSE = 16,
         ACTION_DECREASE_VOLUME = 17,
         ACTION_INCREASE_VOLUME = 18,
         ACTION_SEEK_BACK_SMALL = 19,
@@ -41,8 +41,12 @@ class KeyConfig
         ACTION_SET_ALPHA = 32,
         ACTION_SET_ASPECT_MODE = 33,
         ACTION_CROP_VIDEO = 34,
-        ACTION_PREVIOUS_FILE = 35,
-        ACTION_NEXT_FILE = 36,
+        ACTION_PAUSE = 35,
+        ACTION_PLAY = 36,
+        ACTION_CHANGE_FILE = 37,
+        ACTION_SET_LAYER = 38,
+        ACTION_PREVIOUS_FILE = 39,
+        ACTION_NEXT_FILE = 40
     };
 
     #define KEY_LEFT 0x5b44

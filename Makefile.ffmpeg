@@ -1,5 +1,3 @@
-include Makefile.include
-
 CFLAGS=-D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX -DTARGET_LINUX -fPIC -DPIC -D_REENTRANT -D_HAVE_SBRK -D_LARGEFILE64_SOURCE -DHAVE_CMAKE_CONFIG -DHAVE_VMCS_CONFIG -D_REENTRANT -DUSE_VCHIQ_ARM -DVCHI_BULK_ALIGN=1 -DVCHI_BULK_GRANULARITY=1 -DEGL_SERVER_DISPMANX -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D__VIDEOCORE4__ -DGRAPHICS_X_VG=1 -U_FORTIFY_SOURCE -Wall -DHAVE_OMXLIB -DUSE_EXTERNAL_FFMPEG  -DHAVE_LIBAVCODEC_AVCODEC_H -DHAVE_LIBAVUTIL_MEM_H -DHAVE_LIBAVUTIL_AVUTIL_H -DHAVE_LIBAVFORMAT_AVFORMAT_H -DHAVE_LIBAVFILTER_AVFILTER_H -DOMX -DOMX_SKIP64BIT
 
 WORK=$(PWD)
@@ -14,7 +12,7 @@ copy:
 
 .PHONY : compile
 compile: 
-	+$(MAKE) -C ffmpeg
+	+$(MAKE) -j$(shell nproc) -C ffmpeg
 
 .PHONY : configure
 configure: 
@@ -22,8 +20,7 @@ configure:
 	CFLAGS="$(CFLAGS) ${INCLUDES}" \
 	LDFLAGS="" \
   ./configure \
-			--extra-cflags="-mfpu=vfp -mfloat-abi=$(FLOAT) -mno-apcs-stack-check -mstructure-size-boundary=32 -mno-sched-prolog" \
-			--enable-cross-compile \
+			--extra-cflags="-mfpu=vfp -mfloat-abi=hard" \
 			--enable-shared \
 			--disable-static \
 			--arch=arm \
@@ -59,7 +56,6 @@ configure:
 			--disable-decoder=h264_vda \
 			--disable-decoder=h264_crystalhd \
 			--disable-decoder=h264_vdpau \
-			--disable-decoder=libstagefright_h264 \
 			--disable-decoder=vc1_crystalhd \
 			--disable-decoder=wmv3_crystalhd \
 			--disable-decoder=wmv3_vdpau \
@@ -165,7 +161,6 @@ configure:
 			--disable-decoder=tiff \
 			--disable-decoder=gif \
 			--disable-decoder=dxa \
-			--disable-decoder=dnxhd \
 			--disable-decoder=thp \
 			--disable-decoder=sgi \
 			--disable-decoder=c93 \
@@ -197,7 +192,6 @@ configure:
 			--disable-decoder=r210 \
 			--disable-decoder=anm \
 			--disable-decoder=iff_ilbm \
-			--disable-decoder=iff_byterun1 \
 			--disable-decoder=kgv1 \
 			--disable-decoder=yop \
 			--enable-decoder=vp8 \
@@ -244,8 +238,7 @@ configure:
 			--disable-decoder=xbin \
 			--disable-decoder=idf \
 			--disable-decoder=hevc \
-			--enable-decoder=opus \
-			--cross-prefix=$(HOST)-
+			--enable-decoder=opus
 
 .PHONY : clean
 clean:
@@ -253,7 +246,7 @@ clean:
 
 .PHONY : checkout
 checkout:
-	git clone git://source.ffmpeg.org/ffmpeg ffmpeg -b n2.8.1 --depth=1
+	git clone git://source.ffmpeg.org/ffmpeg ffmpeg -b release/3.3 --depth=1
 
 .PHONY : install
 install:

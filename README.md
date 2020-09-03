@@ -1,9 +1,30 @@
+Note: omxplayer is being deprecated and resources are directed at improving vlc.
+
+This is due to:
+omxplayer uses openvg for OSD and subtitles which isn't supported on Pi4.
+omxplayer uses openmax which has been deprecated for a long time and isn't supported with 64-bit kernels.
+omxplayer does not support software decode
+omxplayer does not support advanced subtitles
+omxplayer does not support playback from ISO files.
+omxplayer does not integrate with the X desktop
+
+Please try using vlc. If there are features of omxplayer that vlc does not handle then try reporting [here](https://github.com/RPi-Distro/vlc/issues).
+
 omxplayer(1) -- Raspberry Pi command line OMX player
 ====================================================
 
-OMXPlayer is a commandline OMX player for the Raspberry Pi. It was developed as
-a testbed for the XBMC Raspberry PI implementation and is quite handy to use
-standalone. 
+OMXPlayer is a command-line video player for the Raspberry Pi. It can play
+video directly from the command line and **does not require a
+[desktop](https://en.wikipedia.org/wiki/Desktop_environment)**. OMXPlayer
+leverages the [OpenMAX](https://en.wikipedia.org/wiki/OpenMAX)
+[API](https://en.wikipedia.org/wiki/Application_programming_interface) to make
+use of the hardware video decoder in the
+[GPU](https://en.wikipedia.org/wiki/Graphics_processing_unit). Hardware
+acceleration along with direct command-line use on
+[ARM](https://en.wikipedia.org/wiki/ARM_architecture) silicon allows ultra
+low overhead, low power video playback. OMXPlayer was developed as a testbed
+for the [XBMC](https://en.wikipedia.org/wiki/Kodi_(software)) Raspberry Pi
+implementation and is quite handy to use standalone.
 
 ## DOWNLOADING
 
@@ -18,14 +39,14 @@ if you modify the structure of README.md!
 ## COMPILING
 
 Run this script which will install build dependency packages,
-including g++ 4.7, and update firmware
+including g++, and update firmware
 
     ./prepare-native-raspbian.sh
 
 Build with
 
     make ffmpeg
-    make
+    make -j$(nproc)
 
 Install with
     
@@ -55,7 +76,7 @@ Usage: omxplayer [OPTIONS] [FILE] ...
     -v  --version               Print version info
     -k  --keys                  Print key bindings
     -n  --aidx  index           Audio stream index    : e.g. 1
-    -o  --adev  device          Audio out device      : e.g. hdmi/local/both
+    -o  --adev  device          Audio out device      : e.g. hdmi/local/both/alsa[:device]
     -i  --info                  Dump stream format and exit
     -I  --with-info             dump stream format before playback
     -s  --stats                 Pts and buffer stats
@@ -64,7 +85,7 @@ Usage: omxplayer [OPTIONS] [FILE] ...
         --nodeinterlace         Force no deinterlacing
         --nativedeinterlace     let display handle interlace
         --anaglyph type         convert 3d to anaglyph
-        --advanced              Allow advanced deinterlace for HD videos
+        --advanced[=0]          Enable/disable advanced deinterlace for HD videos (default enabled)
     -w  --hw                    Hw audio decoding
     -3  --3d mode               Switch tv into 3d mode (e.g. SBS/TB)
     -M  --allow-mvc             Allow decoding of both views of MVC stereo stream
@@ -74,7 +95,7 @@ Usage: omxplayer [OPTIONS] [FILE] ...
     -r  --refresh               Adjust framerate/resolution to video
     -g  --genlog                Generate log file
     -l  --pos n                 Start position (hh:mm:ss)
-    -b  --blank                 Set background to black
+    -b  --blank[=0xAARRGGBB]    Set the video background color to black (or optional ARGB value)
         --loop                  Loop file. Ignored if file not seekable
         --no-boost-on-downmix   Don't boost volume when downmixing
         --vol n                 set initial volume in millibels (default 0)
@@ -110,6 +131,8 @@ Usage: omxplayer [OPTIONS] [FILE] ...
         --display n             Set display to output to
         --cookie 'cookie'       Send specified cookie as part of HTTP requests
         --user-agent 'ua'       Send specified User-Agent as part of HTTP requests
+        --lavfdopts 'opts'      Options passed to libavformat, e.g. 'probesize:250000,...'
+        --avdict 'opts'         Options passed to demuxer, e.g., 'rtsp_transport:tcp,...'
 
 For example:
 
@@ -208,124 +231,380 @@ take a look at the supplied [dbuscontrol.sh](dbuscontrol.sh) file.
 The root interface is accessible under the name
 `org.mpris.MediaPlayer2`.
 
-#### Quit
+#### Methods
+
+Root interface methods can be accessed through `org.mpris.MediaPlayer2.MethodName`.
+
+##### Quit
 
 Stops the currently playing video.  This will cause the currently running
 omxplayer process to terminate.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | -------
  Return         | `null`
 
-### Properties Interface
+##### Raise
 
-The properties interface is accessible under the name
-`org.freedesktop.DBus.Properties`.
+No effect.
 
-#### CanQuit
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+#### Properties
+
+Root interface properties can be accessed through `org.freedesktop.DBus.Properties.Get`
+and `org.freedesktop.DBus.Properties.Set` methods with the string
+`"org.mpris.MediaPlayer2"` as first argument and the string `"PropertyName"` as
+second argument.
+
+##### CanQuit (ro)
 
 Whether or not the player can quit.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ---------
  Return         | `boolean`
 
-#### Fullscreen
+##### Fullscreen (ro)
 
 Whether or not the player can is fullscreen.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ---------
  Return         | `boolean`
 
-#### CanSetFullscreen
+##### CanSetFullscreen (ro)
 
 Whether or not the player can set fullscreen.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ---------
  Return         | `boolean`
 
-#### CanRaise
+##### CanRaise (ro)
 
 Whether the display window can be brought to the top of all the window.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ---------
  Return         | `boolean`
 
-#### HasTrackList
+##### HasTrackList (ro)
 
 Whether or not the player has a track list.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ---------
  Return         | `boolean`
 
-#### Identity
+##### Identity (ro)
 
 Name of the player.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | --------
  Return         | `string`
 
-#### SupportedUriSchemes
+##### SupportedUriSchemes (ro)
 
 Playable URI formats.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ----------
  Return         | `string[]`
 
-#### SupportedMimeTypes
+##### SupportedMimeTypes (ro)
 
 Supported mime types.  **Note**: currently not implemented.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ----------
  Return         | `string[]`
 
-#### CanGoNext
+
+### Player Interface
+
+The player interface is accessible under the name
+`org.mpris.MediaPlayer2.Player`.
+
+#### Methods
+
+Player interface methods can be accessed through `org.mpris.MediaPlayer2.Player.MethodName`.
+
+##### Next
+
+Skip to the next chapter.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### Previous
+
+Skip to the previous chapter.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### Play
+
+Play the video. If the video is playing, it has no effect, if it is
+paused it will play from current position.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### Pause
+
+Pause the video. If the video is playing, it will be paused, if it is
+paused it will stay in pause (no effect).
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+#### NextFile
+
+Skip to the next file.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null` 
+
+#### PreviousFile
+
+Skip to the previous file.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null` 
+
+##### PlayPause
+
+Toggles the play state.  If the video is playing, it will be paused, if it is
+paused it will start playing.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### Stop
+
+Stops the video. This has the same effect as Quit (terminates the omxplayer instance).
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### Seek
+
+Perform a *relative* seek, i.e. seek plus or minus a certain number of
+microseconds from the current position in the video.
+
+   Params       |   Type            | Description
+:-------------: | ----------------- | ---------------------------
+ 1              | `int64`           | Microseconds to seek
+ Return         | `null` or `int64` | If the supplied offset is invalid, `null` is returned, otherwise the offset (in microseconds) is returned
+
+##### SetPosition
+
+Seeks to a specific location in the file.  This is an *absolute* seek.
+
+   Params       |   Type            | Description
+:-------------: | ----------------- | ------------------------------------
+ 1              | `string`          | Path (not currently used)
+ 2              | `int64`           | Position to seek to, in microseconds
+ Return         | `null` or `int64` | If the supplied position is invalid, `null` is returned, otherwise the position (in microseconds) is returned
+
+##### SetAlpha
+
+Set the alpha transparency of the player [0-255].
+
+   Params       |   Type            | Description
+:-------------: | ----------------- | ------------------------------------
+ 1              | `string`          | Path (not currently used)
+ 2              | `int64`           | Alpha value, 0-255
+
+##### SetLayer
+
+Seeks the video playback layer.
+
+   Params       |   Type            | Description
+:-------------: | ----------------- | ------------------------------------
+ 1              | `int64`           | Layer to switch to
+
+##### Mute
+
+Mute the audio stream.  If the volume is already muted, this does nothing.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### Unmute
+
+Unmute the audio stream.  If the stream is already unmuted, this does nothing.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `null`
+
+##### ListSubtitles
+
+Returns a array of all known subtitles.  The length of the array is the number
+of subtitles.  Each item in the araay is a string in the following format:
+
+    <index>:<language>:<name>:<codec>:<active>
+
+Any of the fields may be blank, except for `index`.  `language` is the language
+code, such as `eng`, `chi`, `swe`, etc.  `name` is a description of the
+subtitle, such as `foreign parts` or `SDH`.  `codec` is the name of the codec
+used by the subtitle, sudh as `subrip`.  `active` is either the string `active`
+or an empty string.
+
+   Params       |   Type
+:-------------: | ----------
+ Return         | `string[]` 
+
+##### ListAudio
+
+Returns and array of all known audio streams.  The length of the array is the
+number of streams.  Each item in the array is a string in the following format:
+
+    <index>:<language>:<name>:<codec>:<active>
+
+See `ListSubtitles` for a description of what each of these fields means.  An
+example of a possible string is:
+
+    0:eng:DD 5.1:ac3:active
+
+   Params       |   Type
+:-------------: | ----------
+ Return         | `string[]` 
+
+##### ListVideo
+
+Returns and array of all known video streams.  The length of the array is the
+number of streams.  Each item in the array is a string in the following format:
+
+    <index>:<language>:<name>:<codec>:<active>
+
+See `ListSubtitles` for a description of what each of these fields means.  An
+example of a possible string is:
+
+    0:eng:x264:h264:active
+
+   Params       |   Type
+:-------------: | ----------
+ Return         | `string[]` 
+
+##### SelectSubtitle
+
+Selects the subtitle at a given index.
+
+   Params       |   Type    | Description
+:-------------: | ----------| ------------------------------------
+ 1              | `int32`   | Index of subtitle to select
+ Return         | `boolean` | Returns `true` if subtitle was selected, `false otherwise
+
+
+##### SelectAudio
+
+Selects the audio stream at a given index.
+
+   Params       |   Type    | Description
+:-------------: | ----------| ------------------------------------
+ 1              | `int32`   | Index of audio stream to select
+ Return         | `boolean` | Returns `true` if stream was selected, `false otherwise
+
+##### ShowSubtitles
+
+Turns on subtitles.
+
+   Params       |   Type 
+:-------------: | -------
+ Return         | `null`
+
+##### HideSubtitles
+
+Turns off subtitles.
+
+   Params       |   Type 
+:-------------: | -------
+ Return         | `null`
+
+##### GetSource
+
+The current file or stream that is being played.
+
+   Params       |   Type
+:-------------: | ---------
+ Return         | `string`
+
+
+##### Action
+
+Execute a "keyboard" command.  For available codes, see
+[KeyConfig.h](KeyConfig.h).
+
+
+   Params       |   Type    | Description
+:-------------: | ----------| ------------------
+ 1              | `int32`   | Command to execute
+ Return         | `null`    | 
+
+
+#### Properties
+
+Player interface properties can be accessed through `org.freedesktop.DBus.Properties.Get`
+and `org.freedesktop.DBus.Properties.Set` methods with the string
+`"org.mpris.MediaPlayer2"` as first argument and the string `"PropertyName"` as
+second argument.
+
+##### CanGoNext (ro)
 
 Whether or not the play can skip to the next track.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ---------
  Return         | `boolean`
 
-#### CanGoPrevious
+##### CanGoPrevious (ro)
 
 Whether or not the player can skip to the previous track.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ---------
  Return         | `boolean`
 
-#### CanSeek
+##### CanSeek (ro)
 
 Whether or not the player can seek.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ---------
  Return         | `boolean`
 
 
-#### CanControl
+##### CanControl (ro)
 
 Whether or not the player can be controlled.
 
-   Params       |   Type   
+   Params       |   Type
 :-------------: | ---------
  Return         | `boolean`
 
-#### CanPlay
+##### CanPlay (ro)
 
 Whether or not the player can play.
 
 Return type: `boolean`.
 
-#### CanPause
+##### CanPause (ro)
 
 Whether or not the player can pause.
 
@@ -333,15 +612,15 @@ Whether or not the player can pause.
 :-------------: | ---------
  Return         | `boolean`
 
-#### PlaybackStatus
+##### PlaybackStatus (ro)
 
 The current state of the player, either "Paused" or "Playing".
 
    Params       |   Type
 :-------------: | ---------
- Return         | `string` 
+ Return         | `string`
 
-#### Volume
+##### Volume (rw)
 
 When called with an argument it will set the volume and return the current
 volume.  When called without an argument it will simply return the current
@@ -361,23 +640,15 @@ Millibels can be converted to/from acceptable values using the following:
 
 [MPRIS_volume]: http://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html#Simple-Type:Volume
 
-#### Mute
+##### OpenUri (w)
 
-Mute the audio stream.  If the volume is already muted, this does nothing.
+Restart and open another URI for playing.
 
-   Params       |   Type
-:-------------: | -------
- Return         | `null` 
+   Params       |   Type    | Description
+:-------------: | --------- | --------------------------------
+1               | `string`  | URI to play
 
-#### Unmute
-
-Unmute the audio stream.  If the stream is already unmuted, this does nothing.
-
-   Params       |   Type
-:-------------: | -------
- Return         | `null` 
-
-#### Position
+##### Position (ro)
 
 Returns the current position of the playing media.
 
@@ -385,7 +656,76 @@ Returns the current position of the playing media.
 :-------------: | --------- | --------------------------------
  Return         | `int64`   | Current position in microseconds
 
-#### Duration
+##### MinimumRate (ro)
+
+Returns the minimum playback rate of the video.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `double`
+
+##### MaximumRate (ro)
+
+Returns the maximum playback rate of the video.
+
+   Params       |   Type
+:-------------: | -------
+ Return         | `double`
+
+##### Rate (rw)
+
+When called with an argument it will set the playing rate and return the
+current rate. When called without an argument it will simply return the
+current rate. Rate of 1.0 is the normal playing rate. A value of 2.0
+corresponds to two times faster than normal rate, a value of 0.5 corresponds
+to two times slower than the normal rate.
+
+   Params       |   Type    | Description
+:-------------:	| --------- | ---------------------------
+ 1 (optional)   | `double`  | Rate to set
+ Return         | `double`  | Current rate
+
+##### Metadata (ro)
+
+Returns track information: URI and length.
+
+   Params       |   Type    | Description
+:-------------: | --------- | ----------------------------
+ Return         | `dict`    | Dictionnary entries with key:value pairs
+
+##### Aspect (ro)
+
+Returns the aspect ratio.
+
+   Params       |   Type    | Description
+:-------------: | --------- | ----------------------------
+ Return         | `double`  | Aspect ratio
+
+##### VideoStreamCount (ro)
+
+Returns the number of video streams.
+
+   Params       |   Type    | Description
+:-------------: | --------- | ----------------------------
+ Return         | `int64`   | Number of video streams
+
+##### ResWidth (ro)
+
+Returns video width
+
+   Params       |   Type    | Description
+:-------------: | --------- | ----------------------------
+ Return         | `int64`   | Video width in px
+
+##### ResHeight (ro)
+
+Returns video width
+
+   Params       |   Type    | Description
+:-------------: | --------- | ----------------------------
+ Return         | `int64`   | Video height in px
+
+##### Duration (ro)
 
 Returns the total length of the playing media.
 
@@ -393,192 +733,3 @@ Returns the total length of the playing media.
 :-------------: | --------- | ----------------------------
  Return         | `int64`   | Total length in microseconds
 
-
-#### MinimumRate
-
-Returns the minimum playback rate of the video.
-
-   Params       |   Type
-:-------------: | -------
- Return         | `double` 
-
-#### MaximumRate
-
-Returns the maximum playback rate of the video.
-
-   Params       |   Type
-:-------------: | -------
- Return         | `double` 
-
-
-### Player Interface
-
-
-#### Next
-
-Skip to the next chapter.
-
-   Params       |   Type
-:-------------: | -------
- Return         | `null` 
-
-#### Previous
-
-Skip to the previous chapter.
-
-   Params       |   Type
-:-------------: | -------
- Return         | `null` 
-
-#### NextFile
-
-Skip to the next file.
-
-   Params       |   Type
-:-------------: | -------
- Return         | `null` 
-
-#### PreviousFile
-
-Skip to the previous file.
-
-   Params       |   Type
-:-------------: | -------
- Return         | `null` 
-
-#### Pause
-
-Toggles the play state.  If the video is playing, it will be paused, if it is
-paused it will start playing.
-
-   Params       |   Type
-:-------------: | -------
- Return         | `null` 
-
-#### PlayPause
-
-Same as the `Pause` method.
-
-#### Stop
-
-Stops the video.
-
-   Params       |   Type
-:-------------: | -------
- Return         | `null` 
-
-#### Seek
-
-Perform a *relative* seek, i.e. seek plus or minus a certain number of
-microseconds from the current position in the video.
-
-   Params       |   Type            | Description
-:-------------: | ----------------- | ---------------------------
- 1              | `int64`           | Microseconds to seek
- Return         | `null` or `int64` | If the supplied offset is invalid, `null` is returned, otherwise the offset (in microseconds) is returned
-
-#### SetPosition
-
-Seeks to a specific location in the file.  This is an *absolute* seek.
-
-   Params       |   Type            | Description
-:-------------: | ----------------- | ------------------------------------
- 1              | `string`          | Path (not currently used)
- 2              | `int64`           | Position to seek to, in microseconds
- Return         | `null` or `int64` | If the supplied position is invalid, `null` is returned, otherwise the position (in microseconds) is returned
-
-
-#### ListSubtitles
-
-Returns a array of all known subtitles.  The length of the array is the number
-of subtitles.  Each item in the araay is a string in the following format:
-
-    <index>:<language>:<name>:<codec>:<active>
-
-Any of the fields may be blank, except for `index`.  `language` is the language
-code, such as `eng`, `chi`, `swe`, etc.  `name` is a description of the
-subtitle, such as `foreign parts` or `SDH`.  `codec` is the name of the codec
-used by the subtitle, sudh as `subrip`.  `active` is either the string `active`
-or an empty string.
-
-   Params       |   Type
-:-------------: | ----------
- Return         | `string[]` 
-
-#### ListAudio
-
-Returns and array of all known audio streams.  The length of the array is the
-number of streams.  Each item in the array is a string in the following format:
-
-    <index>:<language>:<name>:<codec>:<active>
-
-See `ListSubtitles` for a description of what each of these fields means.  An
-example of a possible string is:
-
-    0:eng:DD 5.1:ac3:active
-
-   Params       |   Type
-:-------------: | ----------
- Return         | `string[]` 
-
-#### ListVideo
-
-Returns and array of all known video streams.  The length of the array is the
-number of streams.  Each item in the array is a string in the following format:
-
-    <index>:<language>:<name>:<codec>:<active>
-
-See `ListSubtitles` for a description of what each of these fields means.  An
-example of a possible string is:
-
-    0:eng:x264:h264:active
-
-   Params       |   Type
-:-------------: | ----------
- Return         | `string[]` 
-
-#### SelectSubtitle
-
-Selects the subtitle at a given index.
-
-   Params       |   Type    | Description
-:-------------: | ----------| ------------------------------------
- 1              | `int32`   | Index of subtitle to select
- Return         | `boolean` | Returns `true` if subtitle was selected, `false otherwise
-
-
-#### SelectAudio
-
-Selects the audio stream at a given index.
-
-   Params       |   Type    | Description
-:-------------: | ----------| ------------------------------------
- 1              | `int32`   | Index of audio stream to select
- Return         | `boolean` | Returns `true` if stream was selected, `false otherwise
-
-#### ShowSubtitles
-
-Turns on subtitles.
-
-   Params       |   Type 
-:-------------: | -------
- Return         | `null` 
-
-#### HideSubtitles
-
-Turns off subtitles.
-
-   Params       |   Type 
-:-------------: | -------
- Return         | `null` 
-
-#### Action
-
-Execute a "keyboard" command.  For available codes, see
-[KeyConfig.h](KeyConfig.h).
-
-
-   Params       |   Type    | Description
-:-------------: | ----------| ------------------
- 1              | `int32`   | Command to execute
- Return         | `null`    | 

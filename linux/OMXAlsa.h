@@ -1,0 +1,11 @@
+#pragma once
+#include <IL/OMX_Core.h>
+
+OMX_API OMX_ERRORTYPE OMX_APIENTRY OMXALSA_GetHandle(
+    OMX_OUT OMX_HANDLETYPE* pHandle,
+    OMX_IN  OMX_STRING cComponentName,
+    OMX_IN  OMX_PTR pAppData,
+    OMX_IN  OMX_CALLBACKTYPE* pCallBacks);
+
+OMX_API OMX_ERRORTYPE OMX_APIENTRY OMXALSA_FreeHandle(
+    OMX_IN  OMX_HANDLETYPE hComponent);

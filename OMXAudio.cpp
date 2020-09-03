@@ -112,6 +112,11 @@ bool COMXAudio::PortSettingsChanged()
     if(!m_omx_render_hdmi.Initialize("OMX.broadcom.audio_render", OMX_IndexParamAudioInit))
       return false;
   }
+  if (m_config.device == "omx:alsa")
+  {
+    if(!m_omx_render_analog.Initialize("OMX.alsa.audio_render", OMX_IndexParamAudioInit))
+      return false;
+  }
 
   UpdateAttenuation();
 
@@ -235,7 +240,7 @@ bool COMXAudio::PortSettingsChanged()
 
     OMX_CONFIG_BRCMAUDIODESTINATIONTYPE audioDest;
     OMX_INIT_STRUCTURE(audioDest);
-    strncpy((char *)audioDest.sName, "local", strlen("local"));
+    strncpy((char *)audioDest.sName, m_config.device == "omx:alsa" ? m_config.subdevice.c_str() : "local", sizeof(audioDest.sName));
     omx_err = m_omx_render_analog.SetConfig(OMX_IndexConfigBrcmAudioDestination, &audioDest);
     if (omx_err != OMX_ErrorNone)
     {
@@ -424,7 +429,7 @@ bool COMXAudio::Initialize(OMXClock *clock, const OMXAudioConfig &config, uint64
   if(m_config.passthrough || m_config.hwdecode)
     SetCodingType(m_config.hints.codec);
   else
-    SetCodingType(CODEC_ID_PCM_S16LE);
+    SetCodingType(AV_CODEC_ID_PCM_S16LE);
 
   m_omx_clock = m_av_clock->GetOMXClock();
 
@@ -737,6 +742,11 @@ void COMXAudio::Flush()
   
   while(!m_ampqueue.empty())
     m_ampqueue.pop_front();
+
+  if( m_omx_render_analog.IsInitialized() )
+    m_omx_render_analog.ResetEos();
+  if( m_omx_render_hdmi.IsInitialized() )
+    m_omx_render_hdmi.ResetEos();
 
   m_last_pts      = DVD_NOPTS_VALUE;
   m_submitted     = 0.0f;
@@ -1215,12 +1225,12 @@ void COMXAudio::SetCodingType(AVCodecID codec)
 {
   switch(codec)
   { 
-    case CODEC_ID_DTS:
+    case AV_CODEC_ID_DTS:
       CLog::Log(LOGDEBUG, "COMXAudio::SetCodingType OMX_AUDIO_CodingDTS\n");
       m_eEncoding = OMX_AUDIO_CodingDTS;
       break;
-    case CODEC_ID_AC3:
-    case CODEC_ID_EAC3:
+    case AV_CODEC_ID_AC3:
+    case AV_CODEC_ID_EAC3:
       CLog::Log(LOGDEBUG, "COMXAudio::SetCodingType OMX_AUDIO_CodingDDP\n");
       m_eEncoding = OMX_AUDIO_CodingDDP;
       break;
@@ -1236,30 +1246,30 @@ bool COMXAudio::CanHWDecode(AVCodecID codec)
   switch(codec)
   { 
     /*
-    case CODEC_ID_VORBIS:
+    case AV_CODEC_ID_VORBIS:
       CLog::Log(LOGDEBUG, "COMXAudio::CanHWDecode OMX_AUDIO_CodingVORBIS\n");
       m_eEncoding = OMX_AUDIO_CodingVORBIS;
       m_config.hwdecode = true;
       break;
-    case CODEC_ID_AAC:
+    case AV_CODEC_ID_AAC:
       CLog::Log(LOGDEBUG, "COMXAudio::CanHWDecode OMX_AUDIO_CodingAAC\n");
       m_eEncoding = OMX_AUDIO_CodingAAC;
       m_config.hwdecode = true;
       break;
     */
-    case CODEC_ID_MP2:
-    case CODEC_ID_MP3:
+    case AV_CODEC_ID_MP2:
+    case AV_CODEC_ID_MP3:
       CLog::Log(LOGDEBUG, "COMXAudio::CanHWDecode OMX_AUDIO_CodingMP3\n");
       m_eEncoding = OMX_AUDIO_CodingMP3;
       m_config.hwdecode = true;
       break;
-    case CODEC_ID_DTS:
+    case AV_CODEC_ID_DTS:
       CLog::Log(LOGDEBUG, "COMXAudio::CanHWDecode OMX_AUDIO_CodingDTS\n");
       m_eEncoding = OMX_AUDIO_CodingDTS;
       m_config.hwdecode = true;
       break;
-    case CODEC_ID_AC3:
-    case CODEC_ID_EAC3:
+    case AV_CODEC_ID_AC3:
+    case AV_CODEC_ID_EAC3:
       CLog::Log(LOGDEBUG, "COMXAudio::CanHWDecode OMX_AUDIO_CodingDDP\n");
       m_eEncoding = OMX_AUDIO_CodingDDP;
       m_config.hwdecode = true;
@@ -1281,27 +1291,27 @@ bool COMXAudio::HWDecode(AVCodecID codec)
   switch(codec)
   { 
     /*
-    case CODEC_ID_VORBIS:
-      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode CODEC_ID_VORBIS\n");
+    case AV_CODEC_ID_VORBIS:
+      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode AV_CODEC_ID_VORBIS\n");
       ret = true;
       break;
-    case CODEC_ID_AAC:
-      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode CODEC_ID_AAC\n");
+    case AV_CODEC_ID_AAC:
+      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode AV_CODEC_ID_AAC\n");
       ret = true;
       break;
     */
-    case CODEC_ID_MP2:
-    case CODEC_ID_MP3:
-      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode CODEC_ID_MP2 / CODEC_ID_MP3\n");
+    case AV_CODEC_ID_MP2:
+    case AV_CODEC_ID_MP3:
+      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode AV_CODEC_ID_MP2 / AV_CODEC_ID_MP3\n");
       ret = true;
       break;
-    case CODEC_ID_DTS:
-      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode CODEC_ID_DTS\n");
+    case AV_CODEC_ID_DTS:
+      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode AV_CODEC_ID_DTS\n");
       ret = true;
       break;
-    case CODEC_ID_AC3:
-    case CODEC_ID_EAC3:
-      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode CODEC_ID_AC3 / CODEC_ID_EAC3\n");
+    case AV_CODEC_ID_AC3:
+    case AV_CODEC_ID_EAC3:
+      CLog::Log(LOGDEBUG, "COMXAudio::HWDecode AV_CODEC_ID_AC3 / AV_CODEC_ID_EAC3\n");
       ret = true;
       break;
     default:

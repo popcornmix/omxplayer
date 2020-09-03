@@ -81,6 +81,18 @@ private:
   bool closing_;
 };
 
+typedef struct {
+  int buffer_width;
+  int buffer_height;
+  int buffer_y;
+  int buffer_x;
+  int line_height;
+  int box_offset;
+  int box_h_padding;
+  int margin_left;
+  int margin_bottom;
+} SubtitleConfig;
+
 class SubtitleRenderer {
 public:
   SubtitleRenderer(const SubtitleRenderer&) = delete;
@@ -118,6 +130,8 @@ public:
       draw();
   }
 
+  void set_rect(int width, int height, int x, int y) BOOST_NOEXCEPT;
+
 private:
   struct InternalChar {
     InternalChar() = default;
@@ -152,16 +166,11 @@ private:
 
   void destroy();
   void initialize_fonts(const std::string& font_name,
-                        const std::string& italic_font_path,
-                        unsigned int font_size);
+                        const std::string& italic_font_path);
   void destroy_fonts();
   void initialize_vg();
   void destroy_vg();
-  void initialize_window(int display, int layer,
-                         unsigned int x,
-                         unsigned int y,
-                         unsigned int width,
-                         unsigned int height);
+  void initialize_window(int display, int layer);
   void destroy_window();
   void clear() BOOST_NOEXCEPT;
   void draw() BOOST_NOEXCEPT;
@@ -188,14 +197,12 @@ private:
   std::vector<std::vector<InternalChar>> internal_lines_;
   std::vector<std::pair<int,int>> line_positions_;
   std::vector<int> line_widths_;
-  int line_height_;
-  int box_offset_;
-  int box_h_padding_;
-  int margin_left_;
-  int margin_bottom_;
-  int buffer_width_;
-  int buffer_height_;
   bool centered_;
   unsigned int white_level_;
   unsigned int box_opacity_;
+  uint32_t screen_width_;
+  uint32_t screen_height_;
+  float font_size_;
+  SubtitleConfig config_fullscreen_;
+  SubtitleConfig config_;
 };

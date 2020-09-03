@@ -35,6 +35,7 @@
 
 #ifdef TARGET_LINUX
 #include "XMemUtils.h"
+#include "OMXAlsa.h"
 #endif
 
 //#define OMX_DEBUG_EVENTS
@@ -1429,6 +1430,11 @@ bool COMXCoreComponent::Initialize( const std::string &component_name, OMX_INDEX
   // Get video component handle setting up callbacks, component is in loaded state on return.
   if(!m_handle)
   {
+#ifdef TARGET_LINUX
+    if (strncmp("OMX.alsa.", component_name.c_str(), 9) == 0)
+      omx_err = OMXALSA_GetHandle(&m_handle, (char*) component_name.c_str(), this, &m_callbacks);
+    else
+#endif
     omx_err = m_DllOMX->OMX_GetHandle(&m_handle, (char*)component_name.c_str(), this, &m_callbacks);
     if (!m_handle || omx_err != OMX_ErrorNone)
     {
@@ -1505,6 +1511,11 @@ bool COMXCoreComponent::Deinitialize()
 
     CLog::Log(LOGDEBUG, "COMXCoreComponent::Deinitialize : %s handle %p\n",
         m_componentName.c_str(), m_handle);
+#ifdef TARGET_LINUX
+    if (strncmp("OMX.alsa.", m_componentName.c_str(), 9) == 0)
+      omx_err = OMXALSA_FreeHandle(m_handle);
+    else
+#endif
     omx_err = m_DllOMX->OMX_FreeHandle(m_handle);
     if (omx_err != OMX_ErrorNone)
     {

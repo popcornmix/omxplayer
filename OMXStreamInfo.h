@@ -53,6 +53,7 @@ public:
   int height; // height of the stream reported by the demuxer
   int width; // width of the stream reported by the demuxer
   float aspect; // display aspect as reported by demuxer
+  bool forced_aspect; // true if we trust container aspect more than codec
   bool vfr; // variable framerate
   bool stills; // there may be odd still frames in video
   int level; // encoder level of the stream reported by the decoder. used to qualify hw decoders.
