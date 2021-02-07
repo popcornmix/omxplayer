@@ -86,7 +86,7 @@ Usage: omxplayer [OPTIONS] [FILE]
         --nativedeinterlace     let display handle interlace
         --anaglyph type         convert 3d to anaglyph
         --advanced[=0]          Enable/disable advanced deinterlace for HD videos (default enabled)
-    -w  --hw                    Hw audio decoding
+    -w  --hw                    Hw audio decoding (default: disabled)
     -3  --3d mode               Switch tv into 3d mode (e.g. SBS/TB)
     -M  --allow-mvc             Allow decoding of both views of MVC stereo stream
     -y  --hdmiclocksync         Display refresh rate to match video (default)
@@ -114,15 +114,15 @@ Usage: omxplayer [OPTIONS] [FILE]
         --crop 'x1 y1 x2 y2'    Set crop area for input video
         --crop x1,y1,x2,y2      Set crop area for input video
         --aspect-mode type      Letterbox, fill, stretch. Default: stretch if win is specified, letterbox otherwise
-        --audio_fifo  n         Size of audio output fifo in seconds
-        --video_fifo  n         Size of video output fifo in MB
-        --audio_queue n         Size of audio input queue in MB
-        --video_queue n         Size of video input queue in MB
-        --threshold   n         Amount of buffered data required to finish buffering [s]
+        --audio_fifo  n         Size of audio output fifo in seconds (default: 2 seconds)
+        --video_fifo  n         Size of video output fifo in MB (default: 4800KB)
+        --audio_queue n         Size of audio input queue in MB (default: 3MB)
+        --video_queue n         Size of video input queue in MB (default: 10MB)
+        --threshold   n         Amount of buffered data required to finish buffering (default: 0.7 when --live is set. 0.2 otherwise.)
         --timeout     n         Timeout for stalled file/network operations (default 10s)
         --orientation n         Set orientation of video (0, 90, 180 or 270)
         --fps n                 Set fps of video where timestamps are not present
-        --live                  Set for live tv or vod type stream
+        --live                  Set for live tv or vod type stream (default: off)
         --layout                Set output speaker layout (e.g. 5.1)
         --dbus_name name        default: org.mpris.MediaPlayer2.omxplayer
         --key-config <file>     Uses key bindings in <file> instead of the default
