@@ -188,9 +188,8 @@ bool OMXPlayerAudio::Decode(OMXPacket *pkt)
   }
 
   // for passthrough we only care about the codec and the samplerate
-  bool minor_change = channels                 != m_config.hints.channels ||
-                      pkt->hints.bitspersample != m_config.hints.bitspersample ||
-                      old_bitrate              != new_bitrate;
+  bool minor_change = ( pkt->hints.bitspersample != m_hints.bitspersample ) ||
+                      ( old_bitrate              != new_bitrate );
 
   if(pkt->hints.codec          != m_config.hints.codec ||
      pkt->hints.samplerate     != m_config.hints.samplerate ||
@@ -230,10 +229,28 @@ bool OMXPlayerAudio::Decode(OMXPacket *pkt)
     while(data_len > 0)
     {
       int len = m_pAudioCodec->Decode((BYTE *)data_dec, data_len, dts, pts);
-      if( (len < 0) || (len >  data_len) )
+      if( (len < 0) /*|| (len >  data_len)*/ )
       {
         m_pAudioCodec->Reset();
         break;
+      }
+
+      // check audio channel change
+      if( m_pAudioCodec->GetChannels() != 0 && m_pAudioCodec->GetChannels() < 7 &&
+          m_hints.channels != m_pAudioCodec->GetChannels() )
+      {
+
+        m_hints = pkt->hints;
+        m_hints.channels = m_pAudioCodec->GetChannels();
+        channels = m_pAudioCodec->GetChannels();
+
+        bool bAudioRenderOpen = false;
+        bAudioRenderOpen = m_decoder->ChangeInputFormat(m_device, m_hints.channels, m_pAudioCodec->GetChannelMap(),
+                           m_hints, m_layout, m_hints.samplerate, m_pAudioCodec->GetBitsPerSample(), m_boost_on_downmix,
+                           m_av_clock, m_passthrough, m_hw_decode, m_live, m_fifo_size);
+        if(!bAudioRenderOpen)
+            CLog::Log(LOGINFO, "m_decoder->ChangeInputFormat() failed");
+
       }
 
       data_dec+= len;
@@ -517,3 +534,8 @@ bool OMXPlayerAudio::IsEOS()
   return m_packets.empty() && (!m_decoder || m_decoder->IsEOS());
 }
 
+bool OMXPlayerAudio::ToggleMonoTrack()
+{
+  if(m_decoder)
+    m_decoder->ToggleMonoTrack();
+}

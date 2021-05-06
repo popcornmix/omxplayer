@@ -88,6 +88,10 @@ public:
   float GetMaxLevel(double &pts);
   COMXAudio();
   bool Initialize(OMXClock *clock, const OMXAudioConfig &config, uint64_t channelMap, unsigned int uiBitsPerSample);
+  bool ChangeInputFormat(const CStdString& device, int iChannels, uint64_t channelMap,
+                           COMXStreamInfo &hints, enum PCMLayout layout, unsigned int uiSamplesPerSec, unsigned int uiBitsPerSample, bool boostOnDownmix,
+                           OMXClock *clock, bool bUsePassthrough = false, bool bUseHWDecode = false, bool is_live = false, float fifo_size = 0);
+
   ~COMXAudio();
   bool PortSettingsChanged();
 
@@ -103,6 +107,7 @@ public:
   bool ApplyVolume();
   void SubmitEOS();
   bool IsEOS();
+  bool ToggleMonoTrack();
 
   void Flush();
 
@@ -147,6 +152,7 @@ private:
   bool          m_submitted_eos;
   bool          m_failed_eos;
   OMXAudioConfig m_config;
+  int           m_monotrack;
 
   OMX_AUDIO_CHANNELTYPE m_input_channels[OMX_AUDIO_MAXCHANNELS];
   OMX_AUDIO_CHANNELTYPE m_output_channels[OMX_AUDIO_MAXCHANNELS];
